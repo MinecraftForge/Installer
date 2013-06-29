@@ -29,6 +29,11 @@ artifacts {
     archives sourcesJar
 }
 
+jar {
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest { attributes 'Main-Class': 'cpw.mods.fml.installer.SimpleInstaller' }
+
+}
 uploadArchives {
     repositories {
        flatDir {
