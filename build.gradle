@@ -10,8 +10,10 @@ repositories {
 }
 
 group = 'net.minecraftforge'
-archivesBaseName = 'installer'
+archivesBaseName = 'forge-installer'
 version = '1.0'
+targetCompatibility = '1.6'
+sourceCompatibility = '1.6'
 
 dependencies {
     compile 'net.sourceforge.argo:argo:3.7'
