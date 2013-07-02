@@ -36,8 +36,6 @@ jar {
 }
 uploadArchives {
     repositories {
-       flatDir {
-           dirs 'repos'
-       }
+	    add rootProject.repositories.filesrepo
     }
 }
