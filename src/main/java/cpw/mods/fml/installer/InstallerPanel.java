@@ -195,8 +195,11 @@ public class InstallerPanel extends JPanel {
             fileEntryPanel.setBorder(new LineBorder(Color.RED));
             infoLabel.setText("<html>"+action.getFileError(targetDir)+"</html>");
             infoLabel.setVisible(true);
-            dialog.invalidate();
-            dialog.pack();
+            if (dialog!=null)
+            {
+                dialog.invalidate();
+                dialog.pack();
+            }
         }
     }
 
