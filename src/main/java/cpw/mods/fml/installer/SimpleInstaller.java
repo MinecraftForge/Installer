@@ -31,7 +31,7 @@ public class SimpleInstaller {
         }
         else if (osType.contains("mac"))
         {
-            targetDir = new File(new File(new File(userHomeDir, "Library"),"Application Support"),mcDir);
+            targetDir = new File(new File(new File(userHomeDir, "Library"),"Application Support"),"minecraft");
         }
         else
         {
