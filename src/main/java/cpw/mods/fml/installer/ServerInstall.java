@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.JOptionPane;
@@ -21,6 +22,8 @@ import com.google.common.io.InputSupplier;
 import argo.jdom.JsonNode;
 
 public class ServerInstall implements ActionType {
+
+    private List<String> grabbed;
 
     private class URLISSupplier implements InputSupplier<InputStream> {
         private final URLConnection connection;
@@ -50,20 +53,24 @@ public class ServerInstall implements ActionType {
         if (!target.exists())
         {
             target.mkdirs();
-            librariesDir.mkdir();
         }
+        librariesDir.mkdir();
         ProgressMonitor monitor = new ProgressMonitor(null, "Downloading libraries", "Libraries are being analyzed", 0, 1);
         List<JsonNode> libraries = VersionInfo.getVersionInfo().getArrayNode("libraries");
-        monitor.setMaximum(libraries.size() + 1);
-        int i = 0;
-        List<String> skipped = Lists.newArrayList();
+        monitor.setMaximum(libraries.size() + 2);
+        monitor.setMillisToPopup(0);
+        monitor.setMillisToDecideToPopup(0);
+        int i = 2;
+        grabbed = Lists.newArrayList();
         List<String> bad = Lists.newArrayList();
         String mcServerURL = String.format("https://s3.amazonaws.com/Minecraft.Download/versions/%s/minecraft_server.%s.jar", VersionInfo.getMinecraftVersion(), VersionInfo.getMinecraftVersion());
         File mcServerFile = new File(target,"minecraft_server."+VersionInfo.getMinecraftVersion()+".jar");
         if (!mcServerFile.exists())
         {
             monitor.setNote("Considering minecraft server jar");
+            monitor.setProgress(1);
             downloadFile("minecraft server", mcServerFile, mcServerURL);
+            monitor.setProgress(2);
         }
         for (JsonNode library : libraries)
         {
@@ -72,28 +79,32 @@ public class ServerInstall implements ActionType {
             if (library.isBooleanValue("serverreq") && library.getBooleanValue("serverreq"))
             {
                 String[] nameparts = Iterables.toArray(Splitter.on(':').split(libName),String.class);
-                nameparts[0].replace('.', '/');
+                nameparts[0]=nameparts[0].replace('.', '/');
                 String jarName = nameparts[1]+'-'+nameparts[2]+".jar";
                 String pathName = nameparts[0]+'/'+nameparts[1]+'/'+nameparts[2]+'/'+jarName;
-                File libPath = new File(librariesDir,pathName.replace('/', File.pathSeparatorChar));
-                String libURL = library.isStringValue("url") ? library.getStringValue("url") : "https://s3.amazonaws.com/Minecraft.Download/libraries/";
+                File libPath = new File(librariesDir,pathName.replace('/', File.separatorChar));
+                String libURL = library.isStringValue("url") ? library.getStringValue("url")+"/" : "https://s3.amazonaws.com/Minecraft.Download/libraries/";
                 if (libPath.exists())
                 {
-                    skipped.add(libName);
                     monitor.setProgress(i++);
                     continue;
                 }
-                libPath.mkdirs();
+                libPath.getParentFile().mkdirs();
                 monitor.setNote(String.format("Downloading library %s",libName));
                 libURL+=pathName;
                 if (!downloadFile(libName, libPath, libURL))
                 {
                     bad.add(libName);
                 }
+                else
+                {
+                    grabbed.add(libName);
+                }
             }
             monitor.setProgress(i++);
         }
 
+        monitor.close();
         if (bad.size() > 0)
         {
             String list = Joiner.on(", ").join(bad);
@@ -102,7 +113,7 @@ public class ServerInstall implements ActionType {
         }
         try
         {
-            File targetRun = new File(target,VersionInfo.INSTANCE.versionData.getStringValue("install","filePath"));
+            File targetRun = new File(target,VersionInfo.getContainedFile());
             VersionInfo.extractFile(targetRun);
         }
         catch (IOException e)
@@ -158,8 +169,7 @@ public class ServerInstall implements ActionType {
     @Override
     public String getSuccessMessage()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return String.format("Successfully downloaded minecraft server, downloaded %d libraries and installed %s", grabbed.size(), VersionInfo.getProfileName());
     }
 
 }

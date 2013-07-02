@@ -87,6 +87,10 @@ public class VersionInfo {
     {
         return new File(new File(path, getMinecraftVersion()),getMinecraftVersion()+".jar");
     }
+    public static String getContainedFile()
+    {
+        return INSTANCE.versionData.getStringValue("install","filePath");
+    }
     public static void extractFile(File path) throws IOException
     {
         INSTANCE.doFileExtract(path);
@@ -94,8 +98,7 @@ public class VersionInfo {
 
     private void doFileExtract(File path) throws IOException
     {
-        String fileName = versionData.getStringValue("install","filePath");
-        InputStream inputStream = getClass().getResourceAsStream("/"+fileName);
+        InputStream inputStream = getClass().getResourceAsStream("/"+getContainedFile());
         OutputSupplier<FileOutputStream> outputSupplier = Files.newOutputStreamSupplier(path);
         ByteStreams.copy(inputStream, outputSupplier);
     }
