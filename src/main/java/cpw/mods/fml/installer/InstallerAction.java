@@ -39,9 +39,9 @@ public enum InstallerAction {
         return tooltip;
     }
 
-    public void run(File path)
+    public boolean run(File path)
     {
-        action.run(path);
+        return action.run(path);
     }
     public boolean isPathValid(File targetDir)
     {
@@ -51,5 +51,9 @@ public enum InstallerAction {
     public String getFileError(File targetDir)
     {
         return action.getFileError(targetDir);
+    }
+    public String getSuccessMessage()
+    {
+        return action.getSuccessMessage();
     }
 }

@@ -23,20 +23,19 @@ import com.google.common.io.Files;
 
 public class ClientInstall implements ActionType {
 
-
     @Override
-    public void run(File target)
+    public boolean run(File target)
     {
         if (!target.exists())
         {
             JOptionPane.showMessageDialog(null, "There is no minecraft installation at this location!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
         File launcherProfiles = new File(target,"launcher_profiles.json");
         if (!launcherProfiles.exists())
         {
             JOptionPane.showMessageDialog(null, "There is no minecraft launcher profile at this location, you need to run the launcher first!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
 
         File versionRootDir = new File(target,"versions");
@@ -64,7 +63,7 @@ public class ClientInstall implements ActionType {
         catch (IOException e1)
         {
             JOptionPane.showMessageDialog(null, "You need to run the version "+VersionInfo.getMinecraftVersion()+" manually at least once", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
         File targetLibraryFile = VersionInfo.getLibraryPath(new File(target,"libraries"));
         if (!targetLibraryFile.getParentFile().mkdirs() && !targetLibraryFile.getParentFile().isDirectory())
@@ -72,7 +71,7 @@ public class ClientInstall implements ActionType {
             if (!targetLibraryFile.getParentFile().delete())
             {
                 JOptionPane.showMessageDialog(null, "There was a problem with the launcher version data. You will need to clear "+targetLibraryFile.getAbsolutePath()+" manually", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
+                return false;
             }
             else
             {
@@ -92,7 +91,7 @@ public class ClientInstall implements ActionType {
         catch (Exception e)
         {
             JOptionPane.showMessageDialog(null, "There was a problem writing the launcher version data,  is it write protected?", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
 
         try
@@ -102,7 +101,7 @@ public class ClientInstall implements ActionType {
         catch (IOException e)
         {
             JOptionPane.showMessageDialog(null, "There was a problem writing the system library file", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
 
         JdomParser parser = new JdomParser();
@@ -115,7 +114,7 @@ public class ClientInstall implements ActionType {
         catch (InvalidSyntaxException e)
         {
             JOptionPane.showMessageDialog(null, "The launcher profile file is corrupted. Re-run the minecraft launcher to fix it!", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
         catch (Exception e)
         {
@@ -146,10 +145,10 @@ public class ClientInstall implements ActionType {
         catch (Exception e)
         {
             JOptionPane.showMessageDialog(null, "There was a problem writing the launch profile,  is it write protected?", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
 
-
+        return true;
     }
 
     @Override
@@ -174,5 +173,11 @@ public class ClientInstall implements ActionType {
         {
             return "There is no minecraft directory set up. Either choose an alternative, or run the minecraft launcher to create one";
         }
+    }
+
+    @Override
+    public String getSuccessMessage()
+    {
+        return String.format("Successfully installed client profile %s for version %s into launcher",VersionInfo.getProfileName(), VersionInfo.getVersion());
     }
 }

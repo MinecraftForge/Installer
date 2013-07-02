@@ -212,7 +212,10 @@ public class InstallerPanel extends JPanel {
         if (result == JOptionPane.OK_OPTION)
         {
             InstallerAction action = InstallerAction.valueOf(choiceButtonGroup.getSelection().getActionCommand());
-            action.run(targetDir);
+            if (action.run(targetDir))
+            {
+                JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
+            }
         }
         dialog.dispose();
     }
