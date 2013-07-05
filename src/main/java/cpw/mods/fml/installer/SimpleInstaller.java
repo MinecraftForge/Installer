@@ -48,6 +48,12 @@ public class SimpleInstaller {
             JOptionPane.showMessageDialog(null, "Corrupt download detected, cannot install", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+        
+        try {
+    		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		} 
+		catch (Exception e) {
+		}
 
         InstallerPanel panel = new InstallerPanel(targetDir);
         panel.run();
