@@ -3,6 +3,10 @@ package cpw.mods.fml.installer;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Dialog.ModalExclusionType;
+import java.awt.Dialog.ModalityType;
+import java.awt.Frame;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -19,6 +23,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -207,9 +212,12 @@ public class InstallerPanel extends JPanel {
     {
         JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
 
-        dialog = optionPane.createDialog(null, "Mod system installer");
+        Frame emptyFrame = new Frame("Mod system installer");
+        emptyFrame.setUndecorated(true);
+        emptyFrame.setVisible(true);
+        emptyFrame.setLocationRelativeTo(null);
+        dialog = optionPane.createDialog(emptyFrame, "Mod system installer");
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        dialog.setModal(true);
         dialog.setVisible(true);
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
         if (result == JOptionPane.OK_OPTION)
@@ -221,5 +229,6 @@ public class InstallerPanel extends JPanel {
             }
         }
         dialog.dispose();
+        emptyFrame.dispose();
     }
 }

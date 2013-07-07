@@ -23,6 +23,7 @@ import argo.jdom.JsonNode;
 
 public class ServerInstall implements ActionType {
 
+    public static boolean headless;
     private List<String> grabbed;
 
     private class URLISSupplier implements InputSupplier<InputStream> {
@@ -45,7 +46,8 @@ public class ServerInstall implements ActionType {
     {
         if (target.exists() && !target.isDirectory())
         {
-            JOptionPane.showMessageDialog(null, "There is a file at this location, the server cannot be installed here!", "Error", JOptionPane.ERROR_MESSAGE);
+            if (!headless)
+                JOptionPane.showMessageDialog(null, "There is a file at this location, the server cannot be installed here!", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
@@ -55,11 +57,9 @@ public class ServerInstall implements ActionType {
             target.mkdirs();
         }
         librariesDir.mkdir();
-        ProgressMonitor monitor = new ProgressMonitor(null, "Downloading libraries", "Libraries are being analyzed", 0, 1);
+        IMonitor monitor = buildMonitor();
         List<JsonNode> libraries = VersionInfo.getVersionInfo().getArrayNode("libraries");
         monitor.setMaximum(libraries.size() + 2);
-        monitor.setMillisToPopup(0);
-        monitor.setMillisToDecideToPopup(0);
         int i = 2;
         grabbed = Lists.newArrayList();
         List<String> bad = Lists.newArrayList();
@@ -69,6 +69,7 @@ public class ServerInstall implements ActionType {
         {
             monitor.setNote("Considering minecraft server jar");
             monitor.setProgress(1);
+            monitor.setNote(String.format("Downloading minecraft server version %s",VersionInfo.getMinecraftVersion()));
             downloadFile("minecraft server", mcServerFile, mcServerURL);
             monitor.setProgress(2);
         }
@@ -108,7 +109,10 @@ public class ServerInstall implements ActionType {
         if (bad.size() > 0)
         {
             String list = Joiner.on(", ").join(bad);
-            JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
+            if (!headless)
+                JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
+            else
+                System.err.println("These libraries failed to download, try again. "+list);
             return false;
         }
         try
@@ -118,7 +122,10 @@ public class ServerInstall implements ActionType {
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(null, "An error occurred installing the library", "Error", JOptionPane.ERROR_MESSAGE);
+            if (!headless)
+                JOptionPane.showMessageDialog(null, "An error occurred installing the library", "Error", JOptionPane.ERROR_MESSAGE);
+            else
+                System.err.println("An error occurred installing the distributable");
             return false;
         }
 
@@ -172,4 +179,71 @@ public class ServerInstall implements ActionType {
         return String.format("Successfully downloaded minecraft server, downloaded %d libraries and installed %s", grabbed.size(), VersionInfo.getProfileName());
     }
 
+    private IMonitor buildMonitor()
+    {
+        if (headless)
+        {
+            return new IMonitor()
+            {
+
+                @Override
+                public void setMaximum(int max)
+                {
+                }
+
+                @Override
+                public void setNote(String note)
+                {
+                    System.out.println("MESSAGE: "+ note);
+                }
+
+                @Override
+                public void setProgress(int progress)
+                {
+
+                }
+
+                @Override
+                public void close()
+                {
+
+                }
+
+            };
+        }
+        else
+        {
+            return new IMonitor() {
+                private ProgressMonitor monitor;
+                {
+                    monitor = new ProgressMonitor(null, "Downloading libraries", "Libraries are being analyzed", 0, 1);
+                    monitor.setMillisToPopup(0);
+                    monitor.setMillisToDecideToPopup(0);
+                }
+                @Override
+                public void setMaximum(int max)
+                {
+                    monitor.setMaximum(max);
+                }
+
+                @Override
+                public void setNote(String note)
+                {
+                    monitor.setNote(note);
+                }
+
+                @Override
+                public void setProgress(int progress)
+                {
+                    monitor.setProgress(progress);
+                }
+
+                @Override
+                public void close()
+                {
+                    monitor.close();
+                }
+            };
+        }
+    }
 }

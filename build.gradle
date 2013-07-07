@@ -8,6 +8,10 @@ repositories {
     maven {
         url "http://s3.amazonaws.com/Minecraft.Download/libraries"
     }
+    flatDir {
+        name "fileRepo"
+        dirs "repo"
+    }
 }
 
 group = 'net.minecraftforge'
@@ -17,6 +21,7 @@ targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
 
 dependencies {
+    compile 'net.sf.jopt-simple:jopt-simple:4.5'
     compile 'net.sourceforge.argo:argo:3.7'
     compile 'com.google.guava:guava:14.0'
 }
@@ -37,6 +42,12 @@ jar {
 }
 uploadArchives {
     repositories {
-	    add rootProject.repositories.filesrepo
+        if (rootProject.repositories.contains('filesrepo')) {
+           add rootProject.repositories.filesrepo
+        }
+        else
+        {
+            add project.repositories.fileRepo
+        }
     }
 }

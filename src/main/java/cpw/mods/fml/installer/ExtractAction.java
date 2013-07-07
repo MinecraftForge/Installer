@@ -7,6 +7,7 @@ import javax.swing.JOptionPane;
 
 public class ExtractAction implements ActionType {
 
+    public static boolean headless;
     @Override
     public boolean run(File target)
     {
@@ -17,7 +18,8 @@ public class ExtractAction implements ActionType {
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(null, "An error occurred extracting file", "Error", JOptionPane.ERROR_MESSAGE);
+            if (!headless)
+                JOptionPane.showMessageDialog(null, "An error occurred extracting file", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
         return true;
