@@ -3,7 +3,9 @@ package cpw.mods.fml.installer;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.swing.JOptionPane;
 
@@ -17,11 +19,15 @@ import argo.jdom.JsonStringNode;
 import argo.saj.InvalidSyntaxException;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 public class ClientInstall implements ActionType {
+
+    private List<String> grabbed;
 
     @Override
     public boolean run(File target)
@@ -65,7 +71,24 @@ public class ClientInstall implements ActionType {
             JOptionPane.showMessageDialog(null, "You need to run the version "+VersionInfo.getMinecraftVersion()+" manually at least once", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
-        File targetLibraryFile = VersionInfo.getLibraryPath(new File(target,"libraries"));
+        File librariesDir = new File(target,"libraries");
+        File targetLibraryFile = VersionInfo.getLibraryPath(librariesDir);
+        IMonitor monitor = DownloadUtils.buildMonitor();
+        List<JsonNode> libraries = VersionInfo.getVersionInfo().getArrayNode("libraries");
+        monitor.setMaximum(libraries.size() + 2);
+        int progress = 2;
+        grabbed = Lists.newArrayList();
+        List<String> bad = Lists.newArrayList();
+        progress = DownloadUtils.downloadInstalledLibraries("clientreq", librariesDir, monitor, libraries, progress, grabbed, bad);
+
+        monitor.close();
+        if (bad.size() > 0)
+        {
+            String list = Joiner.on(", ").join(bad);
+            JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
+
         if (!targetLibraryFile.getParentFile().mkdirs() && !targetLibraryFile.getParentFile().isDirectory())
         {
             if (!targetLibraryFile.getParentFile().delete())
@@ -178,6 +201,6 @@ public class ClientInstall implements ActionType {
     @Override
     public String getSuccessMessage()
     {
-        return String.format("Successfully installed client profile %s for version %s into launcher",VersionInfo.getProfileName(), VersionInfo.getVersion());
+        return String.format("Successfully installed client profile %s for version %s into launcher and grabbed %d required libraries",VersionInfo.getProfileName(), VersionInfo.getVersion(), grabbed.size());
     }
 }
