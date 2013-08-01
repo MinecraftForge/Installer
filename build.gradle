@@ -30,16 +30,25 @@ task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
 }
+
+task fatJar(type: Jar, dependsOn: jar) {
+    from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
+}
+
+fatJar.doFirst {
+    from zipTree(jar.archivePath)
+}
 artifacts {
-    archives jar
+    archives fatJar
     archives sourcesJar
 }
 
 jar {
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    classifier = 'thin'
+    exclude 'argo/**'
     manifest { attributes 'Main-Class': 'cpw.mods.fml.installer.SimpleInstaller' }
-
 }
+
 uploadArchives {
     repositories {
         if (rootProject.repositories.contains('filesrepo')) {
