@@ -51,19 +51,15 @@ jar {
 
 uploadArchives {
     repositories {
-        logger.info('Avalible Repos:')
-        for (f in rootProject.repositories) {
-            logger.info('    ' + f.name)
-        }
-        if (rootProject.repositories.contains('filesrepo')) {
-            logger.info('Publishing to files server')
-            add rootProject.repositories.filesrepo
-        }
-        else
+        for (f in rootProject.repositories)
         {
-            logger.info('Publishing to repo folder')
-            add project.repositories.fileRepo
+            if (f.name.equals('filesrepo')) {
+                logger.info('Publishing to files server')
+                add f
+            }
         }
+        logger.info('Publishing to repo folder')
+        add project.repositories.fileRepo
     }
 }
 
