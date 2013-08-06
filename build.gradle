@@ -3,6 +3,15 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'net.sf.proguard:proguard-gradle:4.10'
+    }
+}
+
 repositories {
     mavenCentral()
     maven {
@@ -38,9 +47,31 @@ task fatJar(type: Jar, dependsOn: jar) {
 fatJar.doFirst {
     from zipTree(jar.archivePath)
 }
+
+
+task shrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
+    ext {
+        outDir = file("${buildDir}/proguard")
+        obfuscatedJar = "${outDir}/${jar.baseName}.jar"
+    }
+    outDir.mkdirs()
+    
+    injars jar.archivePath
+    outjars obfuscatedJar
+    libraryjars configurations.compile
+    configuration 'proguard.pro'
+}
+
+task shrinkOutput(type: Jar, dependsOn: shrinkJar) {
+    classifier = 'shrunk'
+    from zipTree(shrinkJar.obfuscatedJar)
+    manifest { attributes 'Main-Class': 'cpw.mods.fml.installer.SimpleInstaller' }
+}
+
 artifacts {
     archives fatJar
     archives sourcesJar
+    archives shrinkOutput
 }
 
 jar {
