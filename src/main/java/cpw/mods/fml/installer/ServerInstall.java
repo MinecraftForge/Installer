@@ -47,7 +47,7 @@ public class ServerInstall implements ActionType {
             monitor.setNote("Considering minecraft server jar");
             monitor.setProgress(1);
             monitor.setNote(String.format("Downloading minecraft server version %s",VersionInfo.getMinecraftVersion()));
-            DownloadUtils.downloadFile("minecraft server", mcServerFile, mcServerURL);
+            DownloadUtils.downloadFile("minecraft server", mcServerFile, mcServerURL, null);
             monitor.setProgress(2);
         }
         progress = DownloadUtils.downloadInstalledLibraries("serverreq", librariesDir, monitor, libraries, progress, grabbed, bad);

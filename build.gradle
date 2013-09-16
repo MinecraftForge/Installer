@@ -33,6 +33,7 @@ dependencies {
     compile 'net.sf.jopt-simple:jopt-simple:4.5'
     compile 'net.sourceforge.argo:argo:3.7'
     compile 'com.google.guava:guava:14.0'
+    compile 'lzma:lzma:0.0.1'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
