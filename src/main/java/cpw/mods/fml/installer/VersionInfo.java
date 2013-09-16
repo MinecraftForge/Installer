@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.List;
 
 import argo.jdom.JdomParser;
 import argo.jdom.JsonNode;
@@ -106,5 +107,11 @@ public class VersionInfo {
     public static String getMinecraftVersion()
     {
         return INSTANCE.versionData.getStringValue("install","minecraft");
+    }
+
+    public static List<String> getMirrorList()
+    {
+        String mirrorURL = INSTANCE.versionData.getStringValue("install","mirrorList");
+        return DownloadUtils.downloadList(mirrorURL);
     }
 }

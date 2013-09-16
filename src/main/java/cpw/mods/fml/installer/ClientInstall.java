@@ -75,11 +75,12 @@ public class ClientInstall implements ActionType {
         File targetLibraryFile = VersionInfo.getLibraryPath(librariesDir);
         IMonitor monitor = DownloadUtils.buildMonitor();
         List<JsonNode> libraries = VersionInfo.getVersionInfo().getArrayNode("libraries");
+        List<String> mirrorList = VersionInfo.getMirrorList();
         monitor.setMaximum(libraries.size() + 2);
         int progress = 2;
         grabbed = Lists.newArrayList();
         List<String> bad = Lists.newArrayList();
-        progress = DownloadUtils.downloadInstalledLibraries("clientreq", librariesDir, monitor, libraries, progress, grabbed, bad);
+        progress = DownloadUtils.downloadInstalledLibraries("clientreq", librariesDir, monitor, libraries, progress, grabbed, bad, mirrorList);
 
         monitor.close();
         if (bad.size() > 0)
