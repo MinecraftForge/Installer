@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.jar.JarOutputStream;
@@ -19,8 +20,10 @@ import javax.swing.ProgressMonitor;
 import LZMA.LzmaInputStream;
 import argo.jdom.JsonNode;
 
+import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
@@ -35,7 +38,16 @@ public class DownloadUtils {
         for (JsonNode library : libraries)
         {
             String libName = library.getStringValue("name");
-            String sha1Checksum = library.isStringValue("sha1Checksum") ? library.getStringValue("sha1Checksum") : null;
+            List<String> checksums = null;
+            if (library.isArrayNode("checksums"))
+            {
+                checksums = Lists.newArrayList(Lists.transform(library.getArrayNode("checksums"), new Function<JsonNode, String>() {
+                    public String apply(JsonNode node)
+                    {
+                        return node.getText();
+                    }
+                }));
+            }
             monitor.setNote(String.format("Considering library %s", libName));
             if (library.isBooleanValue(jsonMarker) && library.getBooleanValue(jsonMarker))
             {
@@ -55,7 +67,7 @@ public class DownloadUtils {
                 {
                     libURL = library.getStringValue("url") + "/";
                 }
-                if (libPath.exists() && checksumValid(libPath, sha1Checksum))
+                if (libPath.exists() && checksumValid(libPath, checksums))
                 {
                     monitor.setProgress(progress++);
                     continue;
@@ -68,7 +80,7 @@ public class DownloadUtils {
                 if (!downloadFile(libName, packFile, libURL + PACK_NAME, null))
                 {
                     monitor.setNote("Failed to locate packed library, trying unpacked");
-                    if (!downloadFile(libName, libPath, libURL, sha1Checksum))
+                    if (!downloadFile(libName, libPath, libURL, checksums))
                     {
                         bad.add(libName);
                     }
@@ -84,7 +96,7 @@ public class DownloadUtils {
                         Pack200.newUnpacker().unpack(decompressedPackFile, jos);
                         monitor.setNote(String.format("Successfully unpacked packed file %s",packFile.getName()));
                         packFile.delete();
-                        if (checksumValid(libPath, sha1Checksum))
+                        if (checksumValid(libPath, checksums))
                         {
                             grabbed.add(libName);
                         }
@@ -104,11 +116,11 @@ public class DownloadUtils {
         return progress;
     }
 
-    private static boolean checksumValid(File libPath, String sha1Checksum)
+    private static boolean checksumValid(File libPath, List<String> checksums)
     {
         try
         {
-            return sha1Checksum == null || Hashing.sha1().hashBytes(Files.toByteArray(libPath)).toString().equalsIgnoreCase(sha1Checksum);
+            return checksums == null || checksums.isEmpty() || checksums.contains(Hashing.sha1().hashBytes(Files.toByteArray(libPath)).toString());
         }
         catch (IOException e)
         {
@@ -116,7 +128,7 @@ public class DownloadUtils {
         }
     }
 
-    public static boolean downloadFile(String libName, File libPath, String libURL, String checksum)
+    public static boolean downloadFile(String libName, File libPath, String libURL, List<String> checksums)
     {
         try
         {
@@ -126,7 +138,7 @@ public class DownloadUtils {
             connection.setReadTimeout(5000);
             InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
             Files.copy(urlSupplier, libPath);
-            if (checksumValid(libPath, checksum))
+            if (checksumValid(libPath, checksums))
             {
                 return true;
             }

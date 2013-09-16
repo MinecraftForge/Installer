@@ -25,7 +25,7 @@ repositories {
 
 group = 'net.minecraftforge'
 archivesBaseName = 'forge-installer'
-version = '1.1'
+version = '1.2'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
 
@@ -42,6 +42,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 }
 
 task fatJar(type: Jar, dependsOn: jar) {
+    inputs.file jar.archivePath
     from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
 }
 
@@ -51,12 +52,13 @@ fatJar.doFirst {
 
 
 task shrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
+    inputs.file fatJar.archivePath
     ext {
         outDir = file("${buildDir}/proguard")
         obfuscatedJar = "${outDir}/${jar.baseName}.jar"
     }
     outDir.mkdirs()
-    
+
     injars jar.archivePath
     outjars obfuscatedJar
     libraryjars configurations.compile
