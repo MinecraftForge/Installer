@@ -88,6 +88,10 @@ public class DownloadUtils {
                     {
                         bad.add(libName);
                     }
+                    else
+                    {
+                        grabbed.add(libName);
+                    }
                 }
                 else
                 {
