@@ -38,7 +38,6 @@ public class DownloadUtils {
     private static final String PACK_NAME = ".pack.lzma";
     public static int downloadInstalledLibraries(String jsonMarker, File librariesDir, IMonitor monitor, List<JsonNode> libraries, int progress, List<String> grabbed, List<String> bad)
     {
-        Random r = new Random();
         for (JsonNode library : libraries)
         {
             String libName = library.getStringValue("name");
@@ -61,7 +60,7 @@ public class DownloadUtils {
                 String pathName = nameparts[0] + '/' + nameparts[1] + '/' + nameparts[2] + '/' + jarName;
                 File libPath = new File(librariesDir, pathName.replace('/', File.separatorChar));
                 String libURL = "https://s3.amazonaws.com/Minecraft.Download/libraries/";
-                if (MirrorData.INSTANCE.hasMirrors())
+                if (MirrorData.INSTANCE.hasMirrors() && library.isStringValue("url"))
                 {
                     libURL = MirrorData.INSTANCE.getMirrorURL();
                 }
@@ -81,7 +80,7 @@ public class DownloadUtils {
                 File packFile = new File(libPath.getParentFile(), libName + PACK_NAME);
                 if (!downloadFile(libName, packFile, libURL + PACK_NAME, null))
                 {
-                    monitor.setNote("Failed to locate packed library, trying unpacked");
+                    monitor.setNote(String.format("Failed to locate packed library %s, trying unpacked", libName));
                     if (!downloadFile(libName, libPath, libURL, checksums))
                     {
                         bad.add(libName);
