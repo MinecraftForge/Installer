@@ -82,7 +82,7 @@ public class DownloadUtils {
                 {
                     if (library.isStringValue("url"))
                     {
-                        monitor.setNote(String.format("Failed to locate packed library %s, trying unpacked", libName));
+                        monitor.setNote(String.format("Trying unpacked library %s", libName));
                     }
                     if (!downloadFile(libName, libPath, libURL, checksums))
                     {
