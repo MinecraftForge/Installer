@@ -77,7 +77,7 @@ public class DownloadUtils {
                 libPath.getParentFile().mkdirs();
                 monitor.setNote(String.format("Downloading library %s", libName));
                 libURL += pathName;
-                File packFile = new File(libPath.getParentFile(), libName + PACK_NAME);
+                File packFile = new File(libPath.getParentFile(), libPath.getName() + PACK_NAME);
                 if (!downloadFile(libName, packFile, libURL + PACK_NAME, null))
                 {
                     if (library.isStringValue("url"))
