@@ -80,7 +80,10 @@ public class DownloadUtils {
                 File packFile = new File(libPath.getParentFile(), libName + PACK_NAME);
                 if (!downloadFile(libName, packFile, libURL + PACK_NAME, null))
                 {
-                    monitor.setNote(String.format("Failed to locate packed library %s, trying unpacked", libName));
+                    if (library.isStringValue("url"))
+                    {
+                        monitor.setNote(String.format("Failed to locate packed library %s, trying unpacked", libName));
+                    }
                     if (!downloadFile(libName, libPath, libURL, checksums))
                     {
                         bad.add(libName);
