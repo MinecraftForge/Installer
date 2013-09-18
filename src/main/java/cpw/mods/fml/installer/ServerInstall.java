@@ -3,9 +3,12 @@ package cpw.mods.fml.installer;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
 import com.google.common.base.Joiner;
@@ -35,10 +38,13 @@ public class ServerInstall implements ActionType {
         }
         librariesDir.mkdir();
         IMonitor monitor = DownloadUtils.buildMonitor();
+        if (headless && MirrorData.INSTANCE.hasMirrors())
+        {
+            monitor.setNote(getSponsorMessage());
+        }
         List<JsonNode> libraries = VersionInfo.getVersionInfo().getArrayNode("libraries");
         monitor.setMaximum(libraries.size() + 2);
         int progress = 2;
-        List<String> mirrorList = VersionInfo.getMirrorList();
         grabbed = Lists.newArrayList();
         List<String> bad = Lists.newArrayList();
         String mcServerURL = String.format("https://s3.amazonaws.com/Minecraft.Download/versions/%s/minecraft_server.%s.jar", VersionInfo.getMinecraftVersion(), VersionInfo.getMinecraftVersion());
@@ -51,7 +57,7 @@ public class ServerInstall implements ActionType {
             DownloadUtils.downloadFile("minecraft server", mcServerFile, mcServerURL, null);
             monitor.setProgress(2);
         }
-        progress = DownloadUtils.downloadInstalledLibraries("serverreq", librariesDir, monitor, libraries, progress, grabbed, bad, mirrorList);
+        progress = DownloadUtils.downloadInstalledLibraries("serverreq", librariesDir, monitor, libraries, progress, grabbed, bad);
 
         monitor.close();
         if (bad.size() > 0)
@@ -107,5 +113,11 @@ public class ServerInstall implements ActionType {
     public String getSuccessMessage()
     {
         return String.format("Successfully downloaded minecraft server, downloaded %d libraries and installed %s", grabbed.size(), VersionInfo.getProfileName());
+    }
+
+    @Override
+    public String getSponsorMessage()
+    {
+        return MirrorData.INSTANCE.hasMirrors() ? String.format(headless ? "Data kindly mirrored by %2$s at %1$s" : "<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", MirrorData.INSTANCE.getSponsorURL(),MirrorData.INSTANCE.getSponsorName()) : null;
     }
 }

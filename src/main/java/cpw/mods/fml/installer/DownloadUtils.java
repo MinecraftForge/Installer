@@ -36,7 +36,7 @@ import com.google.common.io.InputSupplier;
 public class DownloadUtils {
 
     private static final String PACK_NAME = ".pack.lzma";
-    public static int downloadInstalledLibraries(String jsonMarker, File librariesDir, IMonitor monitor, List<JsonNode> libraries, int progress, List<String> grabbed, List<String> bad, List<String> mirrors)
+    public static int downloadInstalledLibraries(String jsonMarker, File librariesDir, IMonitor monitor, List<JsonNode> libraries, int progress, List<String> grabbed, List<String> bad)
     {
         Random r = new Random();
         for (JsonNode library : libraries)
@@ -61,10 +61,9 @@ public class DownloadUtils {
                 String pathName = nameparts[0] + '/' + nameparts[1] + '/' + nameparts[2] + '/' + jarName;
                 File libPath = new File(librariesDir, pathName.replace('/', File.separatorChar));
                 String libURL = "https://s3.amazonaws.com/Minecraft.Download/libraries/";
-                if (mirrors != null && !mirrors.isEmpty() && library.isStringValue("url"))
+                if (MirrorData.INSTANCE.hasMirrors())
                 {
-                    libURL = mirrors.get(r.nextInt(mirrors.size()));
-                    monitor.setNote(String.format("Using mirror %s",libURL));
+                    libURL = MirrorData.INSTANCE.getMirrorURL();
                 }
                 else if (library.isStringValue("url"))
                 {

@@ -2,17 +2,23 @@ package cpw.mods.fml.installer;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Dialog.ModalExclusionType;
 import java.awt.Dialog.ModalityType;
+import java.awt.EventQueue;
 import java.awt.Frame;
+import java.awt.GraphicsConfiguration;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
@@ -38,7 +44,10 @@ public class InstallerPanel extends JPanel {
     private ButtonGroup choiceButtonGroup;
     private JTextField selectedDirText;
     private JLabel infoLabel;
+    private JButton sponsorButton;
     private JDialog dialog;
+    private JLabel sponsorLogo;
+    private JPanel sponsorPanel;
     private JPanel fileEntryPanel;
 
     private class FileSelectAction extends AbstractAction
@@ -106,6 +115,49 @@ public class InstallerPanel extends JPanel {
         logoSplash.setAlignmentX(CENTER_ALIGNMENT);
         logoSplash.setAlignmentY(TOP_ALIGNMENT);
         this.add(logoSplash);
+
+        sponsorPanel = new JPanel();
+        sponsorPanel.setLayout(new BoxLayout(sponsorPanel, BoxLayout.X_AXIS));
+        sponsorPanel.setAlignmentX(CENTER_ALIGNMENT);
+        sponsorPanel.setAlignmentY(CENTER_ALIGNMENT);
+
+//        sponsorLogo = new JLabel();
+//        sponsorLogo.setSize(50, 20);
+//        sponsorLogo.setAlignmentX(CENTER_ALIGNMENT);
+//        sponsorLogo.setAlignmentY(CENTER_ALIGNMENT);
+//        sponsorPanel.add(sponsorLogo);
+
+        sponsorButton = new JButton();
+        sponsorButton.setAlignmentX(CENTER_ALIGNMENT);
+        sponsorButton.setAlignmentY(CENTER_ALIGNMENT);
+        sponsorButton.setBorderPainted(false);
+        sponsorButton.setOpaque(false);
+        sponsorButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                try
+                {
+                    Desktop.getDesktop().browse(new URI(sponsorButton.getToolTipText()));
+                    EventQueue.invokeLater(new Runnable() {
+                        @Override
+                        public void run()
+                        {
+                            InstallerPanel.this.dialog.toFront();
+                            InstallerPanel.this.dialog.requestFocus();
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    JOptionPane.showMessageDialog(InstallerPanel.this, "An error occurred launching the browser", "Error launching browser", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        sponsorPanel.add(sponsorButton);
+
+        this.add(sponsorPanel);
+
         choiceButtonGroup = new ButtonGroup();
 
         JPanel choicePanel = new JPanel();
@@ -183,16 +235,30 @@ public class InstallerPanel extends JPanel {
         InstallerAction action = InstallerAction.valueOf(choiceButtonGroup.getSelection().getActionCommand());
         boolean valid = action.isPathValid(targetDir);
 
+        String sponsorMessage = action.getSponsorMessage();
+        if (sponsorMessage != null)
+        {
+            sponsorButton.setText(sponsorMessage);
+            sponsorButton.setToolTipText(action.getSponsorURL());
+            if (action.getSponsorLogo() != null)
+            {
+                sponsorButton.setIcon(action.getSponsorLogo());
+            }
+            else
+            {
+                sponsorButton.setIcon(null);
+            }
+            sponsorPanel.setVisible(true);
+        }
+        else
+        {
+            sponsorPanel.setVisible(false);
+        }
         if (valid)
         {
             selectedDirText.setForeground(Color.BLACK);
             infoLabel.setVisible(false);
             fileEntryPanel.setBorder(null);
-            if (dialog!=null)
-            {
-                dialog.invalidate();
-                dialog.pack();
-            }
         }
         else
         {
@@ -200,11 +266,11 @@ public class InstallerPanel extends JPanel {
             fileEntryPanel.setBorder(new LineBorder(Color.RED));
             infoLabel.setText("<html>"+action.getFileError(targetDir)+"</html>");
             infoLabel.setVisible(true);
-            if (dialog!=null)
-            {
-                dialog.invalidate();
-                dialog.pack();
-            }
+        }
+        if (dialog!=null)
+        {
+            dialog.invalidate();
+            dialog.pack();
         }
     }
 

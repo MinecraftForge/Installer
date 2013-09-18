@@ -7,7 +7,8 @@
     "filePath":"fml-universal-1.5.2-5.2.29.1-16launch.jar",
     "welcome":"Welcome to the simple FML installer.",
     "minecraft":"1.5.2",
-    "logo":"/big_logo.png"
+    "logo":"/big_logo.png",
+    "mirrorList":"http://files.minecraftforge.net/mirror-branded.list"
   },
   "versionInfo": {
       "id": "FML5.2.29",

@@ -3,10 +3,14 @@ package cpw.mods.fml.installer;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
 import argo.format.PrettyJsonFormatter;
@@ -26,7 +30,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 public class ClientInstall implements ActionType {
-
+    private int selectedMirror;
     private List<String> grabbed;
 
     @Override
@@ -75,12 +79,11 @@ public class ClientInstall implements ActionType {
         File targetLibraryFile = VersionInfo.getLibraryPath(librariesDir);
         IMonitor monitor = DownloadUtils.buildMonitor();
         List<JsonNode> libraries = VersionInfo.getVersionInfo().getArrayNode("libraries");
-        List<String> mirrorList = VersionInfo.getMirrorList();
         monitor.setMaximum(libraries.size() + 2);
         int progress = 2;
         grabbed = Lists.newArrayList();
         List<String> bad = Lists.newArrayList();
-        progress = DownloadUtils.downloadInstalledLibraries("clientreq", librariesDir, monitor, libraries, progress, grabbed, bad, mirrorList);
+        progress = DownloadUtils.downloadInstalledLibraries("clientreq", librariesDir, monitor, libraries, progress, grabbed, bad);
 
         monitor.close();
         if (bad.size() > 0)
@@ -203,5 +206,11 @@ public class ClientInstall implements ActionType {
     public String getSuccessMessage()
     {
         return String.format("Successfully installed client profile %s for version %s into launcher and grabbed %d required libraries",VersionInfo.getProfileName(), VersionInfo.getVersion(), grabbed.size());
+    }
+
+    @Override
+    public String getSponsorMessage()
+    {
+        return MirrorData.INSTANCE.hasMirrors() ? String.format("<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", MirrorData.INSTANCE.getSponsorURL(),MirrorData.INSTANCE.getSponsorName()) : null;
     }
 }

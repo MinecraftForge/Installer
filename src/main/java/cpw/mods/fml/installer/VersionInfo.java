@@ -109,9 +109,13 @@ public class VersionInfo {
         return INSTANCE.versionData.getStringValue("install","minecraft");
     }
 
-    public static List<String> getMirrorList()
+    public static String getMirrorListURL()
     {
-        String mirrorURL = INSTANCE.versionData.getStringValue("install","mirrorList");
-        return DownloadUtils.downloadList(mirrorURL);
+        return INSTANCE.versionData.getStringValue("install","mirrorList");
+    }
+
+    public static boolean hasMirrors()
+    {
+        return INSTANCE.versionData.isStringValue("install","mirrorList");
     }
 }
