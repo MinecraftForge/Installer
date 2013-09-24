@@ -102,6 +102,8 @@ public class DownloadUtils {
                         JarOutputStream jos = new JarOutputStream(jarBytes);
                         LzmaInputStream decompressedPackFile = new LzmaInputStream(new FileInputStream(packFile));
                         Pack200.newUnpacker().unpack(decompressedPackFile, jos);
+                        jos.close();
+                        jarBytes.close();
                         monitor.setNote(String.format("Successfully unpacked packed file %s",packFile.getName()));
                         packFile.delete();
                         if (checksumValid(libPath, checksums))
