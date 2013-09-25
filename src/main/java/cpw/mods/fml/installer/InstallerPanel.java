@@ -1,24 +1,15 @@
 package cpw.mods.fml.installer;
 
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.Dialog.ModalExclusionType;
-import java.awt.Dialog.ModalityType;
 import java.awt.EventQueue;
 import java.awt.Frame;
-import java.awt.GraphicsConfiguration;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
@@ -29,7 +20,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -40,18 +30,21 @@ import javax.swing.border.LineBorder;
 import com.google.common.base.Throwables;
 
 public class InstallerPanel extends JPanel {
+    private static final long serialVersionUID = 1L;
     private File targetDir;
     private ButtonGroup choiceButtonGroup;
     private JTextField selectedDirText;
     private JLabel infoLabel;
     private JButton sponsorButton;
     private JDialog dialog;
-    private JLabel sponsorLogo;
+    //private JLabel sponsorLogo;
     private JPanel sponsorPanel;
     private JPanel fileEntryPanel;
 
     private class FileSelectAction extends AbstractAction
     {
+        private static final long serialVersionUID = 1L;
+
         @Override
         public void actionPerformed(ActionEvent e)
         {
@@ -75,6 +68,8 @@ public class InstallerPanel extends JPanel {
 
     private class SelectButtonAction extends AbstractAction
     {
+        private static final long serialVersionUID = 1L;
+
         @Override
         public void actionPerformed(ActionEvent e)
         {

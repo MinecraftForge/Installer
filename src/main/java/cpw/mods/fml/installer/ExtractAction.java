@@ -3,7 +3,6 @@ package cpw.mods.fml.installer;
 import java.io.File;
 import java.io.IOException;
 
-import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
 public class ExtractAction implements ActionType {

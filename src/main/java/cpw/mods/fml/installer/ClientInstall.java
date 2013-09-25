@@ -3,14 +3,9 @@ package cpw.mods.fml.installer;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 
 import argo.format.PrettyJsonFormatter;
@@ -30,7 +25,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 public class ClientInstall implements ActionType {
-    private int selectedMirror;
+    //private int selectedMirror;
     private List<String> grabbed;
 
     @Override

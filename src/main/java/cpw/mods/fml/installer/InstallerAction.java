@@ -1,14 +1,9 @@
 package cpw.mods.fml.installer;
 
 import java.io.File;
-import java.net.URL;
-
-import javax.imageio.ImageIO;
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 
 import com.google.common.base.Throwables;
-import com.google.common.reflect.Reflection;
 
 public enum InstallerAction {
     CLIENT("Install client", "Install a new profile to the Mojang client launcher", ClientInstall.class),
@@ -63,7 +58,6 @@ public enum InstallerAction {
     {
         return action.getSponsorMessage();
     }
-    private ImageIcon icon;
 
     public Icon getSponsorLogo()
     {
