@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -193,7 +193,7 @@ public class DownloadUtils {
 
             if (entry.getName().equals("checksums.sha1"))
             {
-                hashes = new String(eData, StandardCharsets.UTF_8).split("\n");
+                hashes = new String(eData, Charset.forName("UTF-8")).split("\n");
             }
 
             if (!entry.isDirectory())

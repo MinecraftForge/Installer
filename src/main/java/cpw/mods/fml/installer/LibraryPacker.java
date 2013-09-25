@@ -7,7 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
@@ -123,7 +123,7 @@ public class LibraryPacker
         }
         in.close();
         
-        return checksums.toString().getBytes(StandardCharsets.UTF_8);
+        return checksums.toString().getBytes(Charset.forName("UTF-8"));
     }
 
     private static final OutputStream NULL_OUT = new OutputStream()
