@@ -3,6 +3,7 @@ package cpw.mods.fml.installer;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -114,6 +115,7 @@ public class DownloadUtils {
                     }
                     catch (Exception e)
                     {
+                        e.printStackTrace();
                         bad.add(libName);
                     }
                 }
@@ -137,6 +139,7 @@ public class DownloadUtils {
         }
         catch (IOException e)
         {
+            e.printStackTrace();
             return false;
         }
     }
@@ -286,8 +289,17 @@ public class DownloadUtils {
                 return false;
             }
         }
+        catch (FileNotFoundException fnf)
+        {
+            if (!libURL.endsWith(PACK_NAME))
+            {
+                fnf.printStackTrace();
+            }
+            return false;
+        }
         catch (Exception e)
         {
+            e.printStackTrace();
             return false;
         }
     }
@@ -375,6 +387,7 @@ public class DownloadUtils {
                 @Override
                 public void setNote(String note)
                 {
+                    System.out.println(note);
                     monitor.setNote(note);
                 }
 
