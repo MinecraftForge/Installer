@@ -16,6 +16,7 @@ import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
 import java.util.jar.Pack200;
 import java.util.jar.Pack200.Packer;
+import java.util.zip.ZipEntry;
 
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.XZOutputStream;
@@ -94,6 +95,7 @@ public class LibraryPacker
         System.out.println("Processing: " + path.getAbsolutePath());
         byte[] raw = Files.toByteArray(path);
         System.out.println("  Raw:        " + raw.length);
+        System.out.println("  SHA1:       " + Hashing.sha1().hashBytes(raw).toString());
         byte[] packed = pack(raw, path);
         System.out.println("  Packed:     " + packed.length);
         byte[] unpacked = unpack(packed, path);
@@ -103,6 +105,7 @@ public class LibraryPacker
         CHECKSUMS.add(Hashing.sha1().hashBytes(checksums).toString());
         byte[] xzed = xz(packed, checksums, path);
         System.out.println("  XZed:       " + xzed.length);
+        System.out.println("");
         return xzed;
     }
     
@@ -133,7 +136,19 @@ public class LibraryPacker
     
     private static byte[] pack(byte[] data, File path) throws IOException
     {
-        JarInputStream in = new JarInputStream(new ByteArrayInputStream(data));
+        JarInputStream in = new JarInputStream(new ByteArrayInputStream(data))
+        {
+            @Override
+            public ZipEntry getNextEntry() throws IOException
+            {
+                ZipEntry ret = super.getNextEntry();
+                while (ret != null && ret.getName().startsWith("META-INF"))
+                {
+                    ret = super.getNextEntry();
+                }
+                return ret;
+            }
+        };
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         
         Packer packer = Pack200.newPacker();
