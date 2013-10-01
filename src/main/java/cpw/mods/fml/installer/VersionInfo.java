@@ -76,6 +76,18 @@ public class VersionInfo {
         return INSTANCE.versionData.getStringValue("install","logo");
     }
 
+    public static boolean getStripMetaInf()
+    {
+        try 
+        {
+            return INSTANCE.versionData.getBooleanValue("install", "stripMeta");
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+    }
+
     public static JsonNode getVersionInfo()
     {
         return INSTANCE.versionData.getNode("versionInfo");

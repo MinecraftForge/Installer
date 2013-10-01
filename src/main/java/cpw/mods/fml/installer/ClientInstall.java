@@ -1,10 +1,18 @@
 package cpw.mods.fml.installer;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import javax.swing.JOptionPane;
 
@@ -63,7 +71,14 @@ public class ClientInstall implements ActionType {
         File minecraftJarFile = VersionInfo.getMinecraftFile(versionRootDir);
         try
         {
-            Files.copy(minecraftJarFile, clientJarFile);
+            if (VersionInfo.getStripMetaInf())
+            {
+                copyAndStrip(minecraftJarFile, clientJarFile);
+            }
+            else
+            {
+                Files.copy(minecraftJarFile, clientJarFile);
+            }
         }
         catch (IOException e1)
         {
@@ -171,6 +186,55 @@ public class ClientInstall implements ActionType {
         }
 
         return true;
+    }
+
+    private void copyAndStrip(File sourceJar, File targetJar) throws IOException
+    {
+        ZipFile in = new ZipFile(sourceJar);
+        ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(targetJar)));
+        
+        for (ZipEntry e : Collections.list(in.entries()))
+        {
+            if (e.isDirectory())
+            {
+                out.putNextEntry(e);
+            }
+            else if (e.getName().startsWith("META-INF"))
+            {
+            }
+            else
+            {
+                ZipEntry n = new ZipEntry(e.getName());
+                n.setTime(e.getTime());
+                out.putNextEntry(n);
+                out.write(readEntry(in, e));
+            }
+        }
+        
+        in.close();
+        out.close();
+    }
+
+    private static byte[] readEntry(ZipFile inFile, ZipEntry entry) throws IOException
+    {
+        return readFully(inFile.getInputStream(entry));
+    }
+
+    private static byte[] readFully(InputStream stream) throws IOException
+    {
+        byte[] data = new byte[4096];
+        ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
+        int len;
+        do
+        {
+            len = stream.read(data);
+            if (len > 0)
+            {
+                entryBuffer.write(data, 0, len);
+            }
+        } while (len != -1);
+
+        return entryBuffer.toByteArray();
     }
 
     @Override
