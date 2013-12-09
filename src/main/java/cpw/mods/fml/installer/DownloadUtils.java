@@ -90,7 +90,14 @@ public class DownloadUtils {
                     }
                     if (!downloadFile(libName, libPath, libURL, checksums))
                     {
-                        bad.add(libName);
+                        if (!libURL.startsWith(LIBRARIES_URL) || !jsonMarker.equals("clientreq"))
+                        {
+                            bad.add(libName);
+                        }
+                        else
+                        {
+                            monitor.setNote("Unmrriored file failed, Mojang launcher should download at next run, non fatal");
+                        }
                     }
                     else
                     {
