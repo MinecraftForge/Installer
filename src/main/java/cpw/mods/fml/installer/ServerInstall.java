@@ -42,7 +42,7 @@ public class ServerInstall implements ActionType {
         int progress = 2;
         grabbed = Lists.newArrayList();
         List<String> bad = Lists.newArrayList();
-        String mcServerURL = String.format("https://s3.amazonaws.com/Minecraft.Download/versions/%s/minecraft_server.%s.jar", VersionInfo.getMinecraftVersion(), VersionInfo.getMinecraftVersion());
+        String mcServerURL = String.format(DownloadUtils.VERSION_URL_SERVER.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
         File mcServerFile = new File(target,"minecraft_server."+VersionInfo.getMinecraftVersion()+".jar");
         if (!mcServerFile.exists())
         {

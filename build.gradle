@@ -15,7 +15,7 @@ buildscript {
 repositories {
     mavenCentral()
     maven {
-        url "http://s3.amazonaws.com/Minecraft.Download/libraries"
+        url "https://libraries.minecraft.net/"
     }
     flatDir {
         name "fileRepo"

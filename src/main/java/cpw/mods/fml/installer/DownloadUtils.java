@@ -36,6 +36,8 @@ import com.google.common.io.Files;
 import com.google.common.io.InputSupplier;
 
 public class DownloadUtils {
+    public static final String LIBRARIES_URL = "https://libraries.minecraft.net/";
+    public static final String VERSION_URL_SERVER = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/minecraft_server.{MCVER}.jar";
 
     private static final String PACK_NAME = ".pack.xz";
     public static int downloadInstalledLibraries(String jsonMarker, File librariesDir, IMonitor monitor, List<JsonNode> libraries, int progress, List<String> grabbed, List<String> bad)
@@ -61,7 +63,7 @@ public class DownloadUtils {
                 String jarName = nameparts[1] + '-' + nameparts[2] + ".jar";
                 String pathName = nameparts[0] + '/' + nameparts[1] + '/' + nameparts[2] + '/' + jarName;
                 File libPath = new File(librariesDir, pathName.replace('/', File.separatorChar));
-                String libURL = "https://s3.amazonaws.com/Minecraft.Download/libraries/";
+                String libURL = LIBRARIES_URL;
                 if (MirrorData.INSTANCE.hasMirrors() && library.isStringValue("url"))
                 {
                     libURL = MirrorData.INSTANCE.getMirrorURL();
