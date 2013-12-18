@@ -104,7 +104,7 @@ public class ClientInstall implements ActionType {
         {
             if (!targetLibraryFile.getParentFile().delete())
             {
-            	 LogHandler.logErrorWithDialog("There was a problem with the launcher version data. You will need to clear "+targetLibraryFile.getAbsolutePath()+" manually", "Error");
+                LogHandler.logErrorWithDialog("There was a problem with the launcher version data. You will need to clear "+targetLibraryFile.getAbsolutePath()+" manually", "Error");
                 return false;
             }
             else
