@@ -396,7 +396,7 @@ public class DownloadUtils {
                 @Override
                 public void setNote(String note)
                 {
-                    System.out.println(note);
+                    LogHandler.log.info(note);
                     monitor.setNote(note);
                 }
 
