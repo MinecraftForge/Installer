@@ -19,7 +19,7 @@ public class ExtractAction implements ActionType {
         catch (IOException e)
         {
             if (!headless)
-                JOptionPane.showMessageDialog(null, "An error occurred extracting file", "Error", JOptionPane.ERROR_MESSAGE);
+                LogHandler.logErrorWithDialog("An error occurred extracting file", "Error");
             return false;
         }
         return true;

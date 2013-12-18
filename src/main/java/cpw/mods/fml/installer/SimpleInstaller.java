@@ -1,19 +1,21 @@
 package cpw.mods.fml.installer;
+
+import static cpw.mods.fml.installer.LogHandler.log;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Locale;
 
-import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpecBuilder;
 
-
 public class SimpleInstaller {
-    /**
+    
+	/**
      * @param args
      * @throws IOException
      */
@@ -24,6 +26,9 @@ public class SimpleInstaller {
         OptionSpecBuilder extractOption = parser.accepts("extract", "Extract the contained jar file");
         OptionSpecBuilder helpOption = parser.acceptsAll(Arrays.asList("h", "help"),"Help with this installer");
         OptionSet optionSet = parser.parse(args);
+        
+        LogHandler.initLogger();
+        
         if (optionSet.specs().size()>0)
         {
             handleOptions(parser, optionSet, serverInstallOption, extractOption, helpOption);
@@ -42,22 +47,22 @@ public class SimpleInstaller {
             {
                 VersionInfo.getVersionTarget();
                 ServerInstall.headless = true;
-                System.out.println("Installing server to current directory");
+                log.info("Installing server to current directory");
                 if (!InstallerAction.SERVER.run(new File(".")))
                 {
-                    System.err.println("There was an error during server installation");
+                	log.severe("There was an error during server installation");
                     System.exit(1);
                 }
                 else
                 {
-                    System.out.println("The server installed successfully, you should now be able to run the file "+VersionInfo.getContainedFile());
-                    System.out.println("You can delete this installer file now if you wish");
+                	log.info("The server installed successfully, you should now be able to run the file "+VersionInfo.getContainedFile());
+                	log.info("You can delete this installer file now if you wish");
                 }
                 System.exit(0);
             }
             catch (Throwable e)
             {
-                System.err.println("A problem installing the server was detected, server install cannot continue");
+            	log.severe("A problem installing the server was detected, server install cannot continue");
                 System.exit(1);
             }
         }
@@ -68,19 +73,19 @@ public class SimpleInstaller {
                 VersionInfo.getVersionTarget();
                 if (!InstallerAction.EXTRACT.run(new File(".")))
                 {
-                    System.err.println("A problem occurred extracting the file to "+VersionInfo.getContainedFile());
+                    log.severe("A problem occurred extracting the file to "+VersionInfo.getContainedFile());
                     System.exit(1);
                 }
                 else
                 {
-                    System.out.println("File extracted successfully to "+VersionInfo.getContainedFile());
-                    System.out.println("You can delete this installer file now if you wish");
+                    log.info("File extracted successfully to "+VersionInfo.getContainedFile());
+                    log.info("You can delete this installer file now if you wish");
                 }
                 System.exit(0);
             }
             catch (Throwable e)
             {
-                System.err.println("A problem extracting the file was detected, extraction failed");
+                log.severe("A problem extracting the file was detected, extraction failed");
                 System.exit(1);
             }
         }
@@ -116,7 +121,7 @@ public class SimpleInstaller {
         catch (Throwable e)
         {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Corrupt download detected, cannot install", "Error", JOptionPane.ERROR_MESSAGE);
+            LogHandler.logErrorWithDialog("Corrupt download detected, cannot install", "Error");
             return;
         }
 

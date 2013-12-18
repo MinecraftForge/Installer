@@ -145,7 +145,7 @@ public class InstallerPanel extends JPanel {
                 }
                 catch (Exception ex)
                 {
-                    JOptionPane.showMessageDialog(InstallerPanel.this, "An error occurred launching the browser", "Error launching browser", JOptionPane.ERROR_MESSAGE);
+                    LogHandler.logErrorWithDialog("An error occurred launching the browser", "Error launching browser");
                 }
             }
         });
@@ -271,7 +271,9 @@ public class InstallerPanel extends JPanel {
 
     public void run()
     {
-        JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+        LogHandler.log.info("No command line options specified, starting GUI");
+    	
+    	JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
 
         Frame emptyFrame = new Frame("Mod system installer");
         emptyFrame.setUndecorated(true);
@@ -287,6 +289,7 @@ public class InstallerPanel extends JPanel {
             if (action.run(targetDir))
             {
                 JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
+                LogHandler.log.info(action.getSuccessMessage());
             }
         }
         dialog.dispose();

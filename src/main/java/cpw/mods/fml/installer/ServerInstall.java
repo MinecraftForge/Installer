@@ -22,7 +22,7 @@ public class ServerInstall implements ActionType {
         if (target.exists() && !target.isDirectory())
         {
             if (!headless)
-                JOptionPane.showMessageDialog(null, "There is a file at this location, the server cannot be installed here!", "Error", JOptionPane.ERROR_MESSAGE);
+                LogHandler.logErrorWithDialog( "There is a file at this location, the server cannot be installed here!", "Error");
             return false;
         }
 
@@ -60,8 +60,8 @@ public class ServerInstall implements ActionType {
             String list = Joiner.on(", ").join(bad);
             if (!headless)
                 JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
-            else
-                System.err.println("These libraries failed to download, try again. "+list);
+            
+            LogHandler.log.severe("These libraries failed to download, try again. "+list);
             return false;
         }
         try
@@ -73,8 +73,8 @@ public class ServerInstall implements ActionType {
         {
             if (!headless)
                 JOptionPane.showMessageDialog(null, "An error occurred installing the library", "Error", JOptionPane.ERROR_MESSAGE);
-            else
-                System.err.println("An error occurred installing the distributable");
+            
+            LogHandler.log.severe("An error occurred installing the distributable");
             return false;
         }
 
