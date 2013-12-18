@@ -166,7 +166,7 @@ public class DownloadUtils {
         String end = new String(decompressed, decompressed.length - 4, 4);
         if (!end.equals("SIGN"))
         {
-            System.out.println("Unpacking failed, signature missing " + end);
+            LogHandler.log.info("Unpacking failed, signature missing " + end);
             return;
         }
 
@@ -193,7 +193,7 @@ public class DownloadUtils {
 
     public static boolean validateJar(File libPath, byte[] data, List<String> checksums) throws IOException
     {
-        System.out.println("Checking \"" + libPath.getAbsolutePath() + "\" internal checksums");
+        LogHandler.log.info("Checking \"" + libPath.getAbsolutePath() + "\" internal checksums");
 
         HashMap<String, String> files = new HashMap<String, String>();
         String[] hashes = null;
@@ -221,11 +221,11 @@ public class DownloadUtils {
             boolean failed = !checksums.contains(files.get("checksums.sha1"));
             if (failed)
             {
-                System.out.println("    checksums.sha1 failed validation");
+                LogHandler.log.info("    checksums.sha1 failed validation");
             }
             else
             {
-                System.out.println("    checksums.sha1 validated successfully");
+                LogHandler.log.info("    checksums.sha1 validated successfully");
                 for (String hash : hashes)
                 {
                     if (hash.trim().equals("") || !hash.contains(" ")) continue;
@@ -236,12 +236,12 @@ public class DownloadUtils {
     
                     if (!files.containsKey(target) || checksum == null)
                     {
-                        System.out.println("    " + target + " : missing");
+                        LogHandler.log.info("    " + target + " : missing");
                         failed = true;
                     }
                     else if (!checksum.equals(validChecksum))
                     {
-                        System.out.println("    " + target + " : failed (" + checksum + ", " + validChecksum + ")");
+                        LogHandler.log.info("    " + target + " : failed (" + checksum + ", " + validChecksum + ")");
                         failed = true;
                     }
                 }
@@ -249,14 +249,14 @@ public class DownloadUtils {
 
             if (!failed)
             {
-                System.out.println("    Jar contents validated successfully");
+                LogHandler.log.info("    Jar contents validated successfully");
             }
 
             return !failed;
         }
         else
         {
-            System.out.println("    checksums.sha1 was not found, validation failed");
+            LogHandler.log.info("    checksums.sha1 was not found, validation failed");
             return false; //Missing checksums
         }
     }
@@ -362,6 +362,7 @@ public class DownloadUtils {
                 public void setNote(String note)
                 {
                     System.out.println("MESSAGE: "+ note);
+                    LogHandler.log.info(note);
                 }
 
                 @Override
@@ -396,7 +397,7 @@ public class DownloadUtils {
                 @Override
                 public void setNote(String note)
                 {
-                    System.out.println(note);
+                    LogHandler.log.info(note);
                     monitor.setNote(note);
                 }
 

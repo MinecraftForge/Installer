@@ -21,8 +21,7 @@ public class ServerInstall implements ActionType {
     {
         if (target.exists() && !target.isDirectory())
         {
-            if (!headless)
-                JOptionPane.showMessageDialog(null, "There is a file at this location, the server cannot be installed here!", "Error", JOptionPane.ERROR_MESSAGE);
+            sendMessage("There is a file at this location, the server cannot be installed here!", "Error");
             return false;
         }
 
@@ -58,10 +57,7 @@ public class ServerInstall implements ActionType {
         if (bad.size() > 0)
         {
             String list = Joiner.on(", ").join(bad);
-            if (!headless)
-                JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
-            else
-                System.err.println("These libraries failed to download, try again. "+list);
+            sendMessage("These libraries failed to download. Try again.\n"+list, "Error downloading");
             return false;
         }
         try
@@ -71,10 +67,7 @@ public class ServerInstall implements ActionType {
         }
         catch (IOException e)
         {
-            if (!headless)
-                JOptionPane.showMessageDialog(null, "An error occurred installing the library", "Error", JOptionPane.ERROR_MESSAGE);
-            else
-                System.err.println("An error occurred installing the distributable");
+            sendMessage("An error occurred installing the library", "Error");
             return false;
         }
 
@@ -114,5 +107,11 @@ public class ServerInstall implements ActionType {
     public String getSponsorMessage()
     {
         return MirrorData.INSTANCE.hasMirrors() ? String.format(headless ? "Data kindly mirrored by %2$s at %1$s" : "<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", MirrorData.INSTANCE.getSponsorURL(),MirrorData.INSTANCE.getSponsorName()) : null;
+    }
+    
+    private void sendMessage(String message, String dialogTitle){
+    	if (!headless)
+            JOptionPane.showMessageDialog(null, message,dialogTitle, JOptionPane.ERROR_MESSAGE);
+    	LogHandler.log.severe(message);
     }
 }
