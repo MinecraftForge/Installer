@@ -286,6 +286,7 @@ public class InstallerPanel extends JPanel {
             InstallerAction action = InstallerAction.valueOf(choiceButtonGroup.getSelection().getActionCommand());
             if (action.run(targetDir))
             {
+                LogHandler.log.info(action.getSuccessMessage());
                 JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
             }
         }
