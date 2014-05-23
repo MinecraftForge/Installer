@@ -127,4 +127,16 @@ public class VersionInfo {
     {
         return INSTANCE.versionData.isStringValue("install","mirrorList");
     }
+
+    public static boolean hideClient()
+    {
+        return INSTANCE.versionData.isBooleanValue("install", "hideClient") &&
+                INSTANCE.versionData.getBooleanValue("install", "hideClient");
+    }
+
+    public static boolean hideServer()
+    {
+        return INSTANCE.versionData.isBooleanValue("install", "hideServer") &&
+                INSTANCE.versionData.getBooleanValue("install", "hideServer");
+    }
 }
