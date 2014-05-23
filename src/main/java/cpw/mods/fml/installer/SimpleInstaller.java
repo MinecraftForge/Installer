@@ -24,6 +24,7 @@ public class SimpleInstaller {
         OptionSpecBuilder extractOption = parser.accepts("extract", "Extract the contained jar file");
         OptionSpecBuilder helpOption = parser.acceptsAll(Arrays.asList("h", "help"),"Help with this installer");
         OptionSet optionSet = parser.parse(args);
+
         if (optionSet.specs().size()>0)
         {
             handleOptions(parser, optionSet, serverInstallOption, extractOption, helpOption);
@@ -36,6 +37,14 @@ public class SimpleInstaller {
 
     private static void handleOptions(OptionParser parser, OptionSet optionSet, OptionSpecBuilder serverInstallOption, OptionSpecBuilder extractOption, OptionSpecBuilder helpOption) throws IOException
     {
+        String path = VersionInfo.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        if (path.contains("!/"))
+        {
+            System.out.println("Due to java limitation, please do not run this jar in a folder ending with !");
+            System.out.println(path);
+            return;
+        }
+
         if (optionSet.has(serverInstallOption))
         {
             try
@@ -107,6 +116,13 @@ public class SimpleInstaller {
         else
         {
             targetDir = new File(userHomeDir, mcDir);
+        }
+
+        String path = VersionInfo.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        if (path.contains("!/"))
+        {
+            JOptionPane.showMessageDialog(null, "Due to java limitation, please do not run this jar in a folder ending with ! : \n"+ path, "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
         try
