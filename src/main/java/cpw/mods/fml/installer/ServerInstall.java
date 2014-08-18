@@ -66,7 +66,6 @@ public class ServerInstall implements ActionType {
                     System.err.println("Try again, or manually place server jar to skip download.");
                 }
                 return false;
-
             }
             monitor.setProgress(2);
         }

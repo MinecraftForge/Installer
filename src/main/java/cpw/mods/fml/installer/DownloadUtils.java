@@ -36,6 +36,7 @@ import com.google.common.io.InputSupplier;
 public class DownloadUtils {
     public static final String LIBRARIES_URL = "https://libraries.minecraft.net/";
     public static final String VERSION_URL_SERVER = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/minecraft_server.{MCVER}.jar";
+    public static final String VERSION_URL_CLIENT = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/{MCVER}.jar";
 
     private static final String PACK_NAME = ".pack.xz";
 
