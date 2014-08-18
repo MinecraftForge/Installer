@@ -34,7 +34,7 @@ import com.google.common.io.Files;
 
 public class ClientInstall implements ActionType {
     //private int selectedMirror;
-    private List<String> grabbed;
+    private List<Artifact> grabbed;
 
     @Override
     public boolean run(File target)
@@ -92,13 +92,13 @@ public class ClientInstall implements ActionType {
         monitor.setMaximum(libraries.size() + 2);
         int progress = 2;
         grabbed = Lists.newArrayList();
-        List<String> bad = Lists.newArrayList();
+        List<Artifact> bad = Lists.newArrayList();
         progress = DownloadUtils.downloadInstalledLibraries("clientreq", librariesDir, monitor, libraries, progress, grabbed, bad);
 
         monitor.close();
         if (bad.size() > 0)
         {
-            String list = Joiner.on(", ").join(bad);
+            String list = Joiner.on("\n").join(bad);
             JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
             return false;
         }
@@ -192,7 +192,7 @@ public class ClientInstall implements ActionType {
     {
         ZipFile in = new ZipFile(sourceJar);
         ZipOutputStream out = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(targetJar)));
-        
+
         for (ZipEntry e : Collections.list(in.entries()))
         {
             if (e.isDirectory())
@@ -210,7 +210,7 @@ public class ClientInstall implements ActionType {
                 out.write(readEntry(in, e));
             }
         }
-        
+
         in.close();
         out.close();
     }
@@ -264,7 +264,11 @@ public class ClientInstall implements ActionType {
     @Override
     public String getSuccessMessage()
     {
-        return String.format("Successfully installed client profile %s for version %s into launcher and grabbed %d required libraries",VersionInfo.getProfileName(), VersionInfo.getVersion(), grabbed.size());
+        if (grabbed.size() > 0)
+        {
+            return String.format("Successfully installed client profile %s for version %s into launcher and grabbed %d required libraries", VersionInfo.getProfileName(), VersionInfo.getVersion(), grabbed.size());
+        }
+        return String.format("Successfully installed client profile %s for version %s into launcher", VersionInfo.getProfileName(), VersionInfo.getVersion());
     }
 
     @Override

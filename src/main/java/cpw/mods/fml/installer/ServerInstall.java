@@ -14,7 +14,7 @@ import argo.jdom.JsonNode;
 public class ServerInstall implements ActionType {
 
     public static boolean headless;
-    private List<String> grabbed;
+    private List<Artifact> grabbed;
 
     @Override
     public boolean run(File target)
@@ -41,7 +41,7 @@ public class ServerInstall implements ActionType {
         monitor.setMaximum(libraries.size() + 2);
         int progress = 2;
         grabbed = Lists.newArrayList();
-        List<String> bad = Lists.newArrayList();
+        List<Artifact> bad = Lists.newArrayList();
         String mcServerURL = String.format(DownloadUtils.VERSION_URL_SERVER.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
         File mcServerFile = new File(target,"minecraft_server."+VersionInfo.getMinecraftVersion()+".jar");
         if (!mcServerFile.exists())
@@ -57,11 +57,11 @@ public class ServerInstall implements ActionType {
         monitor.close();
         if (bad.size() > 0)
         {
-            String list = Joiner.on(", ").join(bad);
+            String list = Joiner.on("\n").join(bad);
             if (!headless)
                 JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
             else
-                System.err.println("These libraries failed to download, try again. "+list);
+                System.err.println("These libraries failed to download, try again. \n"+list);
             return false;
         }
         try
@@ -107,7 +107,11 @@ public class ServerInstall implements ActionType {
     @Override
     public String getSuccessMessage()
     {
-        return String.format("Successfully downloaded minecraft server, downloaded %d libraries and installed %s", grabbed.size(), VersionInfo.getProfileName());
+        if (grabbed.size() > 0)
+        {
+            return String.format("Successfully downloaded minecraft server, downloaded %d libraries and installed %s", grabbed.size(), VersionInfo.getProfileName());
+        }
+        return String.format("Successfully downloaded minecraft server and installed %s", VersionInfo.getProfileName());
     }
 
     @Override

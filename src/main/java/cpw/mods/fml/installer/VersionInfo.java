@@ -12,6 +12,7 @@ import argo.jdom.JsonRootNode;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import com.google.common.io.ByteStreams;
@@ -78,7 +79,7 @@ public class VersionInfo {
 
     public static boolean getStripMetaInf()
     {
-        try 
+        try
         {
             return INSTANCE.versionData.getBooleanValue("install", "stripMeta");
         }
@@ -108,6 +109,7 @@ public class VersionInfo {
 
     private void doFileExtract(File path) throws IOException
     {
+        if (Strings.isNullOrEmpty(getContainedFile())) return;
         InputStream inputStream = getClass().getResourceAsStream("/"+getContainedFile());
         OutputSupplier<FileOutputStream> outputSupplier = Files.newOutputStreamSupplier(path);
         ByteStreams.copy(inputStream, outputSupplier);

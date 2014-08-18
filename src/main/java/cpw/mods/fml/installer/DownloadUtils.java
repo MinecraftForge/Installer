@@ -27,8 +27,6 @@ import argo.jdom.JsonNode;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
@@ -40,11 +38,12 @@ public class DownloadUtils {
     public static final String VERSION_URL_SERVER = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/minecraft_server.{MCVER}.jar";
 
     private static final String PACK_NAME = ".pack.xz";
-    public static int downloadInstalledLibraries(String jsonMarker, File librariesDir, IMonitor monitor, List<JsonNode> libraries, int progress, List<String> grabbed, List<String> bad)
+
+    public static int downloadInstalledLibraries(String jsonMarker, File librariesDir, IMonitor monitor, List<JsonNode> libraries, int progress, List<Artifact> grabbed, List<Artifact> bad)
     {
         for (JsonNode library : libraries)
         {
-            String libName = library.getStringValue("name");
+            Artifact artifact = new Artifact(library.getStringValue("name"));
             List<String> checksums = null;
             if (library.isArrayNode("checksums"))
             {
@@ -55,14 +54,10 @@ public class DownloadUtils {
                     }
                 }));
             }
-            monitor.setNote(String.format("Considering library %s", libName));
             if (library.isBooleanValue(jsonMarker) && library.getBooleanValue(jsonMarker))
             {
-                String[] nameparts = Iterables.toArray(Splitter.on(':').split(libName), String.class);
-                nameparts[0] = nameparts[0].replace('.', '/');
-                String jarName = nameparts[1] + '-' + nameparts[2] + ".jar";
-                String pathName = nameparts[0] + '/' + nameparts[1] + '/' + nameparts[2] + '/' + jarName;
-                File libPath = new File(librariesDir, pathName.replace('/', File.separatorChar));
+                monitor.setNote(String.format("Considering library %s", artifact.getDescriptor()));
+                File libPath = artifact.getLocalPath(librariesDir);
                 String libURL = LIBRARIES_URL;
                 if (MirrorData.INSTANCE.hasMirrors() && library.isStringValue("url"))
                 {
@@ -79,20 +74,21 @@ public class DownloadUtils {
                 }
 
                 libPath.getParentFile().mkdirs();
-                monitor.setNote(String.format("Downloading library %s", libName));
-                libURL += pathName;
+                monitor.setNote(String.format("Downloading library %s", artifact.getDescriptor()));
+                libURL += artifact.getPath();
+
                 File packFile = new File(libPath.getParentFile(), libPath.getName() + PACK_NAME);
-                if (!downloadFile(libName, packFile, libURL + PACK_NAME, null))
+                if (!downloadFile(artifact.getDescriptor(), packFile, libURL + PACK_NAME, null))
                 {
                     if (library.isStringValue("url"))
                     {
-                        monitor.setNote(String.format("Trying unpacked library %s", libName));
+                        monitor.setNote(String.format("Trying unpacked library %s", artifact.getDescriptor()));
                     }
-                    if (!downloadFile(libName, libPath, libURL, checksums))
+                    if (!downloadFile(artifact.getDescriptor(), libPath, libURL, checksums))
                     {
                         if (!libURL.startsWith(LIBRARIES_URL) || !jsonMarker.equals("clientreq"))
                         {
-                            bad.add(libName);
+                            bad.add(artifact);
                         }
                         else
                         {
@@ -101,7 +97,7 @@ public class DownloadUtils {
                     }
                     else
                     {
-                        grabbed.add(libName);
+                        grabbed.add(artifact);
                     }
                 }
                 else
@@ -115,19 +111,23 @@ public class DownloadUtils {
 
                         if (checksumValid(libPath, checksums))
                         {
-                            grabbed.add(libName);
+                            grabbed.add(artifact);
                         }
                         else
                         {
-                            bad.add(libName);
+                            bad.add(artifact);
                         }
                     }
                     catch (Exception e)
                     {
                         e.printStackTrace();
-                        bad.add(libName);
+                        bad.add(artifact);
                     }
                 }
+            }
+            else
+            {
+                monitor.setNote(String.format("Considering library %s: Not Downloading", artifact.getDescriptor()));
             }
             monitor.setProgress(progress++);
         }
@@ -161,7 +161,7 @@ public class DownloadUtils {
         }
 
         byte[] decompressed = DownloadUtils.readFully(new XZInputStream(new ByteArrayInputStream(data)));
-        
+
         //Snag the checksum signature
         String end = new String(decompressed, decompressed.length - 4, 4);
         if (!end.equals("SIGN"))
@@ -215,7 +215,7 @@ public class DownloadUtils {
             entry = jar.getNextJarEntry();
         }
         jar.close();
-        
+
         if (hashes != null)
         {
             boolean failed = !checksums.contains(files.get("checksums.sha1"));
@@ -233,7 +233,7 @@ public class DownloadUtils {
                     String validChecksum = e[0];
                     String target = e[1];
                     String checksum = files.get(target);
-    
+
                     if (!files.containsKey(target) || checksum == null)
                     {
                         System.out.println("    " + target + " : missing");
