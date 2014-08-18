@@ -6,3 +6,4 @@ build/
 .project
 .settings/
 /repo/
+*.log

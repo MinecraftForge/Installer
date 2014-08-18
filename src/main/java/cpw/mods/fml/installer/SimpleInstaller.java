@@ -1,6 +1,11 @@
 package cpw.mods.fml.installer;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -19,6 +24,7 @@ public class SimpleInstaller {
      */
     public static void main(String[] args) throws IOException
     {
+        setupLogger();
         OptionParser parser = new OptionParser();
         OptionSpecBuilder serverInstallOption = parser.accepts("installServer", "Install a server to the current directory");
         OptionSpecBuilder extractOption = parser.accepts("extract", "Extract the contained jar file");
@@ -146,6 +152,71 @@ public class SimpleInstaller {
 
         InstallerPanel panel = new InstallerPanel(targetDir);
         panel.run();
+    }
+
+    private static void setupLogger()
+    {
+        File f = new File(VersionInfo.class.getProtectionDomain().getCodeSource().getLocation().getFile());
+        File output;
+        if (f.isFile()) output = new File(f.getName() + ".log");
+        else            output = new File("installer.log");
+
+        try
+        {
+            System.out.println("Setting up logger: " + output.getAbsolutePath());
+            OutputStream fout = new BufferedOutputStream(new FileOutputStream(output));
+            System.setOut(new PrintStream(new MultiOutputStream(System.out, fout), true));
+            System.setErr(new PrintStream(new MultiOutputStream(System.err, fout), true));
+        }
+        catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+            //We errored out, lets just continue on and hope the rest runs fine.
+        }
+    }
+
+    private static class MultiOutputStream extends OutputStream
+    {
+        OutputStream[] outs;
+        MultiOutputStream(OutputStream... outs)
+        {
+            this.outs = outs;
+        }
+
+        @Override
+        public void write(int b) throws IOException
+        {
+            for (OutputStream out : outs)
+                out.write(b);
+        }
+
+        @Override
+        public void write(byte b[]) throws IOException
+        {
+            for (OutputStream out : outs)
+                out.write(b);
+        }
+
+        @Override
+        public void write(byte b[], int off, int len) throws IOException
+        {
+            for (OutputStream out : outs)
+                out.write(b, off, len);
+        }
+
+        @Override
+        public void flush() throws IOException
+        {
+            for (OutputStream out : outs)
+                out.flush();
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            for (OutputStream out : outs)
+                out.close();
+        }
     }
 
 }
