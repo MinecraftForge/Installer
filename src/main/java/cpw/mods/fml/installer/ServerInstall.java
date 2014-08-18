@@ -42,6 +42,8 @@ public class ServerInstall implements ActionType {
         int progress = 2;
         grabbed = Lists.newArrayList();
         List<Artifact> bad = Lists.newArrayList();
+
+        //Download MC Server jar
         String mcServerURL = String.format(DownloadUtils.VERSION_URL_SERVER.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
         File mcServerFile = new File(target,"minecraft_server."+VersionInfo.getMinecraftVersion()+".jar");
         if (!mcServerFile.exists())
@@ -49,7 +51,23 @@ public class ServerInstall implements ActionType {
             monitor.setNote("Considering minecraft server jar");
             monitor.setProgress(1);
             monitor.setNote(String.format("Downloading minecraft server version %s",VersionInfo.getMinecraftVersion()));
-            DownloadUtils.downloadFile("minecraft server", mcServerFile, mcServerURL, null);
+            if (!DownloadUtils.downloadFileEtag("minecraft server", mcServerFile, mcServerURL))
+            {
+                mcServerFile.delete();
+                if (!headless)
+                {
+                    JOptionPane.showMessageDialog(null, "Downloading minecraft server failed, invalid e-tag checksum.\n"+
+                                                        "Try again, or manually place server jar to skip download.",
+                                                        "Error downloading", JOptionPane.ERROR_MESSAGE);
+                }
+                else
+                {
+                    System.err.println("Downloading minecraft server failed, invalid e-tag checksum.");
+                    System.err.println("Try again, or manually place server jar to skip download.");
+                }
+                return false;
+
+            }
             monitor.setProgress(2);
         }
         progress = DownloadUtils.downloadInstalledLibraries("serverreq", librariesDir, monitor, libraries, progress, grabbed, bad);

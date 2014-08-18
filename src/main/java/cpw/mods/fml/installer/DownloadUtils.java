@@ -153,6 +153,58 @@ public class DownloadUtils {
         }
     }
 
+    public static boolean downloadFileEtag(String libName, File libPath, String libURL)
+    {
+        try
+        {
+            URL url = new URL(libURL);
+            URLConnection connection = url.openConnection();
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+
+            String etag = connection.getHeaderField("ETag");
+            if (etag == null)
+            {
+              etag = "-";
+            }
+            else if ((etag.startsWith("\"")) && (etag.endsWith("\"")))
+            {
+                etag = etag.substring(1, etag.length() - 1);
+            }
+
+            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
+            Files.copy(urlSupplier, libPath);
+
+            if (etag.indexOf('-') != -1) return true; //No-etag, assume valid
+            try
+            {
+                byte[] fileData = Files.toByteArray(libPath);
+                String md5 = Hashing.md5().hashBytes(fileData).toString();
+                System.out.println("  ETag: " + etag);
+                System.out.println("  MD5:  " + md5);
+                return etag.equalsIgnoreCase(md5);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        catch (FileNotFoundException fnf)
+        {
+            if (!libURL.endsWith(PACK_NAME))
+            {
+                fnf.printStackTrace();
+            }
+            return false;
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public static void unpackLibrary(File output, byte[] data) throws IOException
     {
         if (output.exists())
