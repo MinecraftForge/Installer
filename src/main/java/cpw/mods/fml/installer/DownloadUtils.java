@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
@@ -105,7 +106,7 @@ public class DownloadUtils {
                 {
                     try
                     {
-                        monitor.setNote(String.format("Unpacking packed file %s",packFile.getName()));
+                        monitor.setNote(String.format("Unpacking packed file %s", packFile.getName()));
                         unpackLibrary(libPath, Files.toByteArray(packFile));
                         monitor.setNote(String.format("Successfully unpacked packed file %s",packFile.getName()));
                         packFile.delete();
@@ -118,6 +119,12 @@ public class DownloadUtils {
                         {
                             bad.add(artifact);
                         }
+                    }
+                    catch (OutOfMemoryError oom)
+                    {
+                        oom.printStackTrace();
+                        bad.add(artifact);
+                        artifact.setMemo("Out of Memory: Try restarting installer with JVM Argument: -Xmx1G");
                     }
                     catch (Exception e)
                     {
@@ -229,12 +236,31 @@ public class DownloadUtils {
                 ((decompressed[x - 7] & 0xFF) << 8 ) |
                 ((decompressed[x - 6] & 0xFF) << 16) |
                 ((decompressed[x - 5] & 0xFF) << 24);
+
+        File temp = File.createTempFile("art", ".pack");
+        System.out.println("  Signed");
+        System.out.println("  Checksum Length: " + len);
+        System.out.println("  Total Length:    " + (decompressed.length - len - 8));
+        System.out.println("  Temp File:       " + temp.getAbsolutePath());
+
         byte[] checksums = Arrays.copyOfRange(decompressed, decompressed.length - len - 8, decompressed.length - 8);
+
+        //As Pack200 copies all the data from the input, this creates duplicate data in memory.
+        //Which on some systems triggers a OutOfMemoryError, to counter this, we write the data
+        //to a temporary file, force GC to run {I know, eww} and then unpack.
+        //This is a tradeoff of disk IO for memory.
+        //Should help mac users who have a lower standard max memory then the rest of the world (-.-)
+        OutputStream out = new FileOutputStream(temp);
+        out.write(decompressed, 0, decompressed.length - len - 8);
+        out.close();
+        decompressed = null;
+        data = null;
+        System.gc();
 
         FileOutputStream jarBytes = new FileOutputStream(output);
         JarOutputStream jos = new JarOutputStream(jarBytes);
 
-        Pack200.newUnpacker().unpack(new ByteArrayInputStream(decompressed), jos);
+        Pack200.newUnpacker().unpack(temp, jos);
 
         jos.putNextEntry(new JarEntry("checksums.sha1"));
         jos.write(checksums);
@@ -242,6 +268,7 @@ public class DownloadUtils {
 
         jos.close();
         jarBytes.close();
+        temp.delete();
     }
 
     public static boolean validateJar(File libPath, byte[] data, List<String> checksums) throws IOException

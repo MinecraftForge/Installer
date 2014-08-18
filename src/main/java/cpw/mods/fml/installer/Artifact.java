@@ -15,6 +15,7 @@ public class Artifact
     private String path;
     private String file;
     private String descriptor;
+    private String memo;
 
     public Artifact(String descriptor)
     {
@@ -57,5 +58,12 @@ public class Artifact
     public String getVersion()   { return version;    }
     public String getClassifier(){ return classifier; }
     public String getExt()       { return ext;        }
-    public String toString(){ return getDescriptor(); }
+    public String getMemo()      { return memo;       }
+    public void setMemo(String v){ memo = v;          }
+    public String toString()
+    {
+        if (getMemo() != null)
+            return getDescriptor() + "\n    " + getMemo();
+        return getDescriptor();
+    }
 }
