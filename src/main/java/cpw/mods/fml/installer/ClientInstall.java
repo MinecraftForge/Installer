@@ -72,6 +72,62 @@ public class ClientInstall implements ActionType {
         int progress = 3;
 
         File versionJsonFile = new File(versionTarget,VersionInfo.getVersionTarget()+".json");
+        
+        if (!VersionInfo.isInheritedJson())
+        {
+            File clientJarFile = new File(versionTarget, VersionInfo.getVersionTarget()+".jar");
+            File minecraftJarFile = VersionInfo.getMinecraftFile(versionRootDir);
+            
+            try
+            {
+                boolean delete = false;
+                monitor.setNote("Considering minecraft client jar");
+                monitor.setProgress(1);
+                
+                if (!minecraftJarFile.exists())
+                {
+                    minecraftJarFile = File.createTempFile("minecraft_client", ".jar");
+                    delete = true;
+                    monitor.setNote(String.format("Downloading minecraft client version %s", VersionInfo.getMinecraftVersion()));
+                    String clientUrl = String.format(DownloadUtils.VERSION_URL_CLIENT.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
+                    System.out.println("  Temp File: " + minecraftJarFile.getAbsolutePath());
+                    
+                    if (!DownloadUtils.downloadFileEtag("minecraft server", minecraftJarFile, clientUrl))
+                    {
+                        minecraftJarFile.delete();
+                        JOptionPane.showMessageDialog(null, "Downloading minecraft failed, invalid e-tag checksum.\n" +
+                                "Try again, or use the official launcher to run Minecraft " +
+                                VersionInfo.getMinecraftVersion() + " first.",
+                                "Error downloading", JOptionPane.ERROR_MESSAGE);
+                        return false;
+                    }
+                    monitor.setProgress(2);
+                }
+                
+                if (VersionInfo.getStripMetaInf())
+                {
+                    monitor.setNote("Copying and filtering minecraft client jar");
+                    copyAndStrip(minecraftJarFile, clientJarFile);
+                    monitor.setProgress(3);
+                }
+                else
+                {
+                    monitor.setNote("Copying minecraft client jar");
+                    Files.copy(minecraftJarFile, clientJarFile);
+                    monitor.setProgress(3);
+                }
+                
+                if (delete)
+                {
+                    minecraftJarFile.delete();
+                }
+            }
+            catch (IOException e1)
+            {
+                JOptionPane.showMessageDialog(null, "You need to run the version "+VersionInfo.getMinecraftVersion()+" manually at least once", "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
 
         File targetLibraryFile = VersionInfo.getLibraryPath(librariesDir);
         grabbed = Lists.newArrayList();
