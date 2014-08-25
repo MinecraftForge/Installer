@@ -141,4 +141,10 @@ public class VersionInfo {
         return INSTANCE.versionData.isBooleanValue("install", "hideServer") &&
                 INSTANCE.versionData.getBooleanValue("install", "hideServer");
     }
+
+    public static boolean isInheritedJson()
+    {
+        return INSTANCE.versionData.isStringValue("versionInfo", "inheritsFrom") &&
+                INSTANCE.versionData.isStringValue("versionInfo", "jar");
+    }
 }
