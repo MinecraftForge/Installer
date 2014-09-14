@@ -1,4 +1,4 @@
-package cpw.mods.fml.installer;
+package net.minecraftforge.installer;
 
 public interface IMonitor {
     void setMaximum(int max);

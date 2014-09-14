@@ -1,4 +1,4 @@
-package cpw.mods.fml.installer;
+package net.minecraftforge.installer;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;

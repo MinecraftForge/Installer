@@ -1,4 +1,4 @@
-package cpw.mods.fml.installer;
+package net.minecraftforge.installer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -56,7 +56,7 @@ public class LibraryPacker
     {
         if (args.length < 1)
         {
-            System.out.println("Usage: java cpw.mods.fml.installer.LibraryPacker <path1> [path2...]");
+            System.out.println("Usage: java net.minecraftforge.installer.LibraryPacker <path1> [path2...]");
             System.out.println("This program will walk the supplied paths recursivly and create compressed versions of any .jar file they find.");
             return;
         }

@@ -68,7 +68,7 @@ task shrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
 task shrinkOutput(type: Jar, dependsOn: shrinkJar) {
     classifier = 'shrunk'
     from zipTree(shrinkJar.obfuscatedJar)
-    manifest { attributes 'Main-Class': 'cpw.mods.fml.installer.SimpleInstaller' }
+    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.SimpleInstaller' }
 }
 
 artifacts {
@@ -80,7 +80,7 @@ artifacts {
 jar {
     classifier = 'thin'
     exclude 'argo/**'
-    manifest { attributes 'Main-Class': 'cpw.mods.fml.installer.SimpleInstaller' }
+    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.SimpleInstaller' }
 }
 
 uploadArchives {
