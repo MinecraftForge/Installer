@@ -60,6 +60,7 @@ public class Artifact
     public String getExt()       { return ext;        }
     public String getMemo()      { return memo;       }
     public void setMemo(String v){ memo = v;          }
+    @Override
     public String toString()
     {
         if (getMemo() != null)
