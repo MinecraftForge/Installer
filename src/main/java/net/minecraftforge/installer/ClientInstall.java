@@ -1,4 +1,4 @@
-package cpw.mods.fml.installer;
+package net.minecraftforge.installer;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
@@ -72,18 +72,18 @@ public class ClientInstall implements ActionType {
         int progress = 3;
 
         File versionJsonFile = new File(versionTarget,VersionInfo.getVersionTarget()+".json");
-        
+
         if (!VersionInfo.isInheritedJson())
         {
             File clientJarFile = new File(versionTarget, VersionInfo.getVersionTarget()+".jar");
             File minecraftJarFile = VersionInfo.getMinecraftFile(versionRootDir);
-            
+
             try
             {
                 boolean delete = false;
                 monitor.setNote("Considering minecraft client jar");
                 monitor.setProgress(1);
-                
+
                 if (!minecraftJarFile.exists())
                 {
                     minecraftJarFile = File.createTempFile("minecraft_client", ".jar");
@@ -91,7 +91,7 @@ public class ClientInstall implements ActionType {
                     monitor.setNote(String.format("Downloading minecraft client version %s", VersionInfo.getMinecraftVersion()));
                     String clientUrl = String.format(DownloadUtils.VERSION_URL_CLIENT.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
                     System.out.println("  Temp File: " + minecraftJarFile.getAbsolutePath());
-                    
+
                     if (!DownloadUtils.downloadFileEtag("minecraft server", minecraftJarFile, clientUrl))
                     {
                         minecraftJarFile.delete();
@@ -103,7 +103,7 @@ public class ClientInstall implements ActionType {
                     }
                     monitor.setProgress(2);
                 }
-                
+
                 if (VersionInfo.getStripMetaInf())
                 {
                     monitor.setNote("Copying and filtering minecraft client jar");
@@ -116,7 +116,7 @@ public class ClientInstall implements ActionType {
                     Files.copy(minecraftJarFile, clientJarFile);
                     monitor.setProgress(3);
                 }
-                
+
                 if (delete)
                 {
                     minecraftJarFile.delete();
@@ -288,6 +288,7 @@ public class ClientInstall implements ActionType {
     }
 
 
+    @Override
     public String getFileError(File targetDir)
     {
         if (targetDir.exists())

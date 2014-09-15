@@ -1,4 +1,4 @@
-package cpw.mods.fml.installer;
+package net.minecraftforge.installer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,7 +42,8 @@ public class LibraryPacker
             fStop = System.currentTimeMillis();
             fIsRunning = false;
         }
-        
+
+        @Override
         public String toString(){ return length() + " ms"; }
         public long length() { return fStop - fStart; }
         private long fStart;
@@ -50,12 +51,12 @@ public class LibraryPacker
 
         private boolean fIsRunning;
     }
-    
+
     public static void main(String[] args) throws IOException
     {
         if (args.length < 1)
         {
-            System.out.println("Usage: java cpw.mods.fml.installer.LibraryPacker <path1> [path2...]");
+            System.out.println("Usage: java net.minecraftforge.installer.LibraryPacker <path1> [path2...]");
             System.out.println("This program will walk the supplied paths recursivly and create compressed versions of any .jar file they find.");
             return;
         }
@@ -65,7 +66,7 @@ public class LibraryPacker
             walk(new File(path));
         }
     }
-    
+
     private static void walk(File path) throws IOException
     {
         if (path.isDirectory())
@@ -108,13 +109,13 @@ public class LibraryPacker
         System.out.println("");
         return xzed;
     }
-    
+
     private static byte[] checksum(byte[] raw, File path) throws IOException
     {
         JarInputStream in = new JarInputStream(new ByteArrayInputStream(raw));
-        
+
         StringBuffer checksums = new StringBuffer();
-        
+
         JarEntry entry = in.getNextJarEntry();
         while (entry != null)
         {
@@ -125,15 +126,16 @@ public class LibraryPacker
             entry = in.getNextJarEntry();
         }
         in.close();
-        
+
         return checksums.toString().getBytes(Charset.forName("UTF-8"));
     }
 
     private static final OutputStream NULL_OUT = new OutputStream()
     {
+        @Override
         public void write(int b) throws IOException{}
     };
-    
+
     private static byte[] pack(byte[] data, File path) throws IOException
     {
         JarInputStream in = new JarInputStream(new ByteArrayInputStream(data))
@@ -150,19 +152,19 @@ public class LibraryPacker
             }
         };
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        
+
         Packer packer = Pack200.newPacker();
-        
+
         SortedMap<String, String> props = packer.properties();
         props.put(Packer.EFFORT, "9");
         props.put(Packer.KEEP_FILE_ORDER, Packer.TRUE);
         props.put(Packer.UNKNOWN_ATTRIBUTE, Packer.PASS);
-        
+
         final PrintStream err = new PrintStream(System.err);
         System.setErr(new PrintStream(NULL_OUT));
         packer.pack(in, out);
         System.setErr(err);
-        
+
         in.close();
         out.close();
 
@@ -197,11 +199,11 @@ public class LibraryPacker
 
         return unpacked;
     }
-    
+
     private static byte[] xz(byte[] data, byte[] checksums, File path) throws IOException
     {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        
+
         LZMA2Options options = new LZMA2Options();
         options.setPreset(8);
         XZOutputStream xz = new XZOutputStream(out, options);
@@ -230,12 +232,12 @@ public class LibraryPacker
         File output = new File(path.getAbsolutePath() + ".unpacked.test");
 
         DownloadUtils.unpackLibrary(new File(path.getAbsolutePath() + ".unpacked.test"), data);
-        
+
         DownloadUtils.validateJar(output, Files.toByteArray(output), CHECKSUMS);
-        
+
         t.stop();
         System.out.println("  Decompress: " + t.toString());
     }
-    
-    
+
+
 }

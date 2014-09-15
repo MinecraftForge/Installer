@@ -1,4 +1,4 @@
-package cpw.mods.fml.installer;
+package net.minecraftforge.installer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -50,6 +50,7 @@ public class DownloadUtils {
             if (library.isArrayNode("checksums"))
             {
                 checksums = Lists.newArrayList(Lists.transform(library.getArrayNode("checksums"), new Function<JsonNode, String>() {
+                    @Override
                     public String apply(JsonNode node)
                     {
                         return node.getText();

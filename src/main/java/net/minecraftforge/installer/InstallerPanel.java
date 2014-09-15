@@ -1,4 +1,4 @@
-package cpw.mods.fml.installer;
+package net.minecraftforge.installer;
 
 import java.awt.Color;
 import java.awt.Desktop;

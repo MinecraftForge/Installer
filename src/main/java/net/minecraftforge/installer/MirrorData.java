@@ -1,4 +1,4 @@
-package cpw.mods.fml.installer;
+package net.minecraftforge.installer;
 
 import java.net.URL;
 import java.util.Collections;
