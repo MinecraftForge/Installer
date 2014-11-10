@@ -198,16 +198,25 @@ public class ClientInstall implements ActionType {
         }
 
 
-        JsonField[] fields = new JsonField[] {
-            JsonNodeFactories.field("name", JsonNodeFactories.string(VersionInfo.getProfileName())),
-            JsonNodeFactories.field("lastVersionId", JsonNodeFactories.string(VersionInfo.getVersionTarget())),
-        };
+        
 
         HashMap<JsonStringNode, JsonNode> profileCopy = Maps.newHashMap(jsonProfileData.getNode("profiles").getFields());
         HashMap<JsonStringNode, JsonNode> rootCopy = Maps.newHashMap(jsonProfileData.getFields());
-        profileCopy.put(JsonNodeFactories.string(VersionInfo.getProfileName()), JsonNodeFactories.object(fields));
+        if(profileCopy.containsKey(JsonNodeFactories.string(VersionInfo.getProfileName())))
+        {
+            HashMap<JsonStringNode, JsonNode> forgeProfileCopy = Maps.newHashMap(profileCopy.get(JsonNodeFactories.string(VersionInfo.getProfileName())).getFields());
+            forgeProfileCopy.put(JsonNodeFactories.string("name"), JsonNodeFactories.string(VersionInfo.getProfileName()));
+            forgeProfileCopy.put(JsonNodeFactories.string("lastVersionId"), JsonNodeFactories.string(VersionInfo.getVersionTarget()));
+        }
+        else
+        {
+            JsonField[] fields = new JsonField[] {
+                JsonNodeFactories.field("name", JsonNodeFactories.string(VersionInfo.getProfileName())),
+                JsonNodeFactories.field("lastVersionId", JsonNodeFactories.string(VersionInfo.getVersionTarget())),
+            };
+            profileCopy.put(JsonNodeFactories.string(VersionInfo.getProfileName()), JsonNodeFactories.object(fields));
+        }
         JsonRootNode profileJsonCopy = JsonNodeFactories.object(profileCopy);
-
         rootCopy.put(JsonNodeFactories.string("profiles"), profileJsonCopy);
 
         jsonProfileData = JsonNodeFactories.object(rootCopy);
