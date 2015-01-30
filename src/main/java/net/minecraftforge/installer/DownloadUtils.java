@@ -263,7 +263,9 @@ public class DownloadUtils {
 
         Pack200.newUnpacker().unpack(temp, jos);
 
-        jos.putNextEntry(new JarEntry("checksums.sha1"));
+        JarEntry checksumsFile = new JarEntry("checksums.sha1");
+        checksumsFile.setTime(0);
+        jos.putNextEntry(checksumsFile);
         jos.write(checksums);
         jos.closeEntry();
 
