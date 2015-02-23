@@ -163,6 +163,7 @@ public class InstallerPanel extends JPanel {
         {
             if (action == InstallerAction.CLIENT && VersionInfo.hideClient()) continue;
             if (action == InstallerAction.SERVER && VersionInfo.hideServer()) continue;
+            if (action == InstallerAction.EXTRACT && VersionInfo.hideExtract()) continue;
             JRadioButton radioButton = new JRadioButton();
             radioButton.setAction(sba);
             radioButton.setText(action.getButtonLabel());
