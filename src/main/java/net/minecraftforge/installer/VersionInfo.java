@@ -142,6 +142,12 @@ public class VersionInfo {
                 INSTANCE.versionData.getBooleanValue("install", "hideServer");
     }
 
+    public static boolean hideExtract()
+    {
+        return INSTANCE.versionData.isBooleanValue("install", "hideExtract") &&
+                INSTANCE.versionData.getBooleanValue("install", "hideExtract");
+    }
+
     public static boolean isInheritedJson()
     {
         return INSTANCE.versionData.isStringValue("versionInfo", "inheritsFrom") &&
