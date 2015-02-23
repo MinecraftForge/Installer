@@ -225,7 +225,7 @@ public class InstallerPanel extends JPanel {
             targetDir = targetDir.getCanonicalFile();
             selectedDirText.setText(targetDir.getPath());
         }
-        catch (IOException e)
+        catch (IOException ignored)
         {
 
         }
