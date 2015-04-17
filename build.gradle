@@ -85,15 +85,56 @@ jar {
 
 uploadArchives {
     repositories {
-        for (f in rootProject.repositories)
-        {
-            if (f.name.equals('filesrepo')) {
-                logger.info('Publishing to files server')
-                add f
+        add getProject().repositories.mavenLocal()
+    }
+    repositories.mavenDeployer {
+        configuration = configurations.deployJars
+
+        if (project.hasProperty("filesmaven")) {
+            logger.info('Publishing to files server')
+            repository(url: project.filesmaven.url) {
+                authentication(userName: project.filesmaven.username, privateKey: project.filesmaven.key)
+            }
+        } else {
+            logger.info('Publishing to repo folder')
+            repository(url: 'file://localhost/' + project.file('repo').getAbsolutePath())
+        }
+
+        pom {
+            groupId = project.group
+            version = project.version
+            artifactId = project.archivesBaseName
+        }
+        pom.project {
+            name project.archivesBaseName
+            packaging 'jar'
+            description 'Minecraft Forge Installer'
+            url 'https://github.com/MinecraftForge/Installer'
+
+            scm {
+                url 'https://github.com/MinecraftForge/Installer'
+                connection 'scm:git:git://github.com/MinecraftForge/Installer.git'
+                developerConnection 'scm:git:git@github.com:MinecraftForge/Installer.git'
+            }
+
+            issueManagement {
+                system 'github'
+                url 'https://github.com/MinecraftForge/Installer/issues'
+            }
+
+            developers {
+                developer {
+                    id 'cpw'
+                    name 'cpw'
+                    roles { role 'developer' }
+                }
+                developer {
+                    id 'LexManos'
+                    name 'Lex Manos'
+                    roles { role 'developer' }
+                }
             }
         }
-        logger.info('Publishing to repo folder')
-        add project.repositories.fileRepo
     }
 }
 
