@@ -24,7 +24,7 @@ repositories {
 }
 
 group = 'net.minecraftforge'
-archivesBaseName = 'forge-installer'
+archivesBaseName = 'installer'
 version = '1.4'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
