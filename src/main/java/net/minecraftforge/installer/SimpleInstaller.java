@@ -26,6 +26,7 @@ public class SimpleInstaller {
     {
         setupLogger();
         OptionParser parser = new OptionParser();
+        OptionSpecBuilder clientInstallOption = parser.accepts("installClient", "Install a client to Minecraft");
         OptionSpecBuilder serverInstallOption = parser.accepts("installServer", "Install a server to the current directory");
         OptionSpecBuilder extractOption = parser.accepts("extract", "Extract the contained jar file");
         OptionSpecBuilder helpOption = parser.acceptsAll(Arrays.asList("h", "help"),"Help with this installer");
@@ -33,7 +34,7 @@ public class SimpleInstaller {
 
         if (optionSet.specs().size()>0)
         {
-            handleOptions(parser, optionSet, serverInstallOption, extractOption, helpOption);
+            handleOptions(parser, optionSet, clientInstallOption, serverInstallOption, extractOption, helpOption);
         }
         else
         {
@@ -41,7 +42,7 @@ public class SimpleInstaller {
         }
     }
 
-    private static void handleOptions(OptionParser parser, OptionSet optionSet, OptionSpecBuilder serverInstallOption, OptionSpecBuilder extractOption, OptionSpecBuilder helpOption) throws IOException
+    private static void handleOptions(OptionParser parser, OptionSet optionSet, OptionSpecBuilder clientInstallOption, OptionSpecBuilder serverInstallOption, OptionSpecBuilder extractOption, OptionSpecBuilder helpOption) throws IOException
     {
         String path = VersionInfo.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         if (path.contains("!/"))
@@ -51,7 +52,34 @@ public class SimpleInstaller {
             return;
         }
 
-        if (optionSet.has(serverInstallOption))
+        if (optionSet.has(clientInstallOption))
+        {
+            try
+            {
+                VersionInfo.getVersionTarget();
+                ServerInstall.headless = true;
+                File clientTargetDir = getClientTargetDir();
+                System.out.println("Installing client to default Minecraft directory: " + clientTargetDir.getAbsolutePath());
+                if (!InstallerAction.CLIENT.run(clientTargetDir))
+                {
+                    System.err.println("There was an error during client installation");
+                    System.exit(1);
+                }
+                else
+                {
+                    System.out.println("The client installed successfully, you should now be able to run with the Forge profile.");
+                    System.out.println("You can delete this installer file now if you wish");
+                }
+                System.exit(0);
+            }
+            catch (Throwable e)
+            {
+                e.printStackTrace();
+                System.err.println("A problem installing the client was detected, client install cannot continue");
+                System.exit(1);
+            }
+        }
+        else  if (optionSet.has(serverInstallOption))
         {
             try
             {
@@ -105,24 +133,27 @@ public class SimpleInstaller {
         }
     }
 
-    private static void launchGui()
+    private static File getClientTargetDir()
     {
         String userHomeDir = System.getProperty("user.home", ".");
         String osType = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-        File targetDir = null;
+
         String mcDir = ".minecraft";
         if (osType.contains("win") && System.getenv("APPDATA") != null)
         {
-            targetDir = new File(System.getenv("APPDATA"), mcDir);
+            return new File(System.getenv("APPDATA"), mcDir);
         }
         else if (osType.contains("mac"))
         {
-            targetDir = new File(new File(new File(userHomeDir, "Library"),"Application Support"),"minecraft");
+            return new File(new File(new File(userHomeDir, "Library"),"Application Support"),"minecraft");
         }
-        else
-        {
-            targetDir = new File(userHomeDir, mcDir);
-        }
+
+        return new File(userHomeDir, mcDir);
+    }
+
+    private static void launchGui()
+    {
+        File targetDir = getClientTargetDir();
 
         String path = VersionInfo.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         if (path.contains("!/"))
