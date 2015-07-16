@@ -44,6 +44,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 task fatJar(type: Jar, dependsOn: jar) {
     inputs.file jar.archivePath
     from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
+    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.SimpleInstaller' }
 }
 
 fatJar.doFirst {
@@ -82,7 +83,7 @@ jar {
     exclude 'argo/**'
     manifest { attributes 'Main-Class': 'net.minecraftforge.installer.SimpleInstaller' }
 }
-
+/*
 uploadArchives {
     repositories {
         add getProject().repositories.mavenLocal()
@@ -136,7 +137,7 @@ uploadArchives {
             }
         }
     }
-}
+}*/
 
 task wrapper(type: Wrapper) {
     gradleVersion = '1.6'
