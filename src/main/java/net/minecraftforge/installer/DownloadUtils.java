@@ -314,7 +314,7 @@ public class DownloadUtils {
                     if (hash.trim().equals("") || !hash.contains(" ")) continue;
                     String[] e = hash.split(" ");
                     String validChecksum = e[0];
-                    String target = e[1];
+                    String target = hash.substring(validChecksum.length() + 1);
                     String checksum = files.get(target);
 
                     if (!files.containsKey(target) || checksum == null)
