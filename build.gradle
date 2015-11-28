@@ -8,7 +8,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'net.sf.proguard:proguard-gradle:4.10'
+        classpath 'net.sf.proguard:proguard-gradle:5.2.1'
     }
 }
 
@@ -44,10 +44,21 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 task fatJar(type: Jar, dependsOn: jar) {
     inputs.file jar.archivePath
     from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
+    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.SimpleInstaller' }
 }
 
 fatJar.doFirst {
     from zipTree(jar.archivePath)
+}
+
+task packerJar(type: Jar, dependsOn: jar) {
+    doFirst {
+        from zipTree(jar.archivePath)
+    }
+	classifier = 'packer'
+    inputs.file jar.archivePath
+    from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
+    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.LibraryPacker' }
 }
 
 
@@ -75,6 +86,7 @@ artifacts {
     archives fatJar
     archives sourcesJar
     archives shrinkOutput
+	archives packerJar
 }
 
 jar {
@@ -88,8 +100,6 @@ uploadArchives {
         add getProject().repositories.mavenLocal()
     }
     repositories.mavenDeployer {
-        configuration = configurations.deployJars
-
         if (project.hasProperty("filesmaven")) {
             logger.info('Publishing to files server')
             repository(url: project.filesmaven.url) {
@@ -139,5 +149,5 @@ uploadArchives {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '1.6'
+    gradleVersion = '2.9'
 }
