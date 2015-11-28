@@ -144,13 +144,14 @@ public class LibraryPacker
             public ZipEntry getNextEntry() throws IOException
             {
                 ZipEntry ret = super.getNextEntry();
-                while (ret != null && ret.getName().startsWith("META-INF"))
+                while (ret != null && ret.getName().startsWith("META-INF") && (ret.getName().endsWith(".SF") || ret.getName().endsWith(".DSA")))
                 {
                     ret = super.getNextEntry();
                 }
                 return ret;
             }
         };
+        in.getManifest().getEntries().clear(); //Kill manifest signature data
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
         Packer packer = Pack200.newPacker();
