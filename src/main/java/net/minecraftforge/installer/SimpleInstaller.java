@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.Locale;
 
 import javax.swing.JOptionPane;
-import javax.swing.UIManager;
+import com.alee.laf.WebLookAndFeel;
 
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -142,15 +142,16 @@ public class SimpleInstaller {
             return;
         }
 
-        try
+        /*try
         {
     		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		}
 		catch (Exception e)
 		{
-		}
+		}*/
+        WebLookAndFeel.install();
 
-        InstallerPanel panel = new InstallerPanel(targetDir);
+        RootPanel panel = new RootPanel(targetDir);
         panel.run();
     }
 

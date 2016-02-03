@@ -4,8 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import javax.swing.JOptionPane;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 
@@ -22,7 +20,7 @@ public class ServerInstall implements ActionType {
         if (target.exists() && !target.isDirectory())
         {
             if (!headless)
-                JOptionPane.showMessageDialog(null, "There is a file at this location, the server cannot be installed here!", "Error", JOptionPane.ERROR_MESSAGE);
+            	ActionType.error("There is a file at this location, the server cannot be installed here!");
             return false;
         }
 
@@ -32,13 +30,7 @@ public class ServerInstall implements ActionType {
             target.mkdirs();
         }
         librariesDir.mkdir();
-        IMonitor monitor = DownloadUtils.buildMonitor();
-        if (headless && MirrorData.INSTANCE.hasMirrors())
-        {
-            monitor.setNote(getSponsorMessage());
-        }
         List<JsonNode> libraries = VersionInfo.getVersionInfo().getArrayNode("libraries");
-        monitor.setMaximum(libraries.size() + 2);
         int progress = 2;
         grabbed = Lists.newArrayList();
         List<Artifact> bad = Lists.newArrayList();
@@ -48,17 +40,13 @@ public class ServerInstall implements ActionType {
         File mcServerFile = new File(target,"minecraft_server."+VersionInfo.getMinecraftVersion()+".jar");
         if (!mcServerFile.exists())
         {
-            monitor.setNote("Considering minecraft server jar");
-            monitor.setProgress(1);
-            monitor.setNote(String.format("Downloading minecraft server version %s",VersionInfo.getMinecraftVersion()));
             if (!DownloadUtils.downloadFileEtag("minecraft server", mcServerFile, mcServerURL))
             {
                 mcServerFile.delete();
                 if (!headless)
                 {
-                    JOptionPane.showMessageDialog(null, "Downloading minecraft server failed, invalid e-tag checksum.\n"+
-                                                        "Try again, or manually place server jar to skip download.",
-                                                        "Error downloading", JOptionPane.ERROR_MESSAGE);
+                	ActionType.error("Downloading minecraft server failed, invalid e-tag checksum.\n"+
+                                                        "Try again, or manually place server jar to skip download.");
                 }
                 else
                 {
@@ -67,16 +55,14 @@ public class ServerInstall implements ActionType {
                 }
                 return false;
             }
-            monitor.setProgress(2);
         }
-        progress = DownloadUtils.downloadInstalledLibraries("serverreq", librariesDir, monitor, libraries, progress, grabbed, bad);
-
-        monitor.close();
+        progress = DownloadUtils.downloadInstalledLibraries("serverreq", librariesDir, /*monitor,*/ libraries, progress, grabbed, bad);
+        
         if (bad.size() > 0)
         {
             String list = Joiner.on("\n").join(bad);
             if (!headless)
-                JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
+            	ActionType.error("These libraries failed to download. Try again.\n"+list);
             else
                 System.err.println("These libraries failed to download, try again. \n"+list);
             return false;
@@ -89,7 +75,7 @@ public class ServerInstall implements ActionType {
         catch (IOException e)
         {
             if (!headless)
-                JOptionPane.showMessageDialog(null, "An error occurred installing the library", "Error", JOptionPane.ERROR_MESSAGE);
+            	ActionType.error("An error occurred installing the library");
             else
                 System.err.println("An error occurred installing the distributable");
             return false;
