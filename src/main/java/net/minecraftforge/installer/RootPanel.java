@@ -14,7 +14,7 @@ import com.alee.extended.window.WebPopOver;
 import com.alee.laf.button.WebButton;
 import com.alee.managers.notification.NotificationIcon;
 import com.alee.managers.notification.NotificationManager;
-import com.alee.managers.notification.WebNotification;
+import com.alee.managers.notification.WebNotificationPopup;
 import com.alee.managers.popup.PopupWay;
 import com.alee.managers.popup.WebButtonPopup;
 import com.alee.utils.FileUtils;
@@ -218,7 +218,7 @@ public class RootPanel extends JPanel {
 						@Override
 						protected void process(List<Boolean> chunks){
 							if(chunks.get(0)){
-								final WebNotification notificationPopup = new WebNotification();
+								final WebNotificationPopup notificationPopup = new WebNotificationPopup();
 				                notificationPopup.setIcon(NotificationIcon.information);
 				                notificationPopup.setDisplayTime(5000);
 				                notificationPopup.setContent(action.getSuccessMessage());
@@ -480,6 +480,7 @@ public class RootPanel extends JPanel {
 		
 		{
 			File versionTarget = new File(new File(targetDir,"versions"),VersionInfo.getVersionTarget());
+			System.out.println("Version target is "+VersionInfo.getVersionTarget());
 					if(versionTarget.exists() && versionTarget.isDirectory())
 						cards.show(cardPanel, "mods");
 					else

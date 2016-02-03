@@ -4,7 +4,7 @@ import java.io.File;
 
 import com.alee.managers.notification.NotificationIcon;
 import com.alee.managers.notification.NotificationManager;
-import com.alee.managers.notification.WebNotification;
+import com.alee.managers.notification.WebNotificationPopup;
 
 public interface ActionType {
     boolean run(File target);
@@ -14,7 +14,7 @@ public interface ActionType {
     String getSponsorMessage();
     
     public static void error(String message){
-    	final WebNotification notificationPopup = new WebNotification();
+    	final WebNotificationPopup notificationPopup = new WebNotificationPopup();
         notificationPopup.setIcon(NotificationIcon.error);
         notificationPopup.setDisplayTime(5000);
         notificationPopup.setContent(message);
