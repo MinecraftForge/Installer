@@ -8,3 +8,6 @@ they do not have Forge installed.
 
 If they DO have Forge installed, it will display a file drag and drop
 pane to add mods.
+
+I also changed the license to the GNU General Public License v3.0.
+It is required for WebLAF.
