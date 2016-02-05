@@ -12,9 +12,9 @@ import com.alee.extended.panel.WebButtonGroup;
 import com.alee.extended.progress.WebProgressOverlay;
 import com.alee.extended.window.WebPopOver;
 import com.alee.laf.button.WebButton;
-import com.alee.managers.notification.NotificationIcon;
-import com.alee.managers.notification.NotificationManager;
-import com.alee.managers.notification.WebNotificationPopup;
+//import com.alee.managers.notification.NotificationIcon;
+//import com.alee.managers.notification.NotificationManager;
+//import com.alee.managers.notification.WebNotification;
 import com.alee.managers.popup.PopupWay;
 import com.alee.managers.popup.WebButtonPopup;
 import com.alee.utils.FileUtils;
@@ -34,7 +34,10 @@ import java.awt.GridBagConstraints;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+
 import java.awt.Insets;
+import java.awt.Toolkit;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -218,12 +221,17 @@ public class RootPanel extends JPanel {
 						@Override
 						protected void process(List<Boolean> chunks){
 							if(chunks.get(0)){
-								final WebNotificationPopup notificationPopup = new WebNotificationPopup();
+								// Only works with WebLAF with 1.29
+								
+								/*final WebNotification notificationPopup = new WebNotification();
 				                notificationPopup.setIcon(NotificationIcon.information);
 				                notificationPopup.setDisplayTime(5000);
 				                notificationPopup.setContent(action.getSuccessMessage());
 				                NotificationManager.showNotification(notificationPopup);
-				                cards.show(cardPanel, "mods");
+				                cards.show(cardPanel, "mods");*/
+								
+								Toolkit.getDefaultToolkit().beep();
+								JOptionPane.showMessageDialog(frame, action.getSuccessMessage(), "Done Installing!", JOptionPane.INFORMATION_MESSAGE);
 							}
 							btnInstall.setText("Install");
 							progressOverlay.setShowLoad(false);

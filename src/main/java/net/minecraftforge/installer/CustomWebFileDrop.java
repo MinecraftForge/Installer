@@ -17,13 +17,6 @@ import com.alee.extended.filechooser.WebFileDrop;
 import com.alee.extended.filechooser.WebFilePlate;
 import com.alee.utils.CollectionUtils;
 
-/**
- * @author ArgonBird18
- * TEMPORARY!!! I will make a pull request to WebLAF soon to add this code.
- * This code separates modifications the program makes from modifications
- * the user makes. It adds a different listener type.
- *
- */
 public class CustomWebFileDrop extends WebFileDrop {
 	
 	/**
