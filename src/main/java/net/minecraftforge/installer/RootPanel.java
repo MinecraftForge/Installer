@@ -140,7 +140,7 @@ public class RootPanel extends JPanel {
 		// Install Panel
 		
 		{
-			lblStatus.setText("Forge is not installed. Forge must be installed before any mods can be installed.");
+			lblStatus.setText("Forge is not installed. Forge must be installed before any mods can be added.");
 			
 			JPanel installPanel = new JPanel();
 			cardPanel.add(installPanel, "install");
@@ -227,11 +227,11 @@ public class RootPanel extends JPanel {
 				                notificationPopup.setIcon(NotificationIcon.information);
 				                notificationPopup.setDisplayTime(5000);
 				                notificationPopup.setContent(action.getSuccessMessage());
-				                NotificationManager.showNotification(notificationPopup);
-				                cards.show(cardPanel, "mods");*/
+				                NotificationManager.showNotification(notificationPopup);*/
 								
 								Toolkit.getDefaultToolkit().beep();
 								JOptionPane.showMessageDialog(frame, action.getSuccessMessage(), "Done Installing!", JOptionPane.INFORMATION_MESSAGE);
+								cards.show(cardPanel, "mods");
 							}
 							btnInstall.setText("Install");
 							progressOverlay.setShowLoad(false);
@@ -256,7 +256,7 @@ public class RootPanel extends JPanel {
 			lblStatus.setText("Forge is installed. Now start adding some mods! "
 					+ "First select a Forge profile or create one. Profiles keep "
 					+ "normal Minecraft worlds seperate from modded ones. Then drag "
-					+ "mods into the panel to add them. When your done, select your "
+					+ "mods into the panel to add them. When you're done, select your "
 					+ "profile in the launcher, then click play.");
 			
 			JPanel addModsPanel = new JPanel();

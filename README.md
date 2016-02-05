@@ -11,3 +11,6 @@ pane to add mods.
 
 I also changed the license to the GNU General Public License v3.0.
 It is required for WebLAF.
+
+![Preview](https://www.dropbox.com/s/1pxn12160yawus1/install.tiff?dl=1)
+![Preview](https://www.dropbox.com/s/9s06qz3ghe49j1i/mods.tiff?dl=1)
