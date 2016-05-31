@@ -151,6 +151,6 @@ public class VersionInfo {
     public static boolean isInheritedJson()
     {
         return INSTANCE.versionData.isStringValue("versionInfo", "inheritsFrom") &&
-                !INSTANCE.versionData.isStringValue("versionInfo", "jar");
+                INSTANCE.versionData.isStringValue("versionInfo", "jar");
     }
 }
