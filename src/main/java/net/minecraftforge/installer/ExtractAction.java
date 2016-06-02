@@ -3,8 +3,6 @@ package net.minecraftforge.installer;
 import java.io.File;
 import java.io.IOException;
 
-import javax.swing.JOptionPane;
-
 public class ExtractAction implements ActionType {
 
     public static boolean headless;
@@ -19,7 +17,7 @@ public class ExtractAction implements ActionType {
         catch (IOException e)
         {
             if (!headless)
-                JOptionPane.showMessageDialog(null, "An error occurred extracting file", "Error", JOptionPane.ERROR_MESSAGE);
+            	ActionType.error("An error occurred extracting file");
             return false;
         }
         return true;

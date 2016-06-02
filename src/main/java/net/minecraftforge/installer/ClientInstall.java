@@ -14,8 +14,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import javax.swing.JOptionPane;
-
 import argo.format.PrettyJsonFormatter;
 import argo.jdom.JdomParser;
 import argo.jdom.JsonField;
@@ -33,7 +31,6 @@ import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 
 public class ClientInstall implements ActionType {
-    //private int selectedMirror;
     private List<Artifact> grabbed;
 
     @Override
@@ -41,13 +38,13 @@ public class ClientInstall implements ActionType {
     {
         if (!target.exists())
         {
-            JOptionPane.showMessageDialog(null, "There is no minecraft installation at this location!", "Error", JOptionPane.ERROR_MESSAGE);
+        	ActionType.error("There is no minecraft installation at this location!");
             return false;
         }
         File launcherProfiles = new File(target,"launcher_profiles.json");
         if (!launcherProfiles.exists())
         {
-            JOptionPane.showMessageDialog(null, "There is no minecraft launcher profile at this location, you need to run the launcher first!", "Error", JOptionPane.ERROR_MESSAGE);
+        	ActionType.error("There is no minecraft launcher profile at this location, you need to run the launcher first!");
             return false;
         }
 
@@ -57,7 +54,7 @@ public class ClientInstall implements ActionType {
         {
             if (!versionTarget.delete())
             {
-                JOptionPane.showMessageDialog(null, "There was a problem with the launcher version data. You will need to clear "+versionTarget.getAbsolutePath()+" manually", "Error", JOptionPane.ERROR_MESSAGE);
+                ActionType.error("There was a problem with the launcher version data. You will need to clear "+versionTarget.getAbsolutePath()+" manually");
             }
             else
             {
@@ -66,9 +63,7 @@ public class ClientInstall implements ActionType {
         }
 
         File librariesDir = new File(target, "libraries");
-        IMonitor monitor = DownloadUtils.buildMonitor();
         List<JsonNode> libraries = VersionInfo.getVersionInfo().getArrayNode("libraries");
-        monitor.setMaximum(libraries.size() + 3);
         int progress = 3;
 
         File versionJsonFile = new File(versionTarget,VersionInfo.getVersionTarget()+".json");
@@ -81,40 +76,31 @@ public class ClientInstall implements ActionType {
             try
             {
                 boolean delete = false;
-                monitor.setNote("Considering minecraft client jar");
-                monitor.setProgress(1);
 
                 if (!minecraftJarFile.exists())
                 {
                     minecraftJarFile = File.createTempFile("minecraft_client", ".jar");
                     delete = true;
-                    monitor.setNote(String.format("Downloading minecraft client version %s", VersionInfo.getMinecraftVersion()));
                     String clientUrl = String.format(DownloadUtils.VERSION_URL_CLIENT.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
                     System.out.println("  Temp File: " + minecraftJarFile.getAbsolutePath());
 
                     if (!DownloadUtils.downloadFileEtag("minecraft server", minecraftJarFile, clientUrl))
                     {
                         minecraftJarFile.delete();
-                        JOptionPane.showMessageDialog(null, "Downloading minecraft failed, invalid e-tag checksum.\n" +
+                        ActionType.error("Downloading minecraft failed, invalid e-tag checksum.\n" +
                                 "Try again, or use the official launcher to run Minecraft " +
-                                VersionInfo.getMinecraftVersion() + " first.",
-                                "Error downloading", JOptionPane.ERROR_MESSAGE);
+                                VersionInfo.getMinecraftVersion() + " first.");
                         return false;
                     }
-                    monitor.setProgress(2);
                 }
 
                 if (VersionInfo.getStripMetaInf())
                 {
-                    monitor.setNote("Copying and filtering minecraft client jar");
                     copyAndStrip(minecraftJarFile, clientJarFile);
-                    monitor.setProgress(3);
                 }
                 else
                 {
-                    monitor.setNote("Copying minecraft client jar");
                     Files.copy(minecraftJarFile, clientJarFile);
-                    monitor.setProgress(3);
                 }
 
                 if (delete)
@@ -124,7 +110,7 @@ public class ClientInstall implements ActionType {
             }
             catch (IOException e1)
             {
-                JOptionPane.showMessageDialog(null, "You need to run the version "+VersionInfo.getMinecraftVersion()+" manually at least once", "Error", JOptionPane.ERROR_MESSAGE);
+            	ActionType.error("You need to run the version "+VersionInfo.getMinecraftVersion()+" manually at least once");
                 return false;
             }
         }
@@ -132,13 +118,12 @@ public class ClientInstall implements ActionType {
         File targetLibraryFile = VersionInfo.getLibraryPath(librariesDir);
         grabbed = Lists.newArrayList();
         List<Artifact> bad = Lists.newArrayList();
-        progress = DownloadUtils.downloadInstalledLibraries("clientreq", librariesDir, monitor, libraries, progress, grabbed, bad);
-
-        monitor.close();
+        progress = DownloadUtils.downloadInstalledLibraries("clientreq", librariesDir, /*monitor,*/ libraries, progress, grabbed, bad);
+        
         if (bad.size() > 0)
         {
             String list = Joiner.on("\n").join(bad);
-            JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
+            ActionType.error("These libraries failed to download. Try again.\n"+list);
             return false;
         }
 
@@ -146,7 +131,7 @@ public class ClientInstall implements ActionType {
         {
             if (!targetLibraryFile.getParentFile().delete())
             {
-                JOptionPane.showMessageDialog(null, "There was a problem with the launcher version data. You will need to clear "+targetLibraryFile.getAbsolutePath()+" manually", "Error", JOptionPane.ERROR_MESSAGE);
+            	ActionType.error("There was a problem with the launcher version data. You will need to clear "+targetLibraryFile.getAbsolutePath()+" manually");
                 return false;
             }
             else
@@ -166,7 +151,7 @@ public class ClientInstall implements ActionType {
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(null, "There was a problem writing the launcher version data,  is it write protected?", "Error", JOptionPane.ERROR_MESSAGE);
+        	ActionType.error("There was a problem writing the launcher version data,  is it write protected?");
             return false;
         }
 
@@ -176,7 +161,7 @@ public class ClientInstall implements ActionType {
         }
         catch (IOException e)
         {
-            JOptionPane.showMessageDialog(null, "There was a problem writing the system library file", "Error", JOptionPane.ERROR_MESSAGE);
+        	ActionType.error("There was a problem writing the system library file");
             return false;
         }
 
@@ -189,7 +174,7 @@ public class ClientInstall implements ActionType {
         }
         catch (InvalidSyntaxException e)
         {
-            JOptionPane.showMessageDialog(null, "The launcher profile file is corrupted. Re-run the minecraft launcher to fix it!", "Error", JOptionPane.ERROR_MESSAGE);
+        	ActionType.error("The launcher profile file is corrupted. Re-run the minecraft launcher to fix it!");
             return false;
         }
         catch (Exception e)
@@ -229,7 +214,7 @@ public class ClientInstall implements ActionType {
         }
         catch (Exception e)
         {
-            JOptionPane.showMessageDialog(null, "There was a problem writing the launch profile,  is it write protected?", "Error", JOptionPane.ERROR_MESSAGE);
+        	ActionType.error("There was a problem writing the launch profile,  is it write protected?");
             return false;
         }
 

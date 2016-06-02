@@ -41,7 +41,7 @@ public class DownloadUtils {
 
     private static final String PACK_NAME = ".pack.xz";
 
-    public static int downloadInstalledLibraries(String jsonMarker, File librariesDir, IMonitor monitor, List<JsonNode> libraries, int progress, List<Artifact> grabbed, List<Artifact> bad)
+    public static int downloadInstalledLibraries(String jsonMarker, File librariesDir, /*IMonitor monitor,*/ List<JsonNode> libraries, int progress, List<Artifact> grabbed, List<Artifact> bad)
     {
         for (JsonNode library : libraries)
         {
@@ -59,7 +59,7 @@ public class DownloadUtils {
             }
             if (library.isBooleanValue(jsonMarker) && library.getBooleanValue(jsonMarker))
             {
-                monitor.setNote(String.format("Considering library %s", artifact.getDescriptor()));
+                //monitor.setNote(String.format("Considering library %s", artifact.getDescriptor()));
                 File libPath = artifact.getLocalPath(librariesDir);
                 String libURL = LIBRARIES_URL;
                 if (MirrorData.INSTANCE.hasMirrors() && library.isStringValue("url"))
@@ -72,30 +72,20 @@ public class DownloadUtils {
                 }
                 if (libPath.exists() && checksumValid(libPath, checksums))
                 {
-                    monitor.setProgress(progress++);
                     continue;
                 }
 
                 libPath.getParentFile().mkdirs();
-                monitor.setNote(String.format("Downloading library %s", artifact.getDescriptor()));
                 libURL += artifact.getPath();
 
                 File packFile = new File(libPath.getParentFile(), libPath.getName() + PACK_NAME);
                 if (!downloadFile(artifact.getDescriptor(), packFile, libURL + PACK_NAME, null))
                 {
-                    if (library.isStringValue("url"))
-                    {
-                        monitor.setNote(String.format("Trying unpacked library %s", artifact.getDescriptor()));
-                    }
                     if (!downloadFile(artifact.getDescriptor(), libPath, libURL, checksums))
                     {
                         if (!libURL.startsWith(LIBRARIES_URL) || !jsonMarker.equals("clientreq"))
                         {
                             bad.add(artifact);
-                        }
-                        else
-                        {
-                            monitor.setNote("Unmrriored file failed, Mojang launcher should download at next run, non fatal");
                         }
                     }
                     else
@@ -107,9 +97,7 @@ public class DownloadUtils {
                 {
                     try
                     {
-                        monitor.setNote(String.format("Unpacking packed file %s", packFile.getName()));
                         unpackLibrary(libPath, Files.toByteArray(packFile));
-                        monitor.setNote(String.format("Successfully unpacked packed file %s",packFile.getName()));
                         packFile.delete();
 
                         if (checksumValid(libPath, checksums))
@@ -134,11 +122,6 @@ public class DownloadUtils {
                     }
                 }
             }
-            else
-            {
-                monitor.setNote(String.format("Considering library %s: Not Downloading", artifact.getDescriptor()));
-            }
-            monitor.setProgress(progress++);
         }
         return progress;
     }

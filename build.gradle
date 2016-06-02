@@ -30,6 +30,7 @@ targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
 
 dependencies {
+    compile 'de.sciss:weblaf:1.28'
     compile 'net.sf.jopt-simple:jopt-simple:4.5'
     compile 'net.sourceforge.argo:argo:3.7'
     compile 'com.google.guava:guava:14.0'
