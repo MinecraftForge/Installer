@@ -12,6 +12,8 @@ import java.util.Locale;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
+import com.google.common.base.Predicates;
+
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpecBuilder;
@@ -58,7 +60,7 @@ public class SimpleInstaller {
                 VersionInfo.getVersionTarget();
                 ServerInstall.headless = true;
                 System.out.println("Installing server to current directory");
-                if (!InstallerAction.SERVER.run(new File(".")))
+                if (!InstallerAction.SERVER.run(new File("."), Predicates.<String>alwaysTrue()))
                 {
                     System.err.println("There was an error during server installation");
                     System.exit(1);
@@ -81,7 +83,7 @@ public class SimpleInstaller {
             try
             {
                 VersionInfo.getVersionTarget();
-                if (!InstallerAction.EXTRACT.run(new File(".")))
+                if (!InstallerAction.EXTRACT.run(new File("."), Predicates.<String>alwaysTrue()))
                 {
                     System.err.println("A problem occurred extracting the file to "+VersionInfo.getContainedFile());
                     System.exit(1);
@@ -144,11 +146,11 @@ public class SimpleInstaller {
 
         try
         {
-    		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		}
-		catch (Exception e)
-		{
-		}
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        }
+        catch (Exception e)
+        {
+        }
 
         InstallerPanel panel = new InstallerPanel(targetDir);
         panel.run();

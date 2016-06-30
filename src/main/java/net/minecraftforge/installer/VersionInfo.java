@@ -5,16 +5,19 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
 
 import argo.jdom.JdomParser;
 import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.OutputSupplier;
@@ -22,6 +25,7 @@ import com.google.common.io.OutputSupplier;
 public class VersionInfo {
     public static final VersionInfo INSTANCE = new VersionInfo();
     public final JsonRootNode versionData;
+    private final List<OptionalLibrary> optionals = Lists.newArrayList();
 
     public VersionInfo()
     {
@@ -31,6 +35,21 @@ public class VersionInfo {
         try
         {
             versionData = parser.parse(new InputStreamReader(installProfile, Charsets.UTF_8));
+
+            if (versionData.isArrayNode("optionals"))
+            {
+                for (JsonNode opt : versionData.getArrayNode("optionals"))
+                {
+                    OptionalLibrary o = new OptionalLibrary(opt);
+                    if (!o.isValid())
+                    {
+                        // Make this more prominent to the packer?
+                        System.out.println("Optional Library is invalid, must specify a name, artifact and maven");
+                        continue;
+                    }
+                    optionals.add(o);
+                }
+            }
         }
         catch (Exception e)
         {
@@ -75,6 +94,13 @@ public class VersionInfo {
     public static String getLogoFileName()
     {
         return INSTANCE.versionData.getStringValue("install","logo");
+    }
+
+    public static String getURLFileName()
+    {
+        if (!INSTANCE.versionData.isStringValue("install", "urlIcon"))
+            return "/url.png";
+        return INSTANCE.versionData.getStringValue("install", "urlIcon");
     }
 
     public static boolean getStripMetaInf()
@@ -152,5 +178,32 @@ public class VersionInfo {
     {
         return INSTANCE.versionData.isStringValue("versionInfo", "inheritsFrom") &&
                 INSTANCE.versionData.isStringValue("versionInfo", "jar");
+    }
+
+    public static boolean hasOptionals()
+    {
+        return getOptionals().size() > 0;
+    }
+
+    public static List<OptionalLibrary> getOptionals()
+    {
+        return INSTANCE.optionals;
+    }
+
+    public static List<LibraryInfo> getLibraries(String marker, Predicate<String> filter)
+    {
+        List<LibraryInfo> ret = Lists.newArrayList();
+
+        for (JsonNode node : INSTANCE.versionData.getArrayNode("versionInfo", "libraries"))
+            ret.add(new LibraryInfo(node, marker));
+
+        for (OptionalLibrary opt : getOptionals())
+        {
+            LibraryInfo info = new LibraryInfo(opt, marker);
+            info.setEnabled(filter.apply(opt.getArtifact()));
+            ret.add(info);
+        }
+
+        return ret;
     }
 }

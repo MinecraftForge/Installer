@@ -7,9 +7,8 @@ import java.util.List;
 import javax.swing.JOptionPane;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
-
-import argo.jdom.JsonNode;
 
 public class ServerInstall implements ActionType {
 
@@ -17,7 +16,7 @@ public class ServerInstall implements ActionType {
     private List<Artifact> grabbed;
 
     @Override
-    public boolean run(File target)
+    public boolean run(File target, Predicate<String> optionals)
     {
         if (target.exists() && !target.isDirectory())
         {
@@ -37,7 +36,7 @@ public class ServerInstall implements ActionType {
         {
             monitor.setNote(getSponsorMessage());
         }
-        List<JsonNode> libraries = VersionInfo.getVersionInfo().getArrayNode("libraries");
+        List<LibraryInfo> libraries = VersionInfo.getLibraries("serverreq", optionals);
         monitor.setMaximum(libraries.size() + 2);
         int progress = 2;
         grabbed = Lists.newArrayList();
@@ -69,7 +68,7 @@ public class ServerInstall implements ActionType {
             }
             monitor.setProgress(2);
         }
-        progress = DownloadUtils.downloadInstalledLibraries("serverreq", librariesDir, monitor, libraries, progress, grabbed, bad);
+        progress = DownloadUtils.downloadInstalledLibraries(false, librariesDir, monitor, libraries, progress, grabbed, bad);
 
         monitor.close();
         if (bad.size() > 0)
@@ -94,6 +93,9 @@ public class ServerInstall implements ActionType {
                 System.err.println("An error occurred installing the distributable");
             return false;
         }
+
+        if (!OptionalLibrary.saveModListJson(librariesDir, new File(target, "mods/mod_list.json"), VersionInfo.getOptionals(), optionals))
+            return false;
 
         return true;
     }

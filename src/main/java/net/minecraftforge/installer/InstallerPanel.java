@@ -1,11 +1,16 @@
 package net.minecraftforge.installer;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.EventQueue;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -18,15 +23,21 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.ListCellRenderer;
+import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
+import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 
 public class InstallerPanel extends JPanel {
@@ -40,6 +51,7 @@ public class InstallerPanel extends JPanel {
     //private JLabel sponsorLogo;
     private JPanel sponsorPanel;
     private JPanel fileEntryPanel;
+    private OptionalListEntry[] optionals;
 
     private class FileSelectAction extends AbstractAction
     {
@@ -81,9 +93,11 @@ public class InstallerPanel extends JPanel {
     {
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         BufferedImage image;
+        final BufferedImage urlIcon;
         try
         {
             image = ImageIO.read(SimpleInstaller.class.getResourceAsStream(VersionInfo.getLogoFileName()));
+            urlIcon = ImageIO.read(SimpleInstaller.class.getResourceAsStream(VersionInfo.getURLFileName()));
         }
         catch (IOException e)
         {
@@ -131,22 +145,7 @@ public class InstallerPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                try
-                {
-                    Desktop.getDesktop().browse(new URI(sponsorButton.getToolTipText()));
-                    EventQueue.invokeLater(new Runnable() {
-                        @Override
-                        public void run()
-                        {
-                            InstallerPanel.this.dialog.toFront();
-                            InstallerPanel.this.dialog.requestFocus();
-                        }
-                    });
-                }
-                catch (Exception ex)
-                {
-                    JOptionPane.showMessageDialog(InstallerPanel.this, "An error occurred launching the browser", "Error launching browser", JOptionPane.ERROR_MESSAGE);
-                }
+                openURL(sponsorButton.getToolTipText());
             }
         });
         sponsorPanel.add(sponsorButton);
@@ -180,6 +179,81 @@ public class InstallerPanel extends JPanel {
         choicePanel.setAlignmentX(RIGHT_ALIGNMENT);
         choicePanel.setAlignmentY(CENTER_ALIGNMENT);
         add(choicePanel);
+
+        if (VersionInfo.hasOptionals())
+        {
+            optionals = new OptionalListEntry[VersionInfo.getOptionals().size()];
+            int x = 0;
+            for (OptionalLibrary opt : VersionInfo.getOptionals())
+                optionals[x++] = new OptionalListEntry(opt);
+
+            final JList<OptionalListEntry> list = new JList<OptionalListEntry>(optionals);
+
+            list.setCellRenderer(new ListCellRenderer<OptionalListEntry>()
+            {
+                private JPanel panel = new JPanel(new BorderLayout());
+                private JCheckBox check = new JCheckBox();
+                private JLabel icon = new JLabel(new ImageIcon(urlIcon));
+                {
+                    check.setHorizontalAlignment(SwingConstants.LEFT);
+                    icon.setSize(urlIcon.getWidth(), urlIcon.getHeight());
+                    panel.add(check, BorderLayout.LINE_START);
+                    panel.add(icon,  BorderLayout.LINE_END);
+                }
+
+                @Override
+                public Component getListCellRendererComponent(JList<? extends OptionalListEntry> list, OptionalListEntry value, int index, boolean isSelected, boolean cellHasFocus)
+                {
+                    check.setSelected(value.isEnabled());
+                    check.setText(value.lib.getName());
+                    icon.setVisible(value.lib.getURL() != null);
+                    return panel;
+                }
+            });
+
+            list.addMouseListener(new MouseAdapter()
+            {
+                public void mouseClicked(MouseEvent event)
+                {
+                    int index = list.locationToIndex(event.getPoint());
+                    OptionalListEntry entry = list.getModel().getElementAt(index);
+
+                    if (entry.lib.getURL() != null && event.getPoint().getX() > list.getWidth() - urlIcon.getWidth())
+                        openURL(entry.lib.getURL());
+                    else
+                        entry.setEnabled(!entry.isEnabled());
+                    list.repaint(list.getCellBounds(index, index));
+                }
+            });
+            list.addMouseMotionListener(new MouseMotionListener()
+            {
+                public void mouseMoved(MouseEvent event)
+                {
+                    int index = list.locationToIndex(event.getPoint());
+                    OptionalListEntry entry = list.getModel().getElementAt(index);
+                    if (entry.lib.getDesc() != null)
+                    {
+                        StringBuilder tt = new StringBuilder();
+                        tt.append("<html>");
+                        //tt.append("  <h1>").append(index).append(" ").append(entry.lib.getName()).append("</h1>");
+                        //if (entry.lib.getURL() != null)
+                        //    tt.append("  URL: <a href=\"").append(entry.lib.getURL()).append("\">").append(entry.lib.getURL()).append("</a><br />");
+                        if (entry.lib.getDesc() != null)
+                            tt.append(entry.lib.getDesc());
+                        tt.append("</html>");
+                        list.setToolTipText(tt.toString());
+                    }
+                    else
+                        list.setToolTipText(null);
+                }
+
+                @Override public void mouseDragged(MouseEvent event) {}
+            });
+
+
+            add(new JScrollPane(list));
+        }
+
         JPanel entryPanel = new JPanel();
         entryPanel.setLayout(new BoxLayout(entryPanel,BoxLayout.X_AXIS));
 
@@ -286,13 +360,66 @@ public class InstallerPanel extends JPanel {
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
         if (result == JOptionPane.OK_OPTION)
         {
+            final OptionalListEntry[] ents = this.optionals;
+            Predicate<String> optPred = new Predicate<String>()
+            {
+                @Override
+                public boolean apply(String input)
+                {
+                    if (ents == null)
+                        return true;
+
+                    for (OptionalListEntry ent : ents)
+                    {
+                        if (ent.lib.getArtifact().equals(input))
+                            return ent.isEnabled();
+                    }
+
+                    return false;
+                }
+            };
             InstallerAction action = InstallerAction.valueOf(choiceButtonGroup.getSelection().getActionCommand());
-            if (action.run(targetDir))
+            if (action.run(targetDir, optPred))
             {
                 JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
             }
         }
         dialog.dispose();
         emptyFrame.dispose();
+    }
+
+    private void openURL(String url)
+    {
+        try
+        {
+            Desktop.getDesktop().browse(new URI(url));
+            EventQueue.invokeLater(new Runnable() {
+                @Override
+                public void run()
+                {
+                    InstallerPanel.this.dialog.toFront();
+                    InstallerPanel.this.dialog.requestFocus();
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            JOptionPane.showMessageDialog(InstallerPanel.this, "An error occurred launching the browser", "Error launching browser", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static class OptionalListEntry
+    {
+        OptionalLibrary lib;
+        private boolean enabled = false;
+
+        OptionalListEntry(OptionalLibrary lib)
+        {
+            this.lib = lib;
+            this.enabled = lib.getDefault();
+        }
+
+        public boolean isEnabled(){ return this.enabled; }
+        public void setEnabled(boolean v){ this.enabled = v; }
     }
 }

@@ -1,16 +1,26 @@
 package net.minecraftforge.installer;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import javax.swing.JOptionPane;
+
+import com.google.common.base.Predicate;
+import com.google.common.io.ByteStreams;
+import com.google.common.io.Files;
+import com.google.common.io.OutputSupplier;
 
 public class ExtractAction implements ActionType {
 
     public static boolean headless;
     @Override
-    public boolean run(File target)
+    public boolean run(File target, Predicate<String> optionals)
     {
+        boolean result = true;
+        String failed = "An error occurred extracting the files:";
+
         File file = new File(target,VersionInfo.getContainedFile());
         try
         {
@@ -18,11 +28,43 @@ public class ExtractAction implements ActionType {
         }
         catch (IOException e)
         {
-            if (!headless)
-                JOptionPane.showMessageDialog(null, "An error occurred extracting file", "Error", JOptionPane.ERROR_MESSAGE);
-            return false;
+            result = false;
+            failed += "\n" + VersionInfo.getContainedFile();
         }
-        return true;
+
+        for (OptionalLibrary opt : VersionInfo.getOptionals())
+        {
+            Artifact art = new Artifact(opt.getArtifact());
+            InputStream input = ExtractAction.class.getResourceAsStream("/maven/" + art.getPath());
+            if (input == null)
+                continue;
+
+            File path = art.getLocalPath(new File(target, "libraries"));
+            File outFolder = art.getLocalPath(path).getParentFile();
+
+            if (!outFolder.exists())
+                outFolder.mkdirs();
+
+            OutputSupplier<FileOutputStream> outputSupplier = Files.newOutputStreamSupplier(path);
+            try
+            {
+                ByteStreams.copy(input, outputSupplier);
+            }
+            catch (IOException e)
+            {
+                result = false;
+                failed += "\n" + opt.getArtifact();
+            }
+        }
+
+        if (!result)
+        {
+            if (!headless)
+                JOptionPane.showMessageDialog(null, failed, "Error", JOptionPane.ERROR_MESSAGE);
+            System.out.println(failed);
+        }
+
+        return result;
     }
 
     @Override

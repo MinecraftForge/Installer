@@ -3,6 +3,7 @@ package net.minecraftforge.installer;
 import java.io.File;
 import javax.swing.Icon;
 
+import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 
 public enum InstallerAction {
@@ -37,9 +38,9 @@ public enum InstallerAction {
         return tooltip;
     }
 
-    public boolean run(File path)
+    public boolean run(File path, Predicate<String> optionals)
     {
-        return action.run(path);
+        return action.run(path, optionals);
     }
     public boolean isPathValid(File targetDir)
     {

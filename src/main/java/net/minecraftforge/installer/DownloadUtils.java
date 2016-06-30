@@ -24,11 +24,7 @@ import javax.swing.ProgressMonitor;
 
 import org.tukaani.xz.XZInputStream;
 
-import argo.jdom.JsonNode;
-
 import com.google.common.base.Charsets;
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
@@ -41,35 +37,17 @@ public class DownloadUtils {
 
     private static final String PACK_NAME = ".pack.xz";
 
-    public static int downloadInstalledLibraries(String jsonMarker, File librariesDir, IMonitor monitor, List<JsonNode> libraries, int progress, List<Artifact> grabbed, List<Artifact> bad)
+    public static int downloadInstalledLibraries(boolean isClient, File librariesDir, IMonitor monitor, List<LibraryInfo> libraries, int progress, List<Artifact> grabbed, List<Artifact> bad)
     {
-        for (JsonNode library : libraries)
+        for (LibraryInfo library : libraries)
         {
-            Artifact artifact = new Artifact(library.getStringValue("name"));
-            List<String> checksums = null;
-            if (library.isArrayNode("checksums"))
-            {
-                checksums = Lists.newArrayList(Lists.transform(library.getArrayNode("checksums"), new Function<JsonNode, String>() {
-                    @Override
-                    public String apply(JsonNode node)
-                    {
-                        return node.getText();
-                    }
-                }));
-            }
-            if (library.isBooleanValue(jsonMarker) && library.getBooleanValue(jsonMarker))
+            Artifact artifact = library.getArtifact();
+            List<String> checksums = library.getChecksums();
+            if (library.isCorrectSide() && library.isEnabled())
             {
                 monitor.setNote(String.format("Considering library %s", artifact.getDescriptor()));
                 File libPath = artifact.getLocalPath(librariesDir);
-                String libURL = LIBRARIES_URL;
-                if (MirrorData.INSTANCE.hasMirrors() && library.isStringValue("url"))
-                {
-                    libURL = MirrorData.INSTANCE.getMirrorURL();
-                }
-                else if (library.isStringValue("url"))
-                {
-                    libURL = library.getStringValue("url") + "/";
-                }
+                String libURL = library.getURL();
                 if (libPath.exists() && checksumValid(libPath, checksums))
                 {
                     monitor.setProgress(progress++);
@@ -83,13 +61,11 @@ public class DownloadUtils {
                 File packFile = new File(libPath.getParentFile(), libPath.getName() + PACK_NAME);
                 if (!downloadFile(artifact.getDescriptor(), packFile, libURL + PACK_NAME, null))
                 {
-                    if (library.isStringValue("url"))
+                    monitor.setNote(String.format("Trying unpacked library %s", artifact.getDescriptor()));
+                    if (!downloadFile(artifact.getDescriptor(), libPath, libURL, checksums) &&
+                        !extractFile(artifact, libPath, checksums))
                     {
-                        monitor.setNote(String.format("Trying unpacked library %s", artifact.getDescriptor()));
-                    }
-                    if (!downloadFile(artifact.getDescriptor(), libPath, libURL, checksums))
-                    {
-                        if (!libURL.startsWith(LIBRARIES_URL) || !jsonMarker.equals("clientreq"))
+                        if (!libURL.startsWith(LIBRARIES_URL) || !isClient)
                         {
                             bad.add(artifact);
                         }
@@ -136,7 +112,10 @@ public class DownloadUtils {
             }
             else
             {
-                monitor.setNote(String.format("Considering library %s: Not Downloading", artifact.getDescriptor()));
+                if (library.isCorrectSide())
+                    monitor.setNote(String.format("Considering library %s: Not Downloading {Disabled}", artifact.getDescriptor()));
+                else
+                    monitor.setNote(String.format("Considering library %s: Not Downloading {Wrong Side}", artifact.getDescriptor()));
             }
             monitor.setProgress(progress++);
         }
@@ -147,8 +126,10 @@ public class DownloadUtils {
     {
         try
         {
+            if (checksums == null || checksums.isEmpty())
+                return true;
             byte[] fileData = Files.toByteArray(libPath);
-            boolean valid = checksums == null || checksums.isEmpty() || checksums.contains(Hashing.sha1().hashBytes(fileData).toString());
+            boolean valid = checksums.contains(Hashing.sha1().hashBytes(fileData).toString());
             if (!valid && libPath.getName().endsWith(".jar"))
             {
                 valid = validateJar(libPath, fileData, checksums);
@@ -388,6 +369,34 @@ public class DownloadUtils {
                 fnf.printStackTrace();
             }
             return false;
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean extractFile(Artifact art, File libPath, List<String> checksums)
+    {
+        final InputStream input = DownloadUtils.class.getResourceAsStream("/maven/" + art.getPath());
+        if (input == null)
+        {
+            System.out.println("File not found in installer archive: /maven/" + art.getPath());
+            return false;
+        }
+
+        try
+        {
+            Files.copy(new InputSupplier<InputStream>()
+            {
+                @Override
+                public InputStream getInput() throws IOException
+                {
+                    return input;
+                }
+            }, libPath);
+            return checksumValid(libPath, checksums);
         }
         catch (Exception e)
         {
