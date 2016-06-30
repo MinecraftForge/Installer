@@ -25,6 +25,7 @@ import javax.swing.ProgressMonitor;
 import org.tukaani.xz.XZInputStream;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
@@ -36,6 +37,7 @@ public class DownloadUtils {
     public static final String VERSION_URL_CLIENT = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/{MCVER}.jar";
 
     private static final String PACK_NAME = ".pack.xz";
+    public static boolean OFFLINE_MODE = false;
 
     public static int downloadInstalledLibraries(boolean isClient, File librariesDir, IMonitor monitor, List<LibraryInfo> libraries, int progress, List<Artifact> grabbed, List<Artifact> bad)
     {
@@ -145,6 +147,12 @@ public class DownloadUtils {
 
     public static boolean downloadFileEtag(String libName, File libPath, String libURL)
     {
+        if (OFFLINE_MODE)
+        {
+            System.out.println("Offline Mode: Not downloading: " + libURL);
+            return false;
+        }
+
         try
         {
             URL url = new URL(libURL);
@@ -327,6 +335,12 @@ public class DownloadUtils {
 
     public static List<String> downloadList(String libURL)
     {
+        if (OFFLINE_MODE)
+        {
+            System.out.println("Offline Mode: Not downloading: " + libURL);
+            return Lists.newArrayList();
+        }
+
         try
         {
             URL url = new URL(libURL);
@@ -345,6 +359,12 @@ public class DownloadUtils {
 
     public static boolean downloadFile(String libName, File libPath, String libURL, List<String> checksums)
     {
+        if (OFFLINE_MODE)
+        {
+            System.out.println("Offline Mode: Not downloading: " + libURL);
+            return false;
+        }
+
         try
         {
             URL url = new URL(libURL);

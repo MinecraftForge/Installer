@@ -31,9 +31,18 @@ public class SimpleInstaller {
         OptionSpecBuilder serverInstallOption = parser.accepts("installServer", "Install a server to the current directory");
         OptionSpecBuilder extractOption = parser.accepts("extract", "Extract the contained jar file");
         OptionSpecBuilder helpOption = parser.acceptsAll(Arrays.asList("h", "help"),"Help with this installer");
+        OptionSpecBuilder offlineOption = parser.accepts("offline", "Don't attempt any network calls");
         OptionSet optionSet = parser.parse(args);
 
-        if (optionSet.specs().size()>0)
+        int cnt = 0;
+        if (optionSet.has(offlineOption))
+        {
+            DownloadUtils.OFFLINE_MODE = true;
+            System.out.println("ENABELING OFFLINE MODE");
+            cnt = 1;
+        }
+
+        if (optionSet.specs().size() > cnt)
         {
             handleOptions(parser, optionSet, serverInstallOption, extractOption, helpOption);
         }
