@@ -28,6 +28,7 @@ public class SimpleInstaller {
     {
         setupLogger();
         OptionParser parser = new OptionParser();
+        OptionSpecBuilder clientInstallOption = parser.accepts("installClient", "Install client into the default minecraft directory");
         OptionSpecBuilder serverInstallOption = parser.accepts("installServer", "Install a server to the current directory");
         OptionSpecBuilder extractOption = parser.accepts("extract", "Extract the contained jar file");
         OptionSpecBuilder helpOption = parser.acceptsAll(Arrays.asList("h", "help"),"Help with this installer");
@@ -44,7 +45,7 @@ public class SimpleInstaller {
 
         if (optionSet.specs().size() > cnt)
         {
-            handleOptions(parser, optionSet, serverInstallOption, extractOption, helpOption);
+            handleOptions(parser, optionSet, clientInstallOption, serverInstallOption, extractOption, helpOption);
         }
         else
         {
@@ -52,7 +53,7 @@ public class SimpleInstaller {
         }
     }
 
-    private static void handleOptions(OptionParser parser, OptionSet optionSet, OptionSpecBuilder serverInstallOption, OptionSpecBuilder extractOption, OptionSpecBuilder helpOption) throws IOException
+    private static void handleOptions(OptionParser parser, OptionSet optionSet, OptionSpecBuilder clientInstallOption, OptionSpecBuilder serverInstallOption, OptionSpecBuilder extractOption, OptionSpecBuilder helpOption) throws IOException
     {
         String path = VersionInfo.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         if (path.contains("!/"))
@@ -61,13 +62,38 @@ public class SimpleInstaller {
             System.out.println(path);
             return;
         }
+        DownloadUtils.headless = true;
 
-        if (optionSet.has(serverInstallOption))
+        if (optionSet.has(clientInstallOption))
         {
             try
             {
                 VersionInfo.getVersionTarget();
-                ServerInstall.headless = true;
+                File targetDir = getMinecraftFolder();
+                System.out.println("Installing client into "+ targetDir.getAbsolutePath());
+                if (!InstallerAction.CLIENT.run(targetDir, Predicates.<String>alwaysTrue()))
+                {
+                    System.err.println("There was an error during client installation");
+                    System.exit(1);
+                }
+                else
+                {
+                    System.out.println("The client installed successfully, you should now be able to run the file "+VersionInfo.getContainedFile());
+                    System.out.println("You can delete this installer file now if you wish");
+                }
+                System.exit(0);
+            }
+            catch (Throwable e)
+            {
+                System.err.println("A problem installing the client was detected, server install cannot continue");
+                System.exit(1);
+            }
+        }
+        else if (optionSet.has(serverInstallOption))
+        {
+            try
+            {
+                VersionInfo.getVersionTarget();
                 System.out.println("Installing server to current directory");
                 if (!InstallerAction.SERVER.run(new File("."), Predicates.<String>alwaysTrue()))
                 {
@@ -118,22 +144,7 @@ public class SimpleInstaller {
 
     private static void launchGui()
     {
-        String userHomeDir = System.getProperty("user.home", ".");
-        String osType = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-        File targetDir = null;
-        String mcDir = ".minecraft";
-        if (osType.contains("win") && System.getenv("APPDATA") != null)
-        {
-            targetDir = new File(System.getenv("APPDATA"), mcDir);
-        }
-        else if (osType.contains("mac"))
-        {
-            targetDir = new File(new File(new File(userHomeDir, "Library"),"Application Support"),"minecraft");
-        }
-        else
-        {
-            targetDir = new File(userHomeDir, mcDir);
-        }
+        File targetDir = getMinecraftFolder();
 
         String path = VersionInfo.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         if (path.contains("!/"))
@@ -184,6 +195,28 @@ public class SimpleInstaller {
             e.printStackTrace();
             //We errored out, lets just continue on and hope the rest runs fine.
         }
+    }
+
+    private static File getMinecraftFolder()
+    {
+        String userHomeDir = System.getProperty("user.home", ".");
+        String osType = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
+        File targetDir = null;
+        String mcDir = ".minecraft";
+        if (osType.contains("win") && System.getenv("APPDATA") != null)
+        {
+            targetDir = new File(System.getenv("APPDATA"), mcDir);
+        }
+        else if (osType.contains("mac"))
+        {
+            targetDir = new File(new File(new File(userHomeDir, "Library"),"Application Support"),"minecraft");
+        }
+        else
+        {
+            targetDir = new File(userHomeDir, mcDir);
+        }
+
+        return targetDir;
     }
 
     private static class MultiOutputStream extends OutputStream
