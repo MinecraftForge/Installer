@@ -12,7 +12,6 @@ import com.google.common.collect.Lists;
 
 public class ServerInstall implements ActionType {
 
-    public static boolean headless;
     private List<Artifact> grabbed;
 
     @Override
@@ -20,7 +19,7 @@ public class ServerInstall implements ActionType {
     {
         if (target.exists() && !target.isDirectory())
         {
-            if (!headless)
+            if (!DownloadUtils.headless)
                 JOptionPane.showMessageDialog(null, "There is a file at this location, the server cannot be installed here!", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
@@ -32,7 +31,7 @@ public class ServerInstall implements ActionType {
         }
         librariesDir.mkdir();
         IMonitor monitor = DownloadUtils.buildMonitor();
-        if (headless && MirrorData.INSTANCE.hasMirrors())
+        if (DownloadUtils.headless && MirrorData.INSTANCE.hasMirrors())
         {
             monitor.setNote(getSponsorMessage());
         }
@@ -53,7 +52,7 @@ public class ServerInstall implements ActionType {
             if (!DownloadUtils.downloadFileEtag("minecraft server", mcServerFile, mcServerURL))
             {
                 mcServerFile.delete();
-                if (!headless)
+                if (!DownloadUtils.headless)
                 {
                     JOptionPane.showMessageDialog(null, "Downloading minecraft server failed, invalid e-tag checksum.\n"+
                                                         "Try again, or manually place server jar to skip download.",
@@ -74,7 +73,7 @@ public class ServerInstall implements ActionType {
         if (bad.size() > 0)
         {
             String list = Joiner.on("\n").join(bad);
-            if (!headless)
+            if (!DownloadUtils.headless)
                 JOptionPane.showMessageDialog(null, "These libraries failed to download. Try again.\n"+list, "Error downloading", JOptionPane.ERROR_MESSAGE);
             else
                 System.err.println("These libraries failed to download, try again. \n"+list);
@@ -87,7 +86,7 @@ public class ServerInstall implements ActionType {
         }
         catch (IOException e)
         {
-            if (!headless)
+            if (!DownloadUtils.headless)
                 JOptionPane.showMessageDialog(null, "An error occurred installing the library", "Error", JOptionPane.ERROR_MESSAGE);
             else
                 System.err.println("An error occurred installing the distributable");
@@ -136,6 +135,6 @@ public class ServerInstall implements ActionType {
     @Override
     public String getSponsorMessage()
     {
-        return MirrorData.INSTANCE.hasMirrors() ? String.format(headless ? "Data kindly mirrored by %2$s at %1$s" : "<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", MirrorData.INSTANCE.getSponsorURL(),MirrorData.INSTANCE.getSponsorName()) : null;
+        return MirrorData.INSTANCE.hasMirrors() ? String.format(DownloadUtils.headless ? "Data kindly mirrored by %2$s at %1$s" : "<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", MirrorData.INSTANCE.getSponsorURL(),MirrorData.INSTANCE.getSponsorName()) : null;
     }
 }
