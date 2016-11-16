@@ -12,8 +12,10 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 
 import javax.imageio.ImageIO;
@@ -89,20 +91,42 @@ public class InstallerPanel extends JPanel {
         }
 
     }
-    public InstallerPanel(File targetDir)
+
+    private static final String URL = "89504E470D0A1A0A0000000D4948445200000014000000160803000000F79F4C3400000012504C5445FFFFFFCCFFFF9999996666663333330000009E8B9AE70000000274524E53FF00E5B7304A000000564944415478016DCB410E003108425169E5FE579E98584246593EBF8165C24C5C614BED08455ECABC947929F392584A12CD8021EBEF91B0BD46A13969682BCC45E3706AE04E0DE0E42C819FA3D10F10BE954DC4C4DE07EB6A0497D14F4E8F0000000049454E44AE426082";
+    public static byte[] hexToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                                 + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
+    }
+
+    private BufferedImage getImage(String path, String default_)
     {
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        BufferedImage image;
-        final BufferedImage urlIcon;
         try
         {
-            image = ImageIO.read(SimpleInstaller.class.getResourceAsStream(VersionInfo.getLogoFileName()));
-            urlIcon = ImageIO.read(SimpleInstaller.class.getResourceAsStream(VersionInfo.getURLFileName()));
+            InputStream in = SimpleInstaller.class.getResourceAsStream(path);
+            if (in == null && default_ != null)
+                in = new ByteArrayInputStream(hexToByteArray(default_));
+            return ImageIO.read(in);
         }
         catch (IOException e)
         {
-            throw Throwables.propagate(e);
+            if (default_ == null)
+                Throwables.propagate(e);
+            else
+                return new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
         }
+        return null;
+    }
+
+    public InstallerPanel(File targetDir)
+    {
+        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        BufferedImage image = getImage(VersionInfo.getLogoFileName(), null);
+        final BufferedImage urlIcon = getImage(VersionInfo.getURLFileName(), URL);
 
         JPanel logoSplash = new JPanel();
         logoSplash.setLayout(new BoxLayout(logoSplash, BoxLayout.Y_AXIS));
