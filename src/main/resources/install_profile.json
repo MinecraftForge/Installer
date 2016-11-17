@@ -1,27 +1,28 @@
 {
 "install": {
   "profileName": "forge",
-  "target":"1.10-forge1.10-12.18.0.2000-1.10.0",
-  "path":"net.minecraftforge:forge:1.10-12.18.0.2000-1.10.0",
-  "version":"forge 1.10-12.18.0.2000-1.10.0",
-  "filePath":"forge-1.10-12.18.0.2000-1.10.0-universal.jar",
+  "target":"1.11-forge1.11-13.19.0.2138",
+  "path":"net.minecraftforge:forge:1.11-13.19.0.2138",
+  "version":"forge 1.11-13.19.0.2138",
+  "filePath":"",
   "welcome":"Welcome to the simple forge installer.",
-  "minecraft":"1.10",
+  "minecraft":"1.11",
   "mirrorList" : "http://files.minecraftforge.net/mirror-brand.list",
-  "logo":"/big_logo.png"
+  "logo":"/big_logo.png",
+  "modList":"absolute"
 },
 "versionInfo": {
-  "id": "1.10-forge1.10-12.18.0.2000-1.10.0",
-  "time": "2016-06-26T23:36:23+0000",
+  "id": "1.11-forge1.11-13.19.0.2138",
+  "time": "2016-11-17T03:22:26+0000",
   "releaseTime": "1960-01-01T00:00:00-0700",
   "type": "release",
   "minecraftArguments": "--username ${auth_player_name} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --uuid ${auth_uuid} --accessToken ${auth_access_token} --userType ${user_type} --tweakClass net.minecraftforge.fml.common.launcher.FMLTweaker --versionType Forge",
   "mainClass": "net.minecraft.launchwrapper.Launch",
-  "inheritsFrom": "1.10",
-  "jar": "1.10",
+  "inheritsFrom": "1.11",
+  "jar": "1.11",
   "libraries": [
     {
-      "name": "net.minecraftforge:forge:1.10-12.18.0.2000-1.10.0",
+      "name": "net.minecraftforge:forge:1.11-13.19.0.2138",
       "url": "http://files.minecraftforge.net/maven/"
     },
     {
@@ -138,14 +139,14 @@
 },
 "optionals": [
     {
-        "name": "Forge Stats",
+        "name": "Mercurius",
         "client": true,
         "server": true,
         "default": true,
         "inject": true,
         "desc": "A mod that collects statistics about Minecraft and your system.<br>Useful for Forge to understand how Minecraft/Forge are used.",
-        "url": "http://stats.minecraftforge.net/",
-        "artifact": "net.minecraftforge:ForgeStats:1.10.2",
+        "url": "http://www.minecraftforge.net/forum/index.php?topic=43278.0",
+        "artifact": "net.minecraftforge:MercuriusUpdater:1.11",
         "maven": "http://files.minecraftforge.net/maven/"
     }
 ]

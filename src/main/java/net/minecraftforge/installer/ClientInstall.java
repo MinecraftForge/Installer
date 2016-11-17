@@ -1,6 +1,7 @@
 package net.minecraftforge.installer;
 
 import java.io.*;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -150,12 +151,33 @@ public class ClientInstall implements ActionType {
             }
         }
 
-        if (!OptionalLibrary.saveModListJson(librariesDir, new File(target, "mods/mod_list.json"), VersionInfo.getOptionals(), optionals))
-        {
-            JOptionPane.showMessageDialog(null, "Failed to write mod_list.json, optional mods may not be loaded.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
+        String modListType = VersionInfo.getModListType();
+        File modListFile = new File(target, "mods/mod_list.json");
 
         JsonRootNode versionJson = JsonNodeFactories.object(VersionInfo.getVersionInfo().getFields());
+
+        if ("absolute".equals(modListType))
+        {
+            modListFile = new File(versionTarget, "mod_list.json");
+            JsonStringNode node = (JsonStringNode)versionJson.getNode("minecraftArguments");
+            try {
+                Field value = JsonStringNode.class.getDeclaredField("value");
+                value.setAccessible(true);
+                String args = (String)value.get(node);
+                value.set(node, args + " --modListFile \"absolute:"+modListFile.getAbsolutePath()+ "\"");
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+
+        if (!"none".equals(modListType))
+        {
+            if (!OptionalLibrary.saveModListJson(librariesDir, modListFile, VersionInfo.getOptionals(), optionals))
+            {
+                JOptionPane.showMessageDialog(null, "Failed to write mod_list.json, optional mods may not be loaded.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
 
         try
         {

@@ -81,6 +81,12 @@ public class VersionInfo {
         return new File(dest,fileName);
     }
 
+    public static String getModListType()
+    {
+        return !INSTANCE.versionData.isStringValue("install", "modList") ? "" :
+                INSTANCE.versionData.getStringValue("install", "modList");
+    }
+
     public static String getVersion()
     {
         return INSTANCE.versionData.getStringValue("install","version");
