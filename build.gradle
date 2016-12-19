@@ -94,7 +94,7 @@ jar {
     exclude 'argo/**'
     manifest { attributes 'Main-Class': 'net.minecraftforge.installer.SimpleInstaller' }
 }
-
+/*
 uploadArchives {
     repositories {
         add getProject().repositories.mavenLocal()
@@ -147,7 +147,7 @@ uploadArchives {
             }
         }
     }
-}
+}*/
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.9'
