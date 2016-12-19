@@ -77,6 +77,10 @@ public class OptionalLibrary
         if (artifacts.size() == 0)
             return true;
 
+        File parent = json.getParentFile();
+        if (!parent.exists())
+            parent.mkdirs();
+
         System.out.println("Saving optional modlist to: " + json);
 
         StringBuilder buf = new StringBuilder();
