@@ -68,4 +68,9 @@ public enum InstallerAction {
     {
         return MirrorData.INSTANCE.getSponsorURL();
     }
+
+    public void closeMonitor()
+    {
+        action.closeMonitor();
+    }
 }

@@ -153,54 +153,68 @@ public class DownloadUtils {
             return false;
         }
 
-        try
+        for (int i = 0; i < 5; ++i)
         {
-            URL url = new URL(libURL);
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-
-            String etag = connection.getHeaderField("ETag");
-            if (etag == null)
+            if (i != 0)
             {
-              etag = "-";
+                System.err.println("Failed to download lib: ".concat(libURL));
+                System.err.println("Retrying in 5 seconds...");
+                try
+                {
+                    Thread.sleep(5000);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
             }
-            else if ((etag.startsWith("\"")) && (etag.endsWith("\"")))
-            {
-                etag = etag.substring(1, etag.length() - 1);
-            }
-
-            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
-            Files.copy(urlSupplier, libPath);
-
-            if (etag.indexOf('-') != -1) return true; //No-etag, assume valid
             try
             {
-                byte[] fileData = Files.toByteArray(libPath);
-                String md5 = Hashing.md5().hashBytes(fileData).toString();
-                System.out.println("  ETag: " + etag);
-                System.out.println("  MD5:  " + md5);
-                return etag.equalsIgnoreCase(md5);
+                URL url = new URL(libURL);
+                URLConnection connection = url.openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+
+                String etag = connection.getHeaderField("ETag");
+                if (etag == null)
+                {
+                    etag = "-";
+                }
+                else if ((etag.startsWith("\"")) && (etag.endsWith("\"")))
+                {
+                    etag = etag.substring(1, etag.length() - 1);
+                }
+
+                InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
+                Files.copy(urlSupplier, libPath);
+
+                if (etag.indexOf('-') != -1) return true; //No-etag, assume valid
+                try
+                {
+                    byte[] fileData = Files.toByteArray(libPath);
+                    String md5 = Hashing.md5().hashBytes(fileData).toString();
+                    System.out.println("  ETag: " + etag);
+                    System.out.println("  MD5:  " + md5);
+                    if (etag.equalsIgnoreCase(md5)) return true;
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
             }
-            catch (IOException e)
+            catch (FileNotFoundException fnf)
+            {
+                if (!libURL.endsWith(PACK_NAME))
+                {
+                    fnf.printStackTrace();
+                }
+            }
+            catch (Exception e)
             {
                 e.printStackTrace();
-                return false;
             }
         }
-        catch (FileNotFoundException fnf)
-        {
-            if (!libURL.endsWith(PACK_NAME))
-            {
-                fnf.printStackTrace();
-            }
-            return false;
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            return false;
-        }
+        return false;
     }
 
     public static void unpackLibrary(File output, byte[] data) throws IOException
@@ -341,20 +355,36 @@ public class DownloadUtils {
             return Lists.newArrayList();
         }
 
-        try
+        for (int i = 0; i < 5; ++i)
         {
-            URL url = new URL(libURL);
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
-            return CharStreams.readLines(CharStreams.newReaderSupplier(urlSupplier, Charsets.UTF_8));
+            if (i != 0)
+            {
+                System.err.println("Failed to download lib: ".concat(libURL));
+                System.err.println("Retrying in 5 seconds...");
+                try
+                {
+                    Thread.sleep(5000);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+            try
+            {
+                URL url = new URL(libURL);
+                URLConnection connection = url.openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+                InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
+                return CharStreams.readLines(CharStreams.newReaderSupplier(urlSupplier, Charsets.UTF_8));
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
         }
-        catch (Exception e)
-        {
-            return Collections.emptyList();
-        }
-
+        return Collections.emptyList();
     }
 
     public static boolean downloadFile(String libName, File libPath, String libURL, List<String> checksums)
@@ -365,36 +395,44 @@ public class DownloadUtils {
             return false;
         }
 
-        try
+        for (int i = 0; i < 5; ++i)
         {
-            URL url = new URL(libURL);
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
-            Files.copy(urlSupplier, libPath);
-            if (checksumValid(libPath, checksums))
+            if (i != 0)
             {
-                return true;
+                System.err.println("Failed to download lib: ".concat(libURL));
+                System.err.println("Retrying in 5 seconds...");
+                try
+                {
+                    Thread.sleep(5000);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
             }
-            else
+            try
             {
-                return false;
+                URL url = new URL(libURL);
+                URLConnection connection = url.openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+                InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
+                Files.copy(urlSupplier, libPath);
+                if (checksumValid(libPath, checksums)) return true;
+            }
+            catch (FileNotFoundException fnf)
+            {
+                if (!libURL.endsWith(PACK_NAME))
+                {
+                    fnf.printStackTrace();
+                }
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
             }
         }
-        catch (FileNotFoundException fnf)
-        {
-            if (!libURL.endsWith(PACK_NAME))
-            {
-                fnf.printStackTrace();
-            }
-            return false;
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-            return false;
-        }
+        return false;
     }
 
     public static boolean extractFile(Artifact art, File libPath, List<String> checksums)

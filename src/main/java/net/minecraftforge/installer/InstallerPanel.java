@@ -372,44 +372,58 @@ public class InstallerPanel extends JPanel {
 
     public void run()
     {
-        JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
-
-        Frame emptyFrame = new Frame("Mod system installer");
-        emptyFrame.setUndecorated(true);
-        emptyFrame.setVisible(true);
-        emptyFrame.setLocationRelativeTo(null);
-        dialog = optionPane.createDialog(emptyFrame, "Mod system installer");
-        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        dialog.setVisible(true);
-        int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
-        if (result == JOptionPane.OK_OPTION)
+        boolean success;
+        do
         {
-            final OptionalListEntry[] ents = this.optionals;
-            Predicate<String> optPred = new Predicate<String>()
+
+            JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+
+            Frame emptyFrame = new Frame("Mod system installer");
+            emptyFrame.setUndecorated(true);
+            emptyFrame.setVisible(true);
+            emptyFrame.setLocationRelativeTo(null);
+            dialog = optionPane.createDialog(emptyFrame, "Mod system installer");
+            dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+            dialog.setVisible(true);
+            int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
+            if (result == JOptionPane.OK_OPTION)
             {
-                @Override
-                public boolean apply(String input)
+                final OptionalListEntry[] ents = this.optionals;
+                Predicate<String> optPred = new Predicate<String>()
                 {
-                    if (ents == null)
-                        return true;
-
-                    for (OptionalListEntry ent : ents)
+                    @Override
+                    public boolean apply(String input)
                     {
-                        if (ent.lib.getArtifact().equals(input))
-                            return ent.isEnabled();
-                    }
+                        if (ents == null)
+                            return true;
 
-                    return false;
+                        for (OptionalListEntry ent : ents)
+                        {
+                            if (ent.lib.getArtifact().equals(input))
+                                return ent.isEnabled();
+                        }
+
+                        return false;
+                    }
+                };
+                InstallerAction action = InstallerAction.valueOf(choiceButtonGroup.getSelection().getActionCommand());
+                if (success = action.run(targetDir, optPred))
+                {
+                    JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
                 }
-            };
-            InstallerAction action = InstallerAction.valueOf(choiceButtonGroup.getSelection().getActionCommand());
-            if (action.run(targetDir, optPred))
-            {
-                JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
+                else
+                {
+                    JOptionPane.showMessageDialog(null, "Failed to install", "Failure", JOptionPane.INFORMATION_MESSAGE);
+                }
+                action.closeMonitor();
             }
-        }
-        dialog.dispose();
-        emptyFrame.dispose();
+            else
+            {
+                success = true;
+            }
+            dialog.dispose();
+            emptyFrame.dispose();
+        } while (!success);
     }
 
     private void openURL(String url)

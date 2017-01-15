@@ -31,6 +31,7 @@ import com.google.common.io.Files;
 public class ClientInstall implements ActionType {
     //private int selectedMirror;
     private List<Artifact> grabbed;
+    private IMonitor monitor;
 
     @Override
     public boolean run(File target, Predicate<String> optionals)
@@ -62,7 +63,7 @@ public class ClientInstall implements ActionType {
         }
 
         File librariesDir = new File(target, "libraries");
-        IMonitor monitor = DownloadUtils.buildMonitor();
+        IMonitor monitor = this.monitor = DownloadUtils.buildMonitor();
         List<LibraryInfo> libraries = VersionInfo.getLibraries("clientreq", optionals);
         monitor.setMaximum(libraries.size() + 3);
         int progress = 3;
@@ -399,5 +400,11 @@ public class ClientInstall implements ActionType {
     public String getSponsorMessage()
     {
         return MirrorData.INSTANCE.hasMirrors() ? String.format("<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", MirrorData.INSTANCE.getSponsorURL(),MirrorData.INSTANCE.getSponsorName()) : null;
+    }
+
+    @Override
+    public void closeMonitor()
+    {
+        monitor.close();
     }
 }
