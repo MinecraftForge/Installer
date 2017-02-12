@@ -18,16 +18,20 @@ public class Java6Gate
 
     public static void main(String[] args) throws Exception
     {
-        try {
-            Class.forName("java.util.stream.Stream");
-        }
-        catch (ClassNotFoundException e)
+        try
         {
-            // if we don't have that class we are running < java 8
-            displayErrorMessage();
-            System.exit(-1);
+            double classfileVersion = Double.parseDouble(System.getProperty("java.class.version"));
+            if (classfileVersion < 52) { // 52 is java 8
+                displayErrorMessage();
+                System.exit(-1);
+            }
+        }
+        catch (NumberFormatException e)
+        {
+            System.err.println("class-file version not a number? Ignoring.");
         }
 
+        // cannot reference directly, because this class is compiled separately for java 6
         Class<?> mainClass = Class.forName("net.minecraftforge.installer.SimpleInstaller");
         Method main = mainClass.getMethod("main", String[].class);
         main.invoke(null, (Object) args);
