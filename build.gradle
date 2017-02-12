@@ -40,7 +40,6 @@ task compilej6(type: JavaCompile) {
     source = fileTree(dir: "src/main/java")
     classpath = sourceSets.main.compileClasspath
     destinationDir = sourceSets.main.output.classesDir
-    println sourceSets.main.output.classesDir
     includes = ['net/minecraftforge/installer/Java6Gate.java']
     sourceCompatibility = 1.6
     targetCompatibility = 1.6
