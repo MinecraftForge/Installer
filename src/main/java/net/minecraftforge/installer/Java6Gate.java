@@ -19,8 +19,7 @@ public class Java6Gate
     public static void main(String[] args) throws Exception
     {
         try {
-            System.out.println(Class.forName("java.util.stream.Stream"));
-
+            Class.forName("java.util.stream.Stream");
         }
         catch (ClassNotFoundException e)
         {
