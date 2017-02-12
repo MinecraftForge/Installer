@@ -18,17 +18,29 @@ public class Java6Gate
 
     public static void main(String[] args) throws Exception
     {
+
         try
         {
-            double classfileVersion = Double.parseDouble(System.getProperty("java.class.version"));
-            if (classfileVersion < 52) { // 52 is java 8
+            String versionProperty = System.getProperty("java.specification.version");
+            int version;
+            if (versionProperty.startsWith("1."))
+            {
+                System.out.println(versionProperty.substring(2));
+                version = Integer.parseInt(versionProperty.substring(2));
+            }
+            else
+            {
+                version = Integer.parseInt(versionProperty); // java 9 and onwards
+            }
+            if (version < 8)
+            {
                 displayErrorMessage();
                 System.exit(-1);
             }
         }
         catch (NumberFormatException e)
         {
-            System.err.println("class-file version not a number? Ignoring.");
+            System.err.println("Java version not a number? Ignoring.");
         }
 
         // cannot reference directly, because this class is compiled separately for java 6
