@@ -25,7 +25,6 @@ public class Java6Gate
             int version;
             if (versionProperty.startsWith("1."))
             {
-                System.out.println(versionProperty.substring(2));
                 version = Integer.parseInt(versionProperty.substring(2));
             }
             else
