@@ -25,7 +25,7 @@ repositories {
 
 group = 'net.minecraftforge'
 archivesBaseName = 'installer'
-version = '1.5'
+version = '1.6'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
 
@@ -74,7 +74,7 @@ task packerJar(type: Jar, dependsOn: jar) {
     doFirst {
         from zipTree(jar.archivePath)
     }
-	classifier = 'packer'
+    classifier = 'packer'
     inputs.file jar.archivePath
     from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
     manifest { attributes 'Main-Class': 'net.minecraftforge.installer.LibraryPacker' }
@@ -105,7 +105,7 @@ artifacts {
     archives fatJar
     archives sourcesJar
     archives shrinkOutput
-	archives packerJar
+    archives packerJar
 }
 
 jar {
@@ -119,7 +119,7 @@ uploadArchives {
         add getProject().repositories.mavenLocal()
     }
     repositories.mavenDeployer {
-	
+    
         if (project.hasProperty('forgeMavenPass')) {
             logger.info('Publishing to files server')
             repository(url: "http://files.minecraftforge.net/maven/manage/upload") {
