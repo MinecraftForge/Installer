@@ -10,4 +10,5 @@ public interface ActionType {
     String getFileError(File targetDir);
     String getSuccessMessage();
     String getSponsorMessage();
+    void closeMonitor();
 }

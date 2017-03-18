@@ -90,4 +90,9 @@ public class ExtractAction implements ActionType {
     {
         return null;
     }
+
+    @Override
+    public void closeMonitor()
+    {
+    }
 }

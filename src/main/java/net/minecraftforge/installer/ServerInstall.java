@@ -14,6 +14,7 @@ public class ServerInstall implements ActionType {
 
     public static boolean headless;
     private List<Artifact> grabbed;
+    private IMonitor monitor;
 
     @Override
     public boolean run(File target, Predicate<String> optionals)
@@ -31,7 +32,7 @@ public class ServerInstall implements ActionType {
             target.mkdirs();
         }
         librariesDir.mkdir();
-        IMonitor monitor = DownloadUtils.buildMonitor();
+        IMonitor monitor = this.monitor = DownloadUtils.buildMonitor();
         if (headless && MirrorData.INSTANCE.hasMirrors())
         {
             monitor.setNote(getSponsorMessage());
@@ -137,5 +138,11 @@ public class ServerInstall implements ActionType {
     public String getSponsorMessage()
     {
         return MirrorData.INSTANCE.hasMirrors() ? String.format(headless ? "Data kindly mirrored by %2$s at %1$s" : "<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", MirrorData.INSTANCE.getSponsorURL(),MirrorData.INSTANCE.getSponsorName()) : null;
+    }
+
+    @Override
+    public void closeMonitor()
+    {
+        monitor.close();
     }
 }
