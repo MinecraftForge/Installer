@@ -36,6 +36,25 @@ dependencies {
     compile 'org.tukaani:xz:1.3'
 }
 
+task compilej6(type: JavaCompile) {
+    source = fileTree(dir: "src/main/java")
+    classpath = sourceSets.main.compileClasspath
+    destinationDir = sourceSets.main.output.classesDir
+    includes = ['net/minecraftforge/installer/Java6Gate.java']
+    sourceCompatibility = 1.6
+    targetCompatibility = 1.6
+}
+
+compileJava {
+    excludes = ['**/Java6Gate.java']
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+    options.encoding = 'UTF-8'
+}
+
+tasks.compileJava.dependsOn('compilej6')
+
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
@@ -44,7 +63,7 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 task fatJar(type: Jar, dependsOn: jar) {
     inputs.file jar.archivePath
     from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
-    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.SimpleInstaller' }
+    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.Java6Gate' }
 }
 
 fatJar.doFirst {
@@ -79,7 +98,7 @@ task shrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
 task shrinkOutput(type: Jar, dependsOn: shrinkJar) {
     classifier = 'shrunk'
     from zipTree(shrinkJar.obfuscatedJar)
-    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.SimpleInstaller' }
+    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.Java6Gate' }
 }
 
 artifacts {
@@ -92,7 +111,7 @@ artifacts {
 jar {
     classifier = 'thin'
     exclude 'argo/**'
-    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.SimpleInstaller' }
+    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.Java6Gate' }
 }
 
 uploadArchives {
