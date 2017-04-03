@@ -5,11 +5,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 
 import argo.jdom.JdomParser;
 import argo.jdom.JsonNode;
 import argo.jdom.JsonRootNode;
+import net.minecraftforge.installer.transform.LibraryTransformer;
+import net.minecraftforge.installer.transform.TransformInfo;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
@@ -26,6 +29,8 @@ public class VersionInfo {
     public static final VersionInfo INSTANCE = new VersionInfo();
     public final JsonRootNode versionData;
     private final List<OptionalLibrary> optionals = Lists.newArrayList();
+    private final TransformInfo[] transforms;
+    private final LibraryTransformer transformer;
 
     public VersionInfo()
     {
@@ -50,6 +55,10 @@ public class VersionInfo {
                     optionals.add(o);
                 }
             }
+
+            LibraryTransformer tmp = new LibraryTransformer();
+            this.transforms = tmp.read(versionData);
+            this.transformer = this.transforms.length > 0 ? tmp : null;
         }
         catch (Exception e)
         {
@@ -211,5 +220,29 @@ public class VersionInfo {
         }
 
         return ret;
+    }
+
+    public static boolean needsMCDownload(String side)
+    {
+        for (TransformInfo ti : INSTANCE.transforms)
+        {
+            if (ti.validSide(side) && ("{minecraft_server_jar}".equals(ti.input) || "{minecraft_jar}".equals(ti.input)))
+                return true;
+        }
+        return false;
+    }
+
+    public static List<TransformInfo> getTransforms(String side)
+    {
+        List<TransformInfo> ret = new ArrayList<TransformInfo>();
+        for (TransformInfo ti : INSTANCE.transforms)
+            if (ti.validSide(side))
+                ret.add(ti);
+        return ret;
+    }
+
+    public static LibraryTransformer getTransformer()
+    {
+        return INSTANCE.transformer;
     }
 }

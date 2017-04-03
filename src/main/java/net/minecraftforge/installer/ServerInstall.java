@@ -10,10 +10,13 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 
+import net.minecraftforge.installer.transform.TransformInfo;
+
 public class ServerInstall implements ActionType {
 
     public static boolean headless;
     private List<Artifact> grabbed;
+    private static final String SIDE = "server";
 
     @Override
     public boolean run(File target, Predicate<String> optionals)
@@ -37,7 +40,8 @@ public class ServerInstall implements ActionType {
             monitor.setNote(getSponsorMessage());
         }
         List<LibraryInfo> libraries = VersionInfo.getLibraries("serverreq", optionals);
-        monitor.setMaximum(libraries.size() + 2);
+        List<TransformInfo> transforms = VersionInfo.getTransforms(SIDE);
+        monitor.setMaximum(libraries.size() + transforms.size() + 2);
         int progress = 2;
         grabbed = Lists.newArrayList();
         List<Artifact> bad = Lists.newArrayList();
@@ -69,6 +73,20 @@ public class ServerInstall implements ActionType {
             monitor.setProgress(2);
         }
         progress = DownloadUtils.downloadInstalledLibraries(false, librariesDir, monitor, libraries, progress, grabbed, bad);
+
+        for (TransformInfo info : transforms)
+        {
+            monitor.setNote("Transforming " + info.input);
+            monitor.setProgress(progress++);
+            if (!VersionInfo.getTransformer().transform(info, SIDE, target, VersionInfo.getMinecraftVersion()))
+            {
+                if (!headless)
+                    JOptionPane.showMessageDialog(null, "There was a problem transforming " + info.input + ". You will need to clear " + info.output.getLocalPath(librariesDir).getAbsolutePath()+" manually and try again", "Error", JOptionPane.ERROR_MESSAGE);
+                else
+                    System.err.println("There was a problem transforming " + info.input + ". You will need to clear " + info.output.getLocalPath(librariesDir).getAbsolutePath()+" manually and try again");
+                return false;
+            }
+        }
 
         monitor.close();
         if (bad.size() > 0)

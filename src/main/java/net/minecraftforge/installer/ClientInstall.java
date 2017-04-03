@@ -19,6 +19,7 @@ import argo.jdom.JsonNodeFactories;
 import argo.jdom.JsonRootNode;
 import argo.jdom.JsonStringNode;
 import argo.saj.InvalidSyntaxException;
+import net.minecraftforge.installer.transform.TransformInfo;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
@@ -31,6 +32,7 @@ import com.google.common.io.Files;
 public class ClientInstall implements ActionType {
     //private int selectedMirror;
     private List<Artifact> grabbed;
+    private static final String SIDE = "CLIENT";
 
     @Override
     public boolean run(File target, Predicate<String> optionals)
@@ -64,42 +66,42 @@ public class ClientInstall implements ActionType {
         File librariesDir = new File(target, "libraries");
         IMonitor monitor = DownloadUtils.buildMonitor();
         List<LibraryInfo> libraries = VersionInfo.getLibraries("clientreq", optionals);
-        monitor.setMaximum(libraries.size() + 3);
+        List<TransformInfo> transforms = VersionInfo.getTransforms(SIDE);
+        monitor.setMaximum(libraries.size() + transforms.size() + 3);
         int progress = 3;
 
         File versionJsonFile = new File(versionTarget,VersionInfo.getVersionTarget()+".json");
 
+        boolean downloadMCJar = VersionInfo.isInheritedJson() || VersionInfo.needsMCDownload(SIDE);
+        File minecraftJarFile = VersionInfo.getMinecraftFile(versionRootDir);
+
+        if (downloadMCJar) {
+            monitor.setNote("Considering minecraft client jar");
+            monitor.setProgress(1);
+
+            if (!minecraftJarFile.exists()) {
+                monitor.setNote(String.format("Downloading minecraft client version %s", VersionInfo.getMinecraftVersion()));
+                String clientUrl = String.format(DownloadUtils.VERSION_URL_CLIENT.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
+
+                if (!DownloadUtils.downloadFileEtag("minecraft server", minecraftJarFile, clientUrl)) {
+                    minecraftJarFile.delete();
+                    JOptionPane.showMessageDialog(null, "Downloading minecraft failed, invalid e-tag checksum.\n" +
+                            "Try again, or use the official launcher to run Minecraft " +
+                            VersionInfo.getMinecraftVersion() + " first.",
+                            "Error downloading", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+                monitor.setProgress(2);
+            }
+        }
+
+
         if (!VersionInfo.isInheritedJson())
         {
             File clientJarFile = new File(versionTarget, VersionInfo.getVersionTarget()+".jar");
-            File minecraftJarFile = VersionInfo.getMinecraftFile(versionRootDir);
 
             try
             {
-                boolean delete = false;
-                monitor.setNote("Considering minecraft client jar");
-                monitor.setProgress(1);
-
-                if (!minecraftJarFile.exists())
-                {
-                    minecraftJarFile = File.createTempFile("minecraft_client", ".jar");
-                    delete = true;
-                    monitor.setNote(String.format("Downloading minecraft client version %s", VersionInfo.getMinecraftVersion()));
-                    String clientUrl = String.format(DownloadUtils.VERSION_URL_CLIENT.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
-                    System.out.println("  Temp File: " + minecraftJarFile.getAbsolutePath());
-
-                    if (!DownloadUtils.downloadFileEtag("minecraft server", minecraftJarFile, clientUrl))
-                    {
-                        minecraftJarFile.delete();
-                        JOptionPane.showMessageDialog(null, "Downloading minecraft failed, invalid e-tag checksum.\n" +
-                                "Try again, or use the official launcher to run Minecraft " +
-                                VersionInfo.getMinecraftVersion() + " first.",
-                                "Error downloading", JOptionPane.ERROR_MESSAGE);
-                        return false;
-                    }
-                    monitor.setProgress(2);
-                }
-
                 if (VersionInfo.getStripMetaInf())
                 {
                     monitor.setNote("Copying and filtering minecraft client jar");
@@ -111,11 +113,6 @@ public class ClientInstall implements ActionType {
                     monitor.setNote("Copying minecraft client jar");
                     Files.copy(minecraftJarFile, clientJarFile);
                     monitor.setProgress(3);
-                }
-
-                if (delete)
-                {
-                    minecraftJarFile.delete();
                 }
             }
             catch (IOException e1)
@@ -130,7 +127,6 @@ public class ClientInstall implements ActionType {
         List<Artifact> bad = Lists.newArrayList();
         progress = DownloadUtils.downloadInstalledLibraries(true, librariesDir, monitor, libraries, progress, grabbed, bad);
 
-        monitor.close();
         if (bad.size() > 0)
         {
             String list = Joiner.on("\n").join(bad);
@@ -179,6 +175,19 @@ public class ClientInstall implements ActionType {
             }
         }
 
+        for (TransformInfo info : transforms)
+        {
+            monitor.setNote("Transforming " + info.input);
+            monitor.setProgress(progress++);
+            if (!VersionInfo.getTransformer().transform(info, SIDE, target, VersionInfo.getMinecraftVersion()))
+            {
+                JOptionPane.showMessageDialog(null, "There was a problem transforming " + info.input + ". You will need to clear " + info.output.getLocalPath(librariesDir).getAbsolutePath()+" manually and try again", "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+
+        monitor.close();
+
         try
         {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -189,11 +198,19 @@ public class ClientInstall implements ActionType {
             byte[] output = bos.toByteArray();
 
             //TODO: Switch to GSON and make this less hacky?
-            List<OptionalLibrary> lst = Lists.newArrayList();
+            List<AppendInfo> lst = Lists.newArrayList();
             for (OptionalLibrary opt : VersionInfo.getOptionals())
             {
                 if (optionals.apply(opt.getArtifact()) && opt.isInjected())
-                    lst.add(opt);
+                    lst.add(new AppendInfo(opt.getArtifact(), opt.getMaven()));
+            }
+
+            for (TransformInfo info : transforms)
+            {
+                if (info.append)
+                {
+                    lst.add(new AppendInfo(info.output.getDescriptor(), info.maven));
+                }
             }
 
             if (lst.size() > 0)
@@ -221,10 +238,11 @@ public class ClientInstall implements ActionType {
                             printer.println(prefix + "\t,");
                             for (int x = 0; x < lst.size(); x++)
                             {
-                                OptionalLibrary opt = lst.get(x);
+                                AppendInfo info = lst.get(x);
                                 printer.println(prefix + "\t{");
-                                printer.println(prefix + "\t\t\"name\": \"" + opt.getArtifact() + "\",");
-                                printer.println(prefix + "\t\t\"url\": \"" + opt.getMaven() + "\"");
+                                printer.println(prefix + "\t\t\"name\": \"" + info.artifact + "\"" + info.maven == null ? "" : ",");
+                                if (info.maven != null)
+                                    printer.println(prefix + "\t\t\"url\": \"" + info.maven + "\"");
                                 if (x < lst.size() - 1)
                                     printer.println(prefix + "\t},");
                                 else
@@ -399,5 +417,14 @@ public class ClientInstall implements ActionType {
     public String getSponsorMessage()
     {
         return MirrorData.INSTANCE.hasMirrors() ? String.format("<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", MirrorData.INSTANCE.getSponsorURL(),MirrorData.INSTANCE.getSponsorName()) : null;
+    }
+
+    private static class AppendInfo {
+        private String artifact;
+        private String maven;
+        private AppendInfo(String artifact, String maven) {
+            this.artifact = artifact;
+            this.maven = maven;
+        }
     }
 }

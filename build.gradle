@@ -25,7 +25,7 @@ repositories {
 
 group = 'net.minecraftforge'
 archivesBaseName = 'installer'
-version = '1.6'
+version = '1.7'
 targetCompatibility = '1.6'
 sourceCompatibility = '1.6'
 
@@ -34,6 +34,7 @@ dependencies {
     compile 'net.sourceforge.argo:argo:3.7'
     compile 'com.google.guava:guava:14.0'
     compile 'org.tukaani:xz:1.3'
+    compile 'org.ow2.asm:asm:5.2'
 }
 
 task compilej6(type: JavaCompile) {
@@ -80,6 +81,16 @@ task packerJar(type: Jar, dependsOn: jar) {
     manifest { attributes 'Main-Class': 'net.minecraftforge.installer.LibraryPacker' }
 }
 
+task transformerJar(type: Jar, dependsOn: jar) {
+    doFirst {
+        from zipTree(jar.archivePath)
+    }
+    classifier = 'transformer'
+    inputs.file jar.archivePath
+    from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
+    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.transform.LibraryTransformer' }
+}
+
 
 task shrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
     inputs.file fatJar.archivePath
@@ -106,11 +117,13 @@ artifacts {
     archives sourcesJar
     archives shrinkOutput
     archives packerJar
+    archives transformerJar
 }
 
 jar {
     classifier = 'thin'
     exclude 'argo/**'
+    exclude '**/*.tsrg'
     manifest { attributes 'Main-Class': 'net.minecraftforge.installer.Java6Gate' }
 }
 

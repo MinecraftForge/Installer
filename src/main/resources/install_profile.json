@@ -9,7 +9,22 @@
   "minecraft":"1.11",
   "mirrorList" : "http://files.minecraftforge.net/mirror-brand.list",
   "logo":"/big_logo.png",
-  "modList":"absolute"
+  "modList":"absolute",
+  "transform": [
+    {
+      "side": "client",
+      "input": "{minecraft_jar}",
+      "output": "net.minecraft:minecraft_srg:1.11",
+      "map": "/minecraft.tsrg",
+      "append": true
+    },
+    {
+      "side": "server",
+      "input": "{minecraft_server_jar}",
+      "output": "net.minecraft:minecraft_server_srg:1.11",
+      "map": "/minecraft.tsrg"
+    }
+  ]
 },
 "versionInfo": {
   "id": "1.11-forge1.11-13.19.0.2138",
