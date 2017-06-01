@@ -13,7 +13,6 @@ public class Artifact
     private String classifier = null;
     private String ext = "jar";
     private String path;
-    private String file;
     private String descriptor;
     private String memo;
 
@@ -39,7 +38,7 @@ public class Artifact
             classifier = pts[3];
         }
 
-        file = name + '-' + version;
+        String file = name + '-' + version;
         if (classifier != null) file += '-' + classifier;
         file += '.' + ext;
 

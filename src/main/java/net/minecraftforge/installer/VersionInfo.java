@@ -27,10 +27,14 @@ import com.google.common.io.OutputSupplier;
 
 public class VersionInfo {
     public static final VersionInfo INSTANCE = new VersionInfo();
+
     public final JsonRootNode versionData;
     private final List<OptionalLibrary> optionals = Lists.newArrayList();
     private final TransformInfo[] transforms;
     private final LibraryTransformer transformer;
+
+    private static boolean ForceHideServer  = false;
+    private static boolean ForceHideExtract = false;
 
     public VersionInfo()
     {
@@ -64,6 +68,7 @@ public class VersionInfo {
         {
             throw Throwables.propagate(e);
         }
+
     }
 
     public static String getProfileName()
@@ -177,16 +182,25 @@ public class VersionInfo {
                 INSTANCE.versionData.getBooleanValue("install", "hideClient");
     }
 
+
     public static boolean hideServer()
     {
-        return INSTANCE.versionData.isBooleanValue("install", "hideServer") &&
-                INSTANCE.versionData.getBooleanValue("install", "hideServer");
+        return (INSTANCE.versionData.isBooleanValue("install", "hideServer") &&
+                INSTANCE.versionData.getBooleanValue("install", "hideServer")) || ForceHideServer;
     }
 
     public static boolean hideExtract()
     {
-        return INSTANCE.versionData.isBooleanValue("install", "hideExtract") &&
-                INSTANCE.versionData.getBooleanValue("install", "hideExtract");
+        return (INSTANCE.versionData.isBooleanValue("install", "hideExtract") &&
+                INSTANCE.versionData.getBooleanValue("install", "hideExtract")) || ForceHideExtract;
+    }
+
+    public static void forceHideServer(){
+        ForceHideServer = true;
+    }
+
+    public static void forceHideExtract(){
+        ForceHideExtract = true;
     }
 
     public static boolean isInheritedJson()
