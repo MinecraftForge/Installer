@@ -182,6 +182,12 @@ public class VersionInfo {
         return INSTANCE.versionData.isBooleanValue("install", "hideServer") &&
                 INSTANCE.versionData.getBooleanValue("install", "hideServer");
     }
+    
+    public static boolean hideExtract()
+    {
+        return INSTANCE.versionData.isBooleanValue("install", "hideExtract") &&
+                INSTANCE.versionData.getBooleanValue("install", "hideExtract");
+    }
 
     public static boolean hideExtract()
     {
