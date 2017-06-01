@@ -30,6 +30,10 @@ public class SimpleInstaller {
         OptionParser parser = new OptionParser();
         OptionSpecBuilder serverInstallOption = parser.accepts("installServer", "Install a server to the current directory");
         OptionSpecBuilder extractOption = parser.accepts("extract", "Extract the contained jar file");
+
+        OptionSpecBuilder noServerOption  = parser.accepts("no-extract", "Remove extract option from gui");
+        OptionSpecBuilder noExtractOption = parser.accepts("no-server",  "Remove server option from gui");
+
         OptionSpecBuilder helpOption = parser.acceptsAll(Arrays.asList("h", "help"),"Help with this installer");
         OptionSpecBuilder offlineOption = parser.accepts("offline", "Don't attempt any network calls");
         OptionSet optionSet = parser.parse(args);
@@ -44,7 +48,7 @@ public class SimpleInstaller {
 
         if (optionSet.specs().size() > cnt)
         {
-            handleOptions(parser, optionSet, serverInstallOption, extractOption, helpOption);
+            handleOptions(parser, optionSet, serverInstallOption, extractOption, noServerOption, noExtractOption, helpOption);
         }
         else
         {
@@ -52,7 +56,7 @@ public class SimpleInstaller {
         }
     }
 
-    private static void handleOptions(OptionParser parser, OptionSet optionSet, OptionSpecBuilder serverInstallOption, OptionSpecBuilder extractOption, OptionSpecBuilder helpOption) throws IOException
+    private static void handleOptions(OptionParser parser, OptionSet optionSet, OptionSpecBuilder serverInstallOption, OptionSpecBuilder extractOption, OptionSpecBuilder noServerOption, OptionSpecBuilder noExtractOption, OptionSpecBuilder helpOption) throws IOException
     {
         String path = VersionInfo.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         if (path.contains("!/"))
@@ -112,6 +116,15 @@ public class SimpleInstaller {
         }
         else
         {
+
+            if (optionSet.has(noServerOption)) {
+                VersionInfo.forceHideServer();
+            }
+
+            if (optionSet.has(noExtractOption)) {
+                VersionInfo.forceHideExtract();
+            }
+
             parser.printHelpOn(System.err);
         }
     }
