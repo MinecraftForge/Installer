@@ -151,6 +151,8 @@ public class VersionInfo {
     private void doFileExtract(File path) throws IOException
     {
         if (Strings.isNullOrEmpty(getContainedFile())) return;
+        System.out.println("Extracting: /" + getContainedFile());
+        System.out.println("To:          " + path.getAbsolutePath());
         InputStream inputStream = getClass().getResourceAsStream("/"+getContainedFile());
         OutputSupplier<FileOutputStream> outputSupplier = Files.newOutputStreamSupplier(path);
         ByteStreams.copy(inputStream, outputSupplier);

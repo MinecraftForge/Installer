@@ -19,14 +19,17 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpecBuilder;
 
 
-public class SimpleInstaller {
-    /**
-     * @param args
-     * @throws IOException
-     */
+public class SimpleInstaller
+{
     public static void main(String[] args) throws IOException
     {
         setupLogger();
+        if (System.getProperty("java.net.preferIPv4Stack") == null) //This is a dirty hack, but screw it, i'm hoping this as default will fix more things then it breaks.
+        {
+            System.setProperty("java.net.preferIPv4Stack", "true");
+        }
+        System.out.println("java.net.preferIPv4Stack=" + System.getProperty("java.net.preferIPv4Stack"));
+
         OptionParser parser = new OptionParser();
         OptionSpecBuilder serverInstallOption = parser.accepts("installServer", "Install a server to the current directory");
         OptionSpecBuilder extractOption = parser.accepts("extract", "Extract the contained jar file");
