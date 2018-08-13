@@ -1,32 +1,26 @@
 package net.minecraftforge.installer;
 
 import java.io.File;
+import java.util.function.Supplier;
+
 import javax.swing.Icon;
 
 import com.google.common.base.Predicate;
-import com.google.common.base.Throwables;
 
 public enum InstallerAction {
-    CLIENT("Install client", "Install a new profile to the Mojang client launcher", ClientInstall.class),
-    SERVER("Install server", "Create a new modded server installation", ServerInstall.class),
-    EXTRACT("Extract", "Extract the contained jar file", ExtractAction.class);
+    CLIENT("Install client", "Install a new profile to the Mojang client launcher", ClientInstall::new),
+    SERVER("Install server", "Create a new modded server installation", ServerInstall::new),
+    EXTRACT("Extract", "Extract the contained jar file", ExtractAction::new);
 
     private String label;
     private String tooltip;
     private ActionType action;
 
-    private InstallerAction(String label, String tooltip, Class<? extends ActionType> action)
+    private InstallerAction(String label, String tooltip, Supplier<? extends ActionType> action)
     {
         this.label = label;
         this.tooltip = tooltip;
-        try
-        {
-            this.action = action.newInstance();
-        }
-        catch (Exception e)
-        {
-            throw Throwables.propagate(e);
-        }
+        this.action = action.get();
     }
     public String getButtonLabel()
     {

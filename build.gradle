@@ -26,8 +26,7 @@ repositories {
 group = 'net.minecraftforge'
 archivesBaseName = 'installer'
 version = '1.7'
-targetCompatibility = '1.6'
-sourceCompatibility = '1.6'
+targetCompatibility = sourceCompatibility = '1.8'
 
 dependencies {
     compile 'net.sf.jopt-simple:jopt-simple:4.5'
