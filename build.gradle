@@ -8,7 +8,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'net.sf.proguard:proguard-gradle:5.2.1'
+        classpath 'net.sf.proguard:proguard-gradle:6.0.3'
     }
 }
 
@@ -74,7 +74,7 @@ task packerJar(type: Jar, dependsOn: jar) {
     doFirst {
         from zipTree(jar.archivePath)
     }
-	classifier = 'packer'
+    classifier = 'packer'
     inputs.file jar.archivePath
     from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
     manifest { attributes 'Main-Class': 'net.minecraftforge.installer.LibraryPacker' }
@@ -92,6 +92,18 @@ task shrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
     injars jar.archivePath
     outjars obfuscatedJar
     libraryjars configurations.compile
+
+    // Automatically handle the Java version of this build.
+    if (System.getProperty('java.version').startsWith('1.')) {
+        // Before Java 9, the runtime classes were packaged in a single jar file.
+        libraryjars "${System.getProperty('java.home')}/lib/rt.jar"
+    } else {
+        // As of Java 9, the runtime classes are packaged in modular jmod files.
+        libraryjars "${System.getProperty('java.home')}/jmods/java.base.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+        libraryjars "${System.getProperty('java.home')}/jmods/java.desktop.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+        libraryjars "${System.getProperty('java.home')}/jmods/java.logging.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+        libraryjars "${System.getProperty('java.home')}/jmods/jdk.unsupported.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
+    }
     configuration 'proguard.pro'
 }
 
@@ -105,7 +117,7 @@ artifacts {
     archives fatJar
     archives sourcesJar
     archives shrinkOutput
-	archives packerJar
+    archives packerJar
 }
 
 jar {

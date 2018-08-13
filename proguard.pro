@@ -1,8 +1,6 @@
--libraryjars <java.home>/lib/rt.jar
-
 -dontoptimize
 -dontobfuscate
--dontpreverify
+#-dontpreverify
 -dontwarn javax.annotation.**
 -dontwarn javax.inject.**
 
