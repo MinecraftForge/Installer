@@ -14,46 +14,26 @@ buildscript {
 
 repositories {
     mavenCentral()
-    maven {
-        url "https://libraries.minecraft.net/"
-    }
-    flatDir {
-        name "fileRepo"
-        dirs "repo"
-    }
 }
 
 group = 'net.minecraftforge'
 archivesBaseName = 'installer'
-version = '1.5'
-targetCompatibility = '1.6'
-sourceCompatibility = '1.6'
+version = '2.0'
+targetCompatibility = sourceCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
-dependencies {
-    compile 'net.sf.jopt-simple:jopt-simple:4.5'
-    compile 'net.sourceforge.argo:argo:3.7'
-    compile 'com.google.guava:guava:14.0'
-    compile 'org.tukaani:xz:1.3'
+ext {
+    MAIN_CLASS = 'net.minecraftforge.installer.SimpleInstaller'
 }
 
-task compilej6(type: JavaCompile) {
-    source = fileTree(dir: "src/main/java")
-    classpath = sourceSets.main.compileClasspath
-    destinationDir = sourceSets.main.output.classesDir
-    includes = ['net/minecraftforge/installer/Java6Gate.java']
-    sourceCompatibility = 1.6
-    targetCompatibility = 1.6
+dependencies {
+    compile 'net.sf.jopt-simple:jopt-simple:5.0.4'
+    compile 'com.google.code.gson:gson:2.8.5'
+    compile 'com.google.guava:guava:14.0'
 }
 
 compileJava {
-    excludes = ['**/Java6Gate.java']
-
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
     options.encoding = 'UTF-8'
 }
-
-tasks.compileJava.dependsOn('compilej6')
 
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
@@ -63,25 +43,14 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 task fatJar(type: Jar, dependsOn: jar) {
     inputs.file jar.archivePath
     from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
-    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.Java6Gate' }
+    manifest { attributes 'Main-Class': MAIN_CLASS }
 }
 
 fatJar.doFirst {
     from zipTree(jar.archivePath)
 }
 
-task packerJar(type: Jar, dependsOn: jar) {
-    doFirst {
-        from zipTree(jar.archivePath)
-    }
-    classifier = 'packer'
-    inputs.file jar.archivePath
-    from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
-    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.LibraryPacker' }
-}
-
-
-task shrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
+task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
     inputs.file fatJar.archivePath
     ext {
         outDir = file("${buildDir}/proguard")
@@ -107,25 +76,24 @@ task shrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
     configuration 'proguard.pro'
 }
 
-task shrinkOutput(type: Jar, dependsOn: shrinkJar) {
+task shrinkJar(type: Jar, dependsOn: pgShrinkJar) {
     classifier = 'shrunk'
-    from zipTree(shrinkJar.obfuscatedJar)
-    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.Java6Gate' }
+    from zipTree(pgShrinkJar.obfuscatedJar)
+    manifest { attributes 'Main-Class': MAIN_CLASS }
 }
 
 artifacts {
     archives fatJar
     archives sourcesJar
-    archives shrinkOutput
-    archives packerJar
+    archives shrinkJar
 }
 
 jar {
     classifier = 'thin'
-    exclude 'argo/**'
-    manifest { attributes 'Main-Class': 'net.minecraftforge.installer.Java6Gate' }
+    manifest { attributes 'Main-Class': MAIN_CLASS }
 }
 
+//TODO: Maven Publish
 uploadArchives {
     repositories {
         add getProject().repositories.mavenLocal()
@@ -181,5 +149,5 @@ uploadArchives {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.9'
+    gradleVersion = '4.10'
 }

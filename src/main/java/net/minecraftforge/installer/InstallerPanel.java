@@ -17,6 +17,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
@@ -39,9 +45,14 @@ import javax.swing.ListCellRenderer;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 
+import net.minecraftforge.installer.actions.Action;
+import net.minecraftforge.installer.actions.Actions;
+import net.minecraftforge.installer.json.Install;
+import net.minecraftforge.installer.json.OptionalLibrary;
+
+@SuppressWarnings("unused")
 public class InstallerPanel extends JPanel {
     private static final long serialVersionUID = 1L;
     private File targetDir;
@@ -53,7 +64,9 @@ public class InstallerPanel extends JPanel {
     //private JLabel sponsorLogo;
     private JPanel sponsorPanel;
     private JPanel fileEntryPanel;
-    private OptionalListEntry[] optionals;
+    private List<OptionalListEntry> optionals = new ArrayList<>();
+    private Install profile;
+    private Map<String, Action> actions = new HashMap<>();
 
     private class FileSelectAction extends AbstractAction
     {
@@ -122,11 +135,12 @@ public class InstallerPanel extends JPanel {
         return null;
     }
 
-    public InstallerPanel(File targetDir)
+    public InstallerPanel(File targetDir, Install profile)
     {
+        this.profile = profile;
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        BufferedImage image = getImage(VersionInfo.getLogoFileName(), null);
-        final BufferedImage urlIcon = getImage(VersionInfo.getURLFileName(), URL);
+        BufferedImage image = getImage(profile.getLogo(), null);
+        //final BufferedImage urlIcon = getImage(profile.getUrlIcon(), URL);
 
         JPanel logoSplash = new JPanel();
         logoSplash.setLayout(new BoxLayout(logoSplash, BoxLayout.Y_AXIS));
@@ -136,11 +150,11 @@ public class InstallerPanel extends JPanel {
         logoLabel.setAlignmentY(CENTER_ALIGNMENT);
         logoLabel.setSize(image.getWidth(), image.getHeight());
         logoSplash.add(logoLabel);
-        JLabel tag = new JLabel(VersionInfo.getWelcomeMessage());
+        JLabel tag = new JLabel(profile.getWelcome());
         tag.setAlignmentX(CENTER_ALIGNMENT);
         tag.setAlignmentY(CENTER_ALIGNMENT);
         logoSplash.add(tag);
-        tag = new JLabel(VersionInfo.getVersion());
+        tag = new JLabel(profile.getVersion());
         tag.setAlignmentX(CENTER_ALIGNMENT);
         tag.setAlignmentY(CENTER_ALIGNMENT);
         logoSplash.add(tag);
@@ -165,13 +179,7 @@ public class InstallerPanel extends JPanel {
         sponsorButton.setAlignmentY(CENTER_ALIGNMENT);
         sponsorButton.setBorderPainted(false);
         sponsorButton.setOpaque(false);
-        sponsorButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                openURL(sponsorButton.getToolTipText());
-            }
-        });
+        sponsorButton.addActionListener(e -> openURL(sponsorButton.getToolTipText()));
         sponsorPanel.add(sponsorButton);
 
         this.add(sponsorPanel);
@@ -182,11 +190,12 @@ public class InstallerPanel extends JPanel {
         choicePanel.setLayout(new BoxLayout(choicePanel, BoxLayout.Y_AXIS));
         boolean first = true;
         SelectButtonAction sba = new SelectButtonAction();
-        for (InstallerAction action : InstallerAction.values())
+        for (Actions action : Actions.values())
         {
-            if (action == InstallerAction.CLIENT && VersionInfo.hideClient()) continue;
-            if (action == InstallerAction.SERVER && VersionInfo.hideServer()) continue;
-            if (action == InstallerAction.EXTRACT && VersionInfo.hideExtract()) continue;
+            if (action == Actions.CLIENT && profile.hideClient()) continue;
+            if (action == Actions.SERVER && profile.hideServer()) continue;
+            if (action == Actions.EXTRACT && profile.hideExtract()) continue;
+            actions.put(action.name(), action.getAction(profile));
             JRadioButton radioButton = new JRadioButton();
             radioButton.setAction(sba);
             radioButton.setText(action.getButtonLabel());
@@ -204,6 +213,7 @@ public class InstallerPanel extends JPanel {
         choicePanel.setAlignmentY(CENTER_ALIGNMENT);
         add(choicePanel);
 
+        /*
         if (VersionInfo.hasOptionals())
         {
             optionals = new OptionalListEntry[VersionInfo.getOptionals().size()];
@@ -277,6 +287,7 @@ public class InstallerPanel extends JPanel {
 
             add(new JScrollPane(list));
         }
+        */
 
         JPanel entryPanel = new JPanel();
         entryPanel.setLayout(new BoxLayout(entryPanel,BoxLayout.X_AXIS));
@@ -328,22 +339,17 @@ public class InstallerPanel extends JPanel {
 
         }
 
-        InstallerAction action = InstallerAction.valueOf(choiceButtonGroup.getSelection().getActionCommand());
+        Action action = actions.get(choiceButtonGroup.getSelection().getActionCommand());
         boolean valid = action.isPathValid(targetDir);
 
-        String sponsorMessage = action.getSponsorMessage();
-        if (sponsorMessage != null)
+        if (profile.getMirror() != null)
         {
-            sponsorButton.setText(sponsorMessage);
-            sponsorButton.setToolTipText(action.getSponsorURL());
-            if (action.getSponsorLogo() != null)
-            {
-                sponsorButton.setIcon(action.getSponsorLogo());
-            }
+            sponsorButton.setText(action.getSponsorMessage());
+            sponsorButton.setToolTipText(profile.getMirror().getHomepage());
+            if (profile.getMirror().getImageAddress() != null)
+                sponsorButton.setIcon(profile.getMirror().getImage());
             else
-            {
                 sponsorButton.setIcon(null);
-            }
             sponsorPanel.setVisible(true);
         }
         else
@@ -384,28 +390,17 @@ public class InstallerPanel extends JPanel {
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
         if (result == JOptionPane.OK_OPTION)
         {
-            final OptionalListEntry[] ents = this.optionals;
-            Predicate<String> optPred = new Predicate<String>()
-            {
-                @Override
-                public boolean apply(String input)
-                {
-                    if (ents == null)
-                        return true;
-
-                    for (OptionalListEntry ent : ents)
-                    {
-                        if (ent.lib.getArtifact().equals(input))
-                            return ent.isEnabled();
-                    }
-
-                    return false;
-                }
+            Predicate<String> optPred = input -> {
+                Optional<OptionalListEntry> ent = this.optionals.stream().filter(e -> e.lib.getArtifact().equals(input)).findFirst();
+                return !ent.isPresent() || ent.get().isEnabled();
             };
-            InstallerAction action = InstallerAction.valueOf(choiceButtonGroup.getSelection().getActionCommand());
-            if (action.run(targetDir, optPred))
-            {
-                JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
+            Action action = actions.get(choiceButtonGroup.getSelection().getActionCommand());
+            try {
+                if (action.run(targetDir, optPred))
+                    JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "There was an exception running task: " + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
             }
         }
         dialog.dispose();

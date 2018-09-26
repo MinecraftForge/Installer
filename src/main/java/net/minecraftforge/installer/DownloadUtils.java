@@ -1,529 +1,273 @@
 package net.minecraftforge.installer;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Pack200;
+import java.util.function.Predicate;
 
-import javax.swing.ProgressMonitor;
-
-import org.tukaani.xz.XZInputStream;
-
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
 import com.google.common.hash.Hashing;
-import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
-import com.google.common.io.InputSupplier;
+import net.minecraftforge.installer.json.Artifact;
+import net.minecraftforge.installer.json.Manifest;
+import net.minecraftforge.installer.json.Mirror;
+import net.minecraftforge.installer.json.Util;
+import net.minecraftforge.installer.json.Version.Download;
+import net.minecraftforge.installer.json.Version.Library;
+import net.minecraftforge.installer.json.Version.LibraryDownload;
 
 public class DownloadUtils {
     public static final String LIBRARIES_URL = "https://libraries.minecraft.net/";
-    public static final String VERSION_URL_SERVER = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/minecraft_server.{MCVER}.jar";
-    public static final String VERSION_URL_CLIENT = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/{MCVER}.jar";
+    public static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
 
-    private static final String PACK_NAME = ".pack.xz";
     public static boolean OFFLINE_MODE = false;
 
-    public static int downloadInstalledLibraries(boolean isClient, File librariesDir, IMonitor monitor, List<LibraryInfo> libraries, int progress, List<Artifact> grabbed, List<Artifact> bad)
-    {
-        for (LibraryInfo library : libraries)
-        {
-            Artifact artifact = library.getArtifact();
-            List<String> checksums = library.getChecksums();
-            if (library.isCorrectSide() && library.isEnabled())
-            {
-                monitor.setNote(String.format("Considering library %s", artifact.getDescriptor()));
-                File libPath = artifact.getLocalPath(librariesDir);
-                String libURL = library.getURL();
-                if (libPath.exists() && checksumValid(libPath, checksums))
-                {
-                    monitor.setProgress(progress++);
-                    continue;
-                }
-
-                libPath.getParentFile().mkdirs();
-                monitor.setNote(String.format("Downloading library %s", artifact.getDescriptor()));
-                libURL += artifact.getPath();
-
-                File packFile = new File(libPath.getParentFile(), libPath.getName() + PACK_NAME);
-                if (!downloadFile(artifact.getDescriptor(), packFile, libURL + PACK_NAME, null))
-                {
-                    monitor.setNote(String.format("Trying unpacked library %s", artifact.getDescriptor()));
-                    if (!downloadFile(artifact.getDescriptor(), libPath, libURL, checksums) &&
-                        !extractFile(artifact, libPath, checksums))
-                    {
-                        if (!libURL.startsWith(LIBRARIES_URL) || !isClient)
-                        {
-                            bad.add(artifact);
-                        }
-                        else
-                        {
-                            monitor.setNote("Unmrriored file failed, Mojang launcher should download at next run, non fatal");
-                        }
-                    }
-                    else
-                    {
-                        grabbed.add(artifact);
-                    }
-                }
-                else
-                {
-                    try
-                    {
-                        monitor.setNote(String.format("Unpacking packed file %s", packFile.getName()));
-                        unpackLibrary(libPath, Files.toByteArray(packFile));
-                        monitor.setNote(String.format("Successfully unpacked packed file %s",packFile.getName()));
-                        packFile.delete();
-
-                        if (checksumValid(libPath, checksums))
-                        {
-                            grabbed.add(artifact);
-                        }
-                        else
-                        {
-                            bad.add(artifact);
-                        }
-                    }
-                    catch (OutOfMemoryError oom)
-                    {
-                        oom.printStackTrace();
-                        bad.add(artifact);
-                        artifact.setMemo("Out of Memory: Try restarting installer with JVM Argument: -Xmx1G");
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                        bad.add(artifact);
-                    }
-                }
-            }
-            else
-            {
-                if (library.isCorrectSide())
-                    monitor.setNote(String.format("Considering library %s: Not Downloading {Disabled}", artifact.getDescriptor()));
-                else
-                    monitor.setNote(String.format("Considering library %s: Not Downloading {Wrong Side}", artifact.getDescriptor()));
-            }
-            monitor.setProgress(progress++);
+    public static boolean downloadLibrary(IMonitor monitor, Mirror mirror, Library library, File root, Predicate<String> optional, List<Artifact> grabbed) {
+        Artifact artifact = library.getArtifact();
+        File target = artifact.getLocalPath(root);
+        LibraryDownload download = library.getDownloads() == null ? null :  library.getDownloads().getArtifact();
+        if (download == null) {
+            download = new LibraryDownload();
+            download.setPath(artifact.getPath());
         }
-        return progress;
-    }
 
-    private static boolean checksumValid(File libPath, List<String> checksums)
-    {
-        try
-        {
-            if (checksums == null || checksums.isEmpty())
+        if (!optional.test(library.getArtifact().getDescriptor())) {
+            monitor.setNote(String.format("Considering library %s: Not Downloading {Disabled}", artifact.getDescriptor()));
+            return true;
+        }
+
+        monitor.setNote(String.format("Considering library %s", artifact.getDescriptor()));
+
+        if (target.exists()) {
+            if (download.getSha1() != null) {
+                String sha1 = getSha1(target);
+                if (download.getSha1().equals(sha1)) {
+                    monitor.setNote("  File exists: Checksum validated.");
+                    return true;
+                }
+                monitor.setNote("  File exists: Checksum invalid, deleting file:");
+                monitor.setNote("    Expected: " + download.getSha1());
+                monitor.setNote("    Actual:   " + sha1);
+                if (!target.delete()) {
+                    monitor.setNote("    Failed to delete file, aborting.");
+                    return false;
+                }
+            } else {
+                monitor.setNote("  File exists: No checksum, Assuming valid.");
                 return true;
-            byte[] fileData = Files.toByteArray(libPath);
-            boolean valid = checksums.contains(Hashing.sha1().hashBytes(fileData).toString());
-            if (!valid && libPath.getName().endsWith(".jar"))
-            {
-                valid = validateJar(libPath, fileData, checksums);
             }
-            return valid;
         }
-        catch (IOException e)
-        {
+
+        target.getParentFile().mkdirs();
+
+        // Try extracting first
+        try (final InputStream input = DownloadUtils.class.getResourceAsStream("/maven/" + artifact.getPath())) {
+            if (input != null) {
+                monitor.setNote("  Extracting library from /maven/" + artifact.getPath());
+                Files.copy(() -> input, target);
+                if (download.getSha1() != null) {
+                    String sha1 = getSha1(target);
+                    if (download.getSha1().equals(sha1)) {
+                        monitor.setNote("    Extraction completed: Checksum validated.");
+                        grabbed.add(artifact);
+                        return true;
+                    }
+                    monitor.setNote("    Extraction failed: Checksum invalid, deleting file:");
+                    monitor.setNote("      Expected: " + download.getSha1());
+                    monitor.setNote("      Actual:   " + sha1);
+                    if (!target.delete()) {
+                        monitor.setNote("      Failed to delete file, aborting.");
+                        return false;
+                    }
+                }
+                monitor.setNote("    Extraction completed: No checksum, Assuming valid.");
+                grabbed.add(artifact);
+                return true;
+            }
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
-    }
 
-    public static boolean downloadFileEtag(String libName, File libPath, String libURL)
-    {
-        if (OFFLINE_MODE)
-        {
-            System.out.println("Offline Mode: Not downloading: " + libURL);
+        String url = download.getUrl();
+        if (url == null) {
+            monitor.setNote("  Invalid library, missing url");
             return false;
         }
 
-        try
-        {
-            URL url = new URL(libURL);
-            URLConnection connection = url.openConnection();
+        if (download(monitor, mirror, download, target)) {
+            grabbed.add(artifact);
+            return true;
+        }
+        return false;
+    }
+
+    public static boolean download(IMonitor monitor, Mirror mirror, LibraryDownload download, File target) {
+        String url = download.getUrl();
+        if (!url.startsWith(LIBRARIES_URL) && mirror != null)
+            url = mirror.getUrl() + download.getPath();
+        return download(monitor, mirror, download, target, url);
+    }
+
+    public static boolean download(IMonitor monitor, Mirror mirror, Download download, File target) {
+        return download(monitor, mirror, download, target, download.getUrl());
+    }
+
+    private static boolean download(IMonitor monitor, Mirror mirror, Download download, File target, String url) {
+        monitor.setNote("  Downloading library from " + url);
+        try {
+            URLConnection connection = getConnection(url);
+            if (connection != null) {
+                Files.copy(() -> connection.getInputStream(), target);
+
+                if (download.getSha1() != null) {
+                    String sha1 = getSha1(target);
+                    if (download.getSha1().equals(sha1)) {
+                        monitor.setNote("    Download completed: Checksum validated.");
+                        return true;
+                    }
+                    monitor.setNote("    Download failed: Checksum invalid, deleting file:");
+                    monitor.setNote("      Expected: " + download.getSha1());
+                    monitor.setNote("      Actual:   " + sha1);
+                    if (!target.delete()) {
+                        monitor.setNote("      Failed to delete file, aborting.");
+                        return false;
+                    }
+                }
+                monitor.setNote("    Download completed: No checksum, Assuming valid.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static String getSha1(File target) {
+        try {
+            return Hashing.sha1().hashBytes(Files.toByteArray(target)).toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static boolean checksumValid(File target, String checksum) {
+        if (checksum == null || checksum.isEmpty())
+            return true;
+        String sha1 = getSha1(target);
+        return sha1 != null && sha1.equals(checksum);
+    }
+
+    private static URLConnection getConnection(String url) {
+        if (OFFLINE_MODE) {
+            System.out.println("Offline Mode: Not downloading: " + url);
+            return null;
+        }
+
+        try {
+            URLConnection connection = new URL(url).openConnection();
             connection.setConnectTimeout(5000);
             connection.setReadTimeout(5000);
+            return connection;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
+    public static boolean downloadFileEtag(File target, String url) {
+        try {
+            URLConnection connection = getConnection(url);
             String etag = connection.getHeaderField("ETag");
             if (etag == null)
-            {
               etag = "-";
-            }
             else if ((etag.startsWith("\"")) && (etag.endsWith("\"")))
-            {
                 etag = etag.substring(1, etag.length() - 1);
-            }
 
-            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
-            Files.copy(urlSupplier, libPath);
+            Files.copy(() -> connection.getInputStream(), target);
 
             if (etag.indexOf('-') != -1) return true; //No-etag, assume valid
-            try
-            {
-                byte[] fileData = Files.toByteArray(libPath);
-                String md5 = Hashing.md5().hashBytes(fileData).toString();
-                System.out.println("  ETag: " + etag);
-                System.out.println("  MD5:  " + md5);
-                return etag.equalsIgnoreCase(md5);
-            }
-            catch (IOException e)
-            {
-                e.printStackTrace();
-                return false;
-            }
-        }
-        catch (FileNotFoundException fnf)
-        {
-            if (!libURL.endsWith(PACK_NAME))
-            {
-                fnf.printStackTrace();
-            }
-            return false;
-        }
-        catch (Exception e)
-        {
+            byte[] fileData = Files.toByteArray(target);
+            String md5 = Hashing.md5().hashBytes(fileData).toString();
+            System.out.println("  ETag: " + etag);
+            System.out.println("  MD5:  " + md5);
+            return etag.equalsIgnoreCase(md5);
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    public static void unpackLibrary(File output, byte[] data) throws IOException
-    {
-        if (output.exists())
-        {
-            output.delete();
-        }
-
-        byte[] decompressed = DownloadUtils.readFully(new XZInputStream(new ByteArrayInputStream(data)));
-
-        //Snag the checksum signature
-        String end = new String(decompressed, decompressed.length - 4, 4);
-        if (!end.equals("SIGN"))
-        {
-            System.out.println("Unpacking failed, signature missing " + end);
-            return;
-        }
-
-        int x = decompressed.length;
-        int len =
-                ((decompressed[x - 8] & 0xFF)      ) |
-                ((decompressed[x - 7] & 0xFF) << 8 ) |
-                ((decompressed[x - 6] & 0xFF) << 16) |
-                ((decompressed[x - 5] & 0xFF) << 24);
-
-        File temp = File.createTempFile("art", ".pack");
-        System.out.println("  Signed");
-        System.out.println("  Checksum Length: " + len);
-        System.out.println("  Total Length:    " + (decompressed.length - len - 8));
-        System.out.println("  Temp File:       " + temp.getAbsolutePath());
-
-        byte[] checksums = Arrays.copyOfRange(decompressed, decompressed.length - len - 8, decompressed.length - 8);
-
-        //As Pack200 copies all the data from the input, this creates duplicate data in memory.
-        //Which on some systems triggers a OutOfMemoryError, to counter this, we write the data
-        //to a temporary file, force GC to run {I know, eww} and then unpack.
-        //This is a tradeoff of disk IO for memory.
-        //Should help mac users who have a lower standard max memory then the rest of the world (-.-)
-        OutputStream out = new FileOutputStream(temp);
-        out.write(decompressed, 0, decompressed.length - len - 8);
-        out.close();
-        decompressed = null;
-        data = null;
-        System.gc();
-
-        FileOutputStream jarBytes = new FileOutputStream(output);
-        JarOutputStream jos = new JarOutputStream(jarBytes);
-
-        Pack200.newUnpacker().unpack(temp, jos);
-
-        JarEntry checksumsFile = new JarEntry("checksums.sha1");
-        checksumsFile.setTime(0);
-        jos.putNextEntry(checksumsFile);
-        jos.write(checksums);
-        jos.closeEntry();
-
-        jos.close();
-        jarBytes.close();
-        temp.delete();
-    }
-
-    public static boolean validateJar(File libPath, byte[] data, List<String> checksums) throws IOException
-    {
-        System.out.println("Checking \"" + libPath.getAbsolutePath() + "\" internal checksums");
-
-        HashMap<String, String> files = new HashMap<String, String>();
-        String[] hashes = null;
-        JarInputStream jar = new JarInputStream(new ByteArrayInputStream(data));
-        JarEntry entry = jar.getNextJarEntry();
-        while (entry != null)
-        {
-            byte[] eData = readFully(jar);
-
-            if (entry.getName().equals("checksums.sha1"))
-            {
-                hashes = new String(eData, Charset.forName("UTF-8")).split("\n");
-            }
-
-            if (!entry.isDirectory())
-            {
-                files.put(entry.getName(), Hashing.sha1().hashBytes(eData).toString());
-            }
-            entry = jar.getNextJarEntry();
-        }
-        jar.close();
-
-        if (hashes != null)
-        {
-            boolean failed = !checksums.contains(files.get("checksums.sha1"));
-            if (failed)
-            {
-                System.out.println("    checksums.sha1 failed validation");
-            }
-            else
-            {
-                System.out.println("    checksums.sha1 validated successfully");
-                for (String hash : hashes)
-                {
-                    if (hash.trim().equals("") || !hash.contains(" ")) continue;
-                    String[] e = hash.split(" ");
-                    String validChecksum = e[0];
-                    String target = hash.substring(validChecksum.length() + 1);
-                    String checksum = files.get(target);
-
-                    if (!files.containsKey(target) || checksum == null)
-                    {
-                        System.out.println("    " + target + " : missing");
-                        failed = true;
-                    }
-                    else if (!checksum.equals(validChecksum))
-                    {
-                        System.out.println("    " + target + " : failed (" + checksum + ", " + validChecksum + ")");
-                        failed = true;
-                    }
+    public static Mirror[] downloadMirrors(String url) {
+        try {
+            URLConnection connection = getConnection(url);
+            if (connection != null) {
+                try (InputStream stream = connection.getInputStream()) {
+                    return Util.loadMirriorList(stream);
                 }
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
-            if (!failed)
-            {
-                System.out.println("    Jar contents validated successfully");
+    public static Manifest downloadManifest() {
+        try {
+            URLConnection connection = getConnection(MANIFEST_URL);
+            if (connection != null) {
+                try (InputStream stream = connection.getInputStream()) {
+                    return Util.loadManifest(stream);
+                }
             }
-
-            return !failed;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        else
-        {
-            System.out.println("    checksums.sha1 was not found, validation failed");
-            return false; //Missing checksums
-        }
+        return null;
     }
 
-    public static List<String> downloadList(String libURL)
-    {
-        if (OFFLINE_MODE)
-        {
-            System.out.println("Offline Mode: Not downloading: " + libURL);
-            return Lists.newArrayList();
-        }
-
-        try
-        {
-            URL url = new URL(libURL);
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
-            return CharStreams.readLines(CharStreams.newReaderSupplier(urlSupplier, Charsets.UTF_8));
-        }
-        catch (Exception e)
-        {
-            return Collections.emptyList();
-        }
-
-    }
-
-    public static boolean downloadFile(String libName, File libPath, String libURL, List<String> checksums)
-    {
-        if (OFFLINE_MODE)
-        {
-            System.out.println("Offline Mode: Not downloading: " + libURL);
-            return false;
-        }
-
-        try
-        {
-            URL url = new URL(libURL);
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
-            Files.copy(urlSupplier, libPath);
-            if (checksumValid(libPath, checksums))
-            {
+    public static boolean downloadFile(File target, String url) {
+        try {
+            URLConnection connection = getConnection(url);
+            if (connection != null) {
+                Files.copy(() -> connection.getInputStream(), target);
                 return true;
             }
-            else
-            {
-                return false;
-            }
-        }
-        catch (FileNotFoundException fnf)
-        {
-            if (!libURL.endsWith(PACK_NAME))
-            {
-                fnf.printStackTrace();
-            }
-            return false;
-        }
-        catch (Exception e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
-            return false;
         }
+        return false;
     }
 
-    public static boolean extractFile(Artifact art, File libPath, List<String> checksums)
-    {
+    public static boolean extractFile(Artifact art, File libPath, String checksum) {
         final InputStream input = DownloadUtils.class.getResourceAsStream("/maven/" + art.getPath());
-        if (input == null)
-        {
+        if (input == null) {
             System.out.println("File not found in installer archive: /maven/" + art.getPath());
             return false;
         }
 
-        try
-        {
-            Files.copy(new InputSupplier<InputStream>()
-            {
-                @Override
-                public InputStream getInput() throws IOException
-                {
-                    return input;
-                }
-            }, libPath);
-            return checksumValid(libPath, checksums);
-        }
-        catch (Exception e)
-        {
+        try {
+            Files.copy(() -> input, libPath);
+            return checksumValid(libPath, checksum);
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    public static byte[] readFully(InputStream stream) throws IOException
-    {
+    public static byte[] readFully(InputStream stream) throws IOException {
         byte[] data = new byte[4096];
         ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
         int len;
-        do
-        {
+        do {
             len = stream.read(data);
             if (len > 0)
-            {
                 entryBuffer.write(data, 0, len);
-            }
         } while (len != -1);
 
         return entryBuffer.toByteArray();
-    }
-
-    static class URLISSupplier implements InputSupplier<InputStream>
-    {
-        private final URLConnection connection;
-
-        private URLISSupplier(URLConnection connection)
-        {
-            this.connection = connection;
-        }
-
-        @Override
-        public InputStream getInput() throws IOException
-        {
-            return connection.getInputStream();
-        }
-    }
-
-    public static IMonitor buildMonitor()
-    {
-        if (ServerInstall.headless)
-        {
-            return new IMonitor()
-            {
-
-                @Override
-                public void setMaximum(int max)
-                {
-                }
-
-                @Override
-                public void setNote(String note)
-                {
-                    System.out.println("MESSAGE: "+ note);
-                }
-
-                @Override
-                public void setProgress(int progress)
-                {
-
-                }
-
-                @Override
-                public void close()
-                {
-
-                }
-
-            };
-        }
-        else
-        {
-            return new IMonitor() {
-                private ProgressMonitor monitor;
-                {
-                    monitor = new ProgressMonitor(null, "Downloading libraries", "Libraries are being analyzed", 0, 1);
-                    monitor.setMillisToPopup(0);
-                    monitor.setMillisToDecideToPopup(0);
-                }
-                @Override
-                public void setMaximum(int max)
-                {
-                    monitor.setMaximum(max);
-                }
-
-                @Override
-                public void setNote(String note)
-                {
-                    System.out.println(note);
-                    monitor.setNote(note);
-                }
-
-                @Override
-                public void setProgress(int progress)
-                {
-                    monitor.setProgress(progress);
-                }
-
-                @Override
-                public void close()
-                {
-                    monitor.close();
-                }
-            };
-        }
     }
 }

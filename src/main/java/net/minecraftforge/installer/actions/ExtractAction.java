@@ -1,18 +1,17 @@
-package net.minecraftforge.installer;
+package net.minecraftforge.installer.actions;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.util.function.Predicate;
 
-import javax.swing.JOptionPane;
+import net.minecraftforge.installer.DownloadUtils;
+import net.minecraftforge.installer.json.Artifact;
+import net.minecraftforge.installer.json.Install;
 
-import com.google.common.base.Predicate;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Files;
-import com.google.common.io.OutputSupplier;
+public class ExtractAction extends Action {
 
-public class ExtractAction implements ActionType {
+    public ExtractAction(Install profile) {
+        super(profile);
+    }
 
     public static boolean headless;
     @Override
@@ -21,17 +20,15 @@ public class ExtractAction implements ActionType {
         boolean result = true;
         String failed = "An error occurred extracting the files:";
 
-        File file = new File(target,VersionInfo.getContainedFile());
-        try
-        {
-            VersionInfo.extractFile(file);
-        }
-        catch (IOException e)
-        {
+        Artifact contained = profile.getPath();
+        File file = new File(target, contained.getFilename());
+
+        if (!DownloadUtils.extractFile(contained, file, null)) {
             result = false;
-            failed += "\n" + VersionInfo.getContainedFile();
+            failed += "\n" + contained.getFilename();
         }
 
+        /*
         for (OptionalLibrary opt : VersionInfo.getOptionals())
         {
             Artifact art = new Artifact(opt.getArtifact());
@@ -56,13 +53,10 @@ public class ExtractAction implements ActionType {
                 failed += "\n" + opt.getArtifact();
             }
         }
+        */
 
         if (!result)
-        {
-            if (!headless)
-                JOptionPane.showMessageDialog(null, failed, "Error", JOptionPane.ERROR_MESSAGE);
-            System.out.println(failed);
-        }
+            error(failed);
 
         return result;
     }
@@ -80,14 +74,7 @@ public class ExtractAction implements ActionType {
     }
 
     @Override
-    public String getSuccessMessage()
-    {
+    public String getSuccessMessage() {
         return "Extracted successfully";
-    }
-
-    @Override
-    public String getSponsorMessage()
-    {
-        return null;
     }
 }

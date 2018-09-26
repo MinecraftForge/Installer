@@ -1,0 +1,226 @@
+{
+    "_comment_": [
+        "Please do not automate the download and installation of Forge.",
+        "Our efforts are supported by ads from the download page.",
+        "If you MUST automate this, please consider supporting the project through https://www.patreon.com/LexManos/"
+    ],
+    "id": "1.13-forge-14.23.2.0",
+    "time": "2018-09-25T15:44:45-07:00",
+    "releaseTime": "2018-09-25T15:44:45-07:00",
+    "type": "release",
+    "mainClass": "cpw.mods.modlauncher.Launcher",
+    "inheritsFrom": "1.13",
+    "logging": [
+
+    ],
+    "arguments": {
+        "game": [
+            "--username",
+            "${auth_player_name}",
+            "--version",
+            "${version_name}",
+            "--gameDir",
+            "${game_directory}",
+            "--assetsDir",
+            "${assets_root}",
+            "--assetIndex",
+            "${assets_index_name}",
+            "--uuid",
+            "${auth_uuid}",
+            "--accessToken",
+            "${auth_access_token}",
+            "--userType",
+            "${user_type}",
+            "--versionType",
+            "${version_type}",
+            {
+                "rules": [
+                    {
+                        "action": "allow",
+                        "features": {
+                            "is_demo_user": true
+                        }
+                    }
+                ],
+                "value": "--demo"
+            },
+            {
+                "rules": [
+                    {
+                        "action": "allow",
+                        "features": {
+                            "has_custom_resolution": true
+                        }
+                    }
+                ],
+                "value": [
+                    "--width",
+                    "${resolution_width}",
+                    "--height",
+                    "${resolution_height}"
+                ]
+            },
+            "--launchTarget",
+            "fmlclient"
+        ]
+    },
+    "libraries": [
+        {
+            "name": "net.minecraftforge:forge:1.13-14.23.2.0-1.13-pre"
+        },
+        {
+            "name": "net.minecraftforge:accesstransformers:0.10.0-rc.4.15+36fb035:shadowed",
+            "downloads": {
+                "artifact": {
+                    "path": "net/minecraftforge/accesstransformers/0.10.0-rc.4.15+36fb035/accesstransformers-0.10.0-rc.4.15+36fb035-shadowed.jar",
+                    "url": "https://files.minecraftforge.net/maven/net/minecraftforge/accesstransformers/0.10.0-rc.4.15+36fb035/accesstransformers-0.10.0-rc.4.15+36fb035-shadowed.jar",
+                    "sha1": "5efbf02b273dbff71fe6c5e96940ad991c7fa015",
+                    "size": 437739
+                }
+            }
+        },
+        {
+            "name": "net.minecraftforge:eventbus:0.1.0-rc.6:service",
+            "downloads": {
+                "artifact": {
+                    "path": "net/minecraftforge/eventbus/0.1.0-rc.6/eventbus-0.1.0-rc.6-service.jar",
+                    "url": "https://files.minecraftforge.net/maven/net/minecraftforge/eventbus/0.1.0-rc.6/eventbus-0.1.0-rc.6-service.jar",
+                    "sha1": "958cda658e8517d8b7dd49ddd2326d13d670938d",
+                    "size": 35221
+                }
+            }
+        },
+        {
+            "name": "net.minecraftforge:coremods:0.1.0-rc.3",
+            "downloads": {
+                "artifact": {
+                    "path": "net/minecraftforge/coremods/0.1.0-rc.3/coremods-0.1.0-rc.3.jar",
+                    "url": "https://files.minecraftforge.net/maven/net/minecraftforge/coremods/0.1.0-rc.3/coremods-0.1.0-rc.3.jar",
+                    "sha1": "a1775044615ebbea810bd4c41edec8749bf169c8",
+                    "size": 8643
+                }
+            }
+        },
+        {
+            "name": "net.minecraftforge:forgespi:0.1.0-rc.6",
+            "downloads": {
+                "artifact": {
+                    "path": "net/minecraftforge/forgespi/0.1.0-rc.6/forgespi-0.1.0-rc.6.jar",
+                    "url": "https://files.minecraftforge.net/maven/net/minecraftforge/forgespi/0.1.0-rc.6/forgespi-0.1.0-rc.6.jar",
+                    "sha1": "188f7c702cce3a5ae8e699c22d28720a080fb67b",
+                    "size": 3091
+                }
+            }
+        },
+        {
+            "name": "cpw.mods:modlauncher:0.1.0-rc.4",
+            "downloads": {
+                "artifact": {
+                    "path": "cpw/mods/modlauncher/0.1.0-rc.4/modlauncher-0.1.0-rc.4.jar",
+                    "url": "https://files.minecraftforge.net/maven/cpw/mods/modlauncher/0.1.0-rc.4/modlauncher-0.1.0-rc.4.jar",
+                    "sha1": "4c735fbcd30e1da057668bc1b50bacbc4613d5f0",
+                    "size": 69994
+                }
+            }
+        },
+        {
+            "name": "cpw.mods:modlauncher:0.1.0-rc.4:api",
+            "downloads": {
+                "artifact": {
+                    "path": "cpw/mods/modlauncher/0.1.0-rc.4/modlauncher-0.1.0-rc.4-api.jar",
+                    "url": "https://files.minecraftforge.net/maven/cpw/mods/modlauncher/0.1.0-rc.4/modlauncher-0.1.0-rc.4-api.jar",
+                    "sha1": "373c9c4d27daea76786cd496fde11e3129051091",
+                    "size": 1203
+                }
+            }
+        },
+        {
+            "name": "org.ow2.asm:asm-commons:6.2",
+            "downloads": {
+                "artifact": {
+                    "path": "org/ow2/asm/asm-commons/6.2/asm-commons-6.2.jar",
+                    "url": "https://files.minecraftforge.net/maven/org/ow2/asm/asm-commons/6.2/asm-commons-6.2.jar",
+                    "sha1": "f0df1c69e34a0463679d7c8db36ddb4312836e76",
+                    "size": 78919
+                }
+            }
+        },
+        {
+            "name": "org.ow2.asm:asm-tree:6.2",
+            "downloads": {
+                "artifact": {
+                    "path": "org/ow2/asm/asm-tree/6.2/asm-tree-6.2.jar",
+                    "url": "https://files.minecraftforge.net/maven/org/ow2/asm/asm-tree/6.2/asm-tree-6.2.jar",
+                    "sha1": "61570e046111559f38d4e0e580c005f75988c0a6",
+                    "size": 50370
+                }
+            }
+        },
+        {
+            "name": "org.ow2.asm:asm:6.2",
+            "downloads": {
+                "artifact": {
+                    "path": "org/ow2/asm/asm/6.2/asm-6.2.jar",
+                    "url": "https://files.minecraftforge.net/maven/org/ow2/asm/asm/6.2/asm-6.2.jar",
+                    "sha1": "1b6c4ff09ce03f3052429139c2a68e295cae6604",
+                    "size": 111214
+                }
+            }
+        },
+        {
+            "name": "com.electronwill.night-config:toml:3.4.0",
+            "downloads": {
+                "artifact": {
+                    "path": "com/electronwill/night-config/toml/3.4.0/toml-3.4.0.jar",
+                    "url": "https://files.minecraftforge.net/maven/com/electronwill/night-config/toml/3.4.0/toml-3.4.0.jar",
+                    "sha1": "5bfa2ed039b64c6132820ac39f04f3e0f0180df8",
+                    "size": 30619
+                }
+            }
+        },
+        {
+            "name": "com.electronwill.night-config:core:3.4.0",
+            "downloads": {
+                "artifact": {
+                    "path": "com/electronwill/night-config/core/3.4.0/core-3.4.0.jar",
+                    "url": "https://files.minecraftforge.net/maven/com/electronwill/night-config/core/3.4.0/core-3.4.0.jar",
+                    "sha1": "16aca3862bf692e2ac83432d0b3fd80bd8a3eb89",
+                    "size": 186609
+                }
+            }
+        },
+        {
+            "name": "org.jline:jline:3.5.1",
+            "downloads": {
+                "artifact": {
+                    "path": "org/jline/jline/3.5.1/jline-3.5.1.jar",
+                    "url": "https://files.minecraftforge.net/maven/org/jline/jline/3.5.1/jline-3.5.1.jar",
+                    "sha1": "51800e9d7a13608894a5a28eed0f5c7fa2f300fb",
+                    "size": 614590
+                }
+            }
+        },
+        {
+            "name": "org.apache.maven:maven-artifact:3.5.3",
+            "downloads": {
+                "artifact": {
+                    "path": "org/apache/maven/maven-artifact/3.5.3/maven-artifact-3.5.3.jar",
+                    "url": "https://files.minecraftforge.net/maven/org/apache/maven/maven-artifact/3.5.3/maven-artifact-3.5.3.jar",
+                    "sha1": "7dc72b6d6d8a6dced3d294ed54c2cc3515ade9f4",
+                    "size": 54961
+                }
+            }
+        },
+        {
+            "name": "java3d:vecmath:1.5.2",
+            "downloads": {
+                "artifact": {
+                    "path": "java3d/vecmath/1.5.2/vecmath-1.5.2.jar",
+                    "url": "https://files.minecraftforge.net/maven/java3d/vecmath/1.5.2/vecmath-1.5.2.jar",
+                    "sha1": "79846ba34cbd89e2422d74d53752f993dcc2ccaf",
+                    "size": 318956
+                }
+            }
+        }
+    ]
+}

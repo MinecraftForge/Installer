@@ -1,0 +1,87 @@
+package net.minecraftforge.installer.json;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+public class Version {
+    private String id;
+    private Map<String, Download> downloads;
+    private Library[] libraries;
+
+    public String getId() {
+        return id;
+    }
+
+    public Download getDownload(String key) {
+        return downloads == null ? null : downloads.get(key);
+    }
+
+    public Library[] getLibraries() {
+        return libraries == null ? new Library[0] : libraries;
+    }
+
+    public static class Download {
+        private String sha1;
+        private int size;
+        private String url;
+
+        public String getSha1() {
+            return sha1;
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+    }
+
+    public static class LibraryDownload extends Download {
+        private String path;
+
+        public String getPath() {
+            return path;
+        }
+
+        public void setPath(String value) {
+            this.path = value;
+        }
+    }
+
+    public static class Library {
+        private String name;
+        private Downloads downloads;
+
+        private Artifact _artifact;
+
+        public Artifact getArtifact() {
+            if (_artifact == null && name != null)
+                _artifact = new Artifact(name);
+            return _artifact;
+        }
+
+        public Downloads getDownloads() {
+            return downloads;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    public static class Downloads {
+        private LibraryDownload artifact;
+        private Map<String, LibraryDownload> classifiers;
+
+        public LibraryDownload getArtifact() {
+            return artifact;
+        }
+
+        public Set<String> getClassifiers() {
+            return classifiers == null ? new HashSet<>() : classifiers.keySet();
+        }
+    }
+}

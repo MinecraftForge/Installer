@@ -1,4 +1,4 @@
-package net.minecraftforge.installer;
+package net.minecraftforge.installer.json;
 
 import java.io.File;
 
@@ -59,6 +59,7 @@ public class Artifact
     public String getClassifier(){ return classifier; }
     public String getExt()       { return ext;        }
     public String getMemo()      { return memo;       }
+    public String getFilename()  { return file;       }
     public void setMemo(String v){ memo = v;          }
     @Override
     public String toString()

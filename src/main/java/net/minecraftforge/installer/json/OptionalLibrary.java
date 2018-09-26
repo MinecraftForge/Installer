@@ -1,4 +1,4 @@
-package net.minecraftforge.installer;
+package net.minecraftforge.installer.json;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,13 +9,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
-import argo.jdom.JsonNode;
-
-public class OptionalLibrary
-{
-    @SuppressWarnings("unused")
-    private JsonNode node;
-
+public class OptionalLibrary {
     private String name;
     private String artifact;
     private String maven;
@@ -27,31 +21,7 @@ public class OptionalLibrary
     private String desc;
     private String url;
 
-    public OptionalLibrary(JsonNode node)
-    {
-        this.node = node;
-        name     = node.getStringValue("name");
-        artifact = node.getStringValue("artifact");
-        maven    = node.getStringValue("maven");
-        client   = getBool(node, "client", true);
-        server   = getBool(node, "server", true);
-        _default = getBool(node, "default", true);
-        inject   = getBool(node, "inject", true);
-        if (node.isStringValue("desc"))
-            this.desc = node.getStringValue("desc");
-        if (node.isStringValue("url"))
-            this.url = node.getStringValue("url");
-    }
-
-    private boolean getBool(JsonNode node, String name, boolean _def)
-    {
-        if (!node.isBooleanValue(name))
-            return _def;
-        return node.getBooleanValue(name);
-    }
-
-    public boolean isValid()
-    {
+    public boolean isValid() {
         return this.name != null && this.artifact != null && this.maven != null;
     }
 
