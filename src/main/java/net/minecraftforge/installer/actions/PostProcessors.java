@@ -80,9 +80,9 @@ public class PostProcessors {
             Processor[] processors = profile.getProcessors();
             int progress = 1;
             if (processors.length == 1) {
-            	monitor.stage("Building Processor");
+                monitor.stage("Building Processor");
             } else {
-            	monitor.start("Building Processors");
+                monitor.start("Building Processors");
             }
             for (Processor proc : processors) {
                 monitor.progress((double) progress / processors.length);

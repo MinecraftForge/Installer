@@ -82,28 +82,32 @@ public class SimpleInstaller
                 SimpleInstaller.headless = true;
                 System.out.println("Target Directory: " + target);
                 Install install = Util.loadInstallProfile();
-                if (!action.getAction(install, new ProgressCallback() {
-					
-					@Override
-					public void start(String label) {
-						message(label);
-					}
-					
-					@Override
-					public void progress(double progress) {
-						System.out.println(DecimalFormat.getPercentInstance().format(progress));
-					}
+                if (!action.getAction(install, new ProgressCallback()
+                {
+                    @Override
+                    public void start(String label)
+                    {
+                        message(label);
+                    }
 
-					@Override
-					public void stage(String message) {
-						message(message);
-					}
+                    @Override
+                    public void progress(double progress)
+                    {
+                        System.out.println(DecimalFormat.getPercentInstance().format(progress));
+                    }
 
-					@Override
-					public void message(String message, MessagePriority priority) {
-						System.out.println(message);
-					}
-				}).run(target, a -> true))
+                    @Override
+                    public void stage(String message)
+                    {
+                        message(message);
+                    }
+
+                    @Override
+                    public void message(String message, MessagePriority priority)
+                    {
+                        System.out.println(message);
+                    }
+                }).run(target, a -> true))
                 {
                     System.err.println("There was an error during installation");
                     System.exit(1);

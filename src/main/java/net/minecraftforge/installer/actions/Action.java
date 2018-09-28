@@ -54,9 +54,9 @@ public abstract class Action {
         StringBuilder output = new StringBuilder();
         final double steps = libraries.size();
         int progress = 1;
-    	monitor.start("Downloading libraries");
+        monitor.start("Downloading libraries");
         for (Library lib : libraries) {
-        	checkCancel();
+            checkCancel();
             monitor.progress(progress++ / steps);
             if (!DownloadUtils.downloadLibrary(monitor, profile.getMirror(), lib, librariesDir, optionals, grabbed)) {
                 LibraryDownload download = lib.getDownloads() == null ? null :  lib.getDownloads().getArtifact();
@@ -81,10 +81,10 @@ public abstract class Action {
     }
     
     protected void checkCancel() throws ActionCanceledException {
-    	try {
-			Thread.sleep(1);
-		} catch (InterruptedException e) {
-			throw new ActionCanceledException(e);
-		}
+        try {
+            Thread.sleep(1);
+        } catch (InterruptedException e) {
+            throw new ActionCanceledException(e);
+        }
     }
 }

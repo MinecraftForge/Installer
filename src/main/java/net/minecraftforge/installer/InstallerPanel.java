@@ -393,25 +393,25 @@ public class InstallerPanel extends JPanel {
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
         if (result == JOptionPane.OK_OPTION)
         {
-        	ProgressFrame prog = new ProgressFrame("Installing Forge " + profile.getVersion(), Thread.currentThread()::interrupt);
+            ProgressFrame prog = new ProgressFrame("Installing Forge " + profile.getVersion(), Thread.currentThread()::interrupt);
             Predicate<String> optPred = input -> {
                 Optional<OptionalListEntry> ent = this.optionals.stream().filter(e -> e.lib.getArtifact().equals(input)).findFirst();
                 return !ent.isPresent() || ent.get().isEnabled();
             };
             Action action = actions.get(choiceButtonGroup.getSelection().getActionCommand()).apply(prog);
             try {
-            	prog.setVisible(true);
-            	prog.toFront();
+                prog.setVisible(true);
+                prog.toFront();
                 if (action.run(targetDir, optPred)) {
                     JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
                 }
             } catch (ActionCanceledException e) {
-            	JOptionPane.showMessageDialog(null, "Installation Canceled", "Forge Installer", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(null, "Installation Canceled", "Forge Installer", JOptionPane.WARNING_MESSAGE);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "There was an exception running task: " + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
                 e.printStackTrace();
             } finally {
-            	prog.dispose();
+                prog.dispose();
             }
         }
         dialog.dispose();
