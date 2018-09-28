@@ -9,7 +9,6 @@ import java.util.function.Predicate;
 import javax.swing.JOptionPane;
 
 import net.minecraftforge.installer.DownloadUtils;
-import net.minecraftforge.installer.IMonitor;
 import net.minecraftforge.installer.SimpleInstaller;
 import net.minecraftforge.installer.json.Artifact;
 import net.minecraftforge.installer.json.Install;
@@ -20,14 +19,14 @@ import net.minecraftforge.installer.json.Version.LibraryDownload;
 
 public abstract class Action {
     protected final Install profile;
-    protected final IMonitor monitor;
+    protected final ProgressCallback monitor;
     protected final PostProcessors processors;
     protected final Version version;
     private List<Artifact> grabbed = new ArrayList<>();
 
-    protected Action(Install profile, boolean isClient) {
+    protected Action(Install profile, ProgressCallback monitor, boolean isClient) {
         this.profile = profile;
-        this.monitor = IMonitor.buildMonitor(); //TODO: Headless argument instead of public field?
+        this.monitor = monitor;
         this.processors = new PostProcessors(profile, isClient, monitor);
         this.version = Util.loadVersion(profile);
     }
@@ -35,16 +34,10 @@ public abstract class Action {
     protected void error(String message) {
         if (!SimpleInstaller.headless)
             JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
-        for (String line : message.split("\n"))
-            monitor.setNote(line);
+        monitor.stage(message);
     }
-
-    protected void info(String message) {
-        for (String line : message.split("\n"))
-            monitor.setNote(line);
-    }
-
-    public abstract boolean run(File target, Predicate<String> optionals);
+    
+    public abstract boolean run(File target, Predicate<String> optionals) throws ActionCanceledException;
     public abstract boolean isPathValid(File targetDir);
     public abstract String getFileError(File targetDir);
     public abstract String getSuccessMessage();
@@ -53,14 +46,18 @@ public abstract class Action {
         return profile.getMirror() != null ? String.format(SimpleInstaller.headless ? "Data kindly mirrored by %2$s at %1$s" : "<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", profile.getMirror().getHomepage(), profile.getMirror().getName()) : null;
     }
 
-    protected int downloadLibraries(int progress, File librariesDir, Predicate<String> optionals) {
+    protected boolean downloadLibraries(File librariesDir, Predicate<String> optionals) throws ActionCanceledException {
         List<Library> libraries = new ArrayList<>();
         libraries.addAll(Arrays.asList(version.getLibraries()));
         libraries.addAll(Arrays.asList(processors.getLibraries()));
 
         StringBuilder output = new StringBuilder();
+        final double steps = libraries.size();
+        int progress = 1;
+    	monitor.start("Downloading libraries");
         for (Library lib : libraries) {
-            monitor.setProgress(progress++);
+        	checkCancel();
+            monitor.progress(progress++ / steps);
             if (!DownloadUtils.downloadLibrary(monitor, profile.getMirror(), lib, librariesDir, optionals, grabbed)) {
                 LibraryDownload download = lib.getDownloads() == null ? null :  lib.getDownloads().getArtifact();
                 if (download != null && download.getUrl() != null) // If it doesn't have a URL we can't download it, assume we install it later
@@ -70,9 +67,9 @@ public abstract class Action {
         String bad = output.toString();
         if (!bad.isEmpty()) {
             error("These libraries failed to download. Try again.\n" + bad);
-            return -1;
+            return false;
         }
-        return progress;
+        return true;
     }
 
     protected int downlaodedCount() {
@@ -81,5 +78,13 @@ public abstract class Action {
 
     protected int getTaskCount() {
         return profile.getLibraries().length + processors.getTaskCount();
+    }
+    
+    protected void checkCancel() throws ActionCanceledException {
+    	try {
+			Thread.sleep(1);
+		} catch (InterruptedException e) {
+			throw new ActionCanceledException(e);
+		}
     }
 }

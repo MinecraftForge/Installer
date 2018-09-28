@@ -1,6 +1,10 @@
 package net.minecraftforge.installer.actions;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
+
+import javax.swing.ProgressMonitor;
+
 import net.minecraftforge.installer.json.Install;
 
 public enum Actions
@@ -11,10 +15,10 @@ public enum Actions
 
     private String label;
     private String tooltip;
-    private Function<Install, Action> action;
+    private BiFunction<Install, ProgressCallback, Action> action;
     private Function<String, String> success;
 
-    private Actions(String label, String tooltip, Function<Install, Action> action, Function<String, String> success)
+    private Actions(String label, String tooltip, BiFunction<Install, ProgressCallback, Action> action, Function<String, String> success)
     {
         this.label = label;
         this.tooltip = tooltip;
@@ -37,7 +41,7 @@ public enum Actions
         return success.apply(jar);
     }
 
-    public Action getAction(Install profile) {
-        return action.apply(profile);
+    public Action getAction(Install profile, ProgressCallback monitor) {
+        return action.apply(profile, monitor);
     }
 }

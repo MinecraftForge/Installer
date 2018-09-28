@@ -18,8 +18,8 @@ import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
 
 import net.minecraftforge.installer.DownloadUtils;
-import net.minecraftforge.installer.IMonitor;
 import net.minecraftforge.installer.SimpleInstaller;
+import net.minecraftforge.installer.actions.ProgressCallback.MessagePriority;
 import net.minecraftforge.installer.json.Artifact;
 import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.Install.Processor;
@@ -28,11 +28,11 @@ import net.minecraftforge.installer.json.Version.Library;
 public class PostProcessors {
     private final Install profile;
     private final boolean isClient;
-    private final IMonitor monitor;
+    private final ProgressCallback monitor;
     private final boolean hasTasks;
     private final Map<String, String> data;
 
-    public PostProcessors(Install profile, boolean isClient, IMonitor monitor) {
+    public PostProcessors(Install profile, boolean isClient, ProgressCallback monitor) {
         this.profile = profile;
         this.isClient = isClient;
         this.monitor = monitor;
@@ -52,37 +52,45 @@ public class PostProcessors {
             profile.getData(isClient).size();
     }
 
-    public int process(int progress, File librariesDir, File minecraft) {
+    public boolean process(File librariesDir, File minecraft) {
         try {
             if (!data.isEmpty()) {
                 StringBuilder err = new StringBuilder();
                 Path temp  = Files.createTempDirectory("forge_installer");
-                info("Created Temporary Directory: " + temp);
+                monitor.start("Created Temporary Directory: " + temp);
+                double steps = data.size();
+                int progress = 1;
                 for (String key : data.keySet()) {
-                    monitor.setProgress(progress++);
+                    monitor.progress(progress++ / steps);
                     String value = data.get(key);
                     File target = Paths.get(temp.toString(), value).toFile();
-                    info("  Extracting: " + value);
+                    monitor.message("  Extracting: " + value);
                     if (!DownloadUtils.extractFile(value, target))
                         err.append("\n  ").append(value);
                     data.put(key, target.getAbsolutePath());
                 }
                 if (err.length() > 0) {
                     error("Failed to extract files from archive: " + err.toString());
-                    return -1;
+                    return false;
                 }
             }
             data.put("SIDE", isClient ? "client" : "server");
             data.put("MINECRAFT_JAR", minecraft.getAbsolutePath());
 
-            for (Processor proc : profile.getProcessors()) {
-                monitor.setProgress(progress++);
-                info("Building Processor:");
+            Processor[] processors = profile.getProcessors();
+            int progress = 1;
+            if (processors.length == 1) {
+            	monitor.stage("Building Processor");
+            } else {
+            	monitor.start("Building Processors");
+            }
+            for (Processor proc : processors) {
+                monitor.progress((double) progress / processors.length);
 
                 File jar = proc.getJar().getLocalPath(librariesDir);
                 if (!jar.exists() || !jar.isFile()) {
                     error("  Missing Jar for processor: " + jar.getAbsolutePath());
-                    return -1;
+                    return false;
                 }
 
                 // Locate main class in jar file
@@ -92,25 +100,25 @@ public class PostProcessors {
 
                 if (mainClass == null || mainClass.isEmpty()) {
                     error("  Jar does not have main class: " + jar.getAbsolutePath());
-                    return -1;
+                    return false;
                 }
-                info("  MainClass: " + mainClass);
+                monitor.message("  MainClass: " + mainClass, MessagePriority.LOW);
 
                 List<URL> classpath = new ArrayList<>();
                 StringBuilder err = new StringBuilder();
-                info("  Classpath:");
-                info("    " + jar.getAbsolutePath());
+                monitor.message("  Classpath:", MessagePriority.LOW);
+                monitor.message("    " + jar.getAbsolutePath(), MessagePriority.LOW);
                 classpath.add(jar.toURI().toURL());
                 for (Artifact dep : proc.getClasspath()) {
                     File lib = dep.getLocalPath(librariesDir);
                     if (!lib.exists() || !lib.isFile())
                         err.append("\n  ").append(dep.getDescriptor());
                     classpath.add(lib.toURI().toURL());
-                    info("    " + lib.getAbsolutePath());
+                    monitor.message("    " + lib.getAbsolutePath(), MessagePriority.LOW);
                 }
                 if (err.length() > 0) {
                     error("  Missing Processor dependancies: " + err.toString());
-                    return -1;
+                    return false;
                 }
 
                 List<String> args = new ArrayList<>();
@@ -131,9 +139,9 @@ public class PostProcessors {
                 }
                 if (err.length() > 0) {
                     error("  Missing Processor data values: " + err.toString());
-                    return -1;
+                    return false;
                 }
-                info("  Args: " + args.stream().map(a -> a.indexOf(' ') != -1 || a.indexOf(',') != -1 ? '"' + a + '"' : a).collect(Collectors.joining(", ")));
+                monitor.message("  Args: " + args.stream().map(a -> a.indexOf(' ') != -1 || a.indexOf(',') != -1 ? '"' + a + '"' : a).collect(Collectors.joining(", ")), MessagePriority.LOW);
 
                 ClassLoader cl = new URLClassLoader(classpath.toArray(new URL[classpath.size()]), null);
                 try {
@@ -143,14 +151,13 @@ public class PostProcessors {
                 } catch (ReflectiveOperationException | SecurityException | IllegalArgumentException e) {
                     e.printStackTrace();
                     error("Failed to run processor: " + e.getMessage() + "\nSee log for more details.");
-                    return -1;
+                    return false;
                 }
             }
-
-            return progress;
+            return true;
         } catch (IOException e) {
             e.printStackTrace();
-            return -1;
+            return false;
         }
     }
 
@@ -158,11 +165,6 @@ public class PostProcessors {
         if (!SimpleInstaller.headless)
             JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
         for (String line : message.split("\n"))
-            monitor.setNote(line);
-    }
-
-    private void info(String message) {
-        for (String line : message.split("\n"))
-            monitor.setNote(line);
+            monitor.stage(line);
     }
 }

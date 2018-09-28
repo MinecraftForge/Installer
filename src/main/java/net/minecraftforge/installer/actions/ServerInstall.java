@@ -15,12 +15,12 @@ import net.minecraftforge.installer.json.Version.Download;
 public class ServerInstall extends Action {
     private List<Artifact> grabbed = new ArrayList<>();
 
-    public ServerInstall(Install profile) {
-        super(profile, false);
+    public ServerInstall(Install profile, ProgressCallback monitor) {
+        super(profile, monitor, false);
     }
 
     @Override
-    public boolean run(File target, Predicate<String> optionals) {
+    public boolean run(File target, Predicate<String> optionals) throws ActionCanceledException {
         if (target.exists() && !target.isDirectory()) {
             error("There is a file at this location, the server cannot be installed here!");
             return false;
@@ -31,24 +31,21 @@ public class ServerInstall extends Action {
             target.mkdirs();
         librariesDir.mkdir();
         if (profile.getMirror() != null)
-            monitor.setNote(getSponsorMessage());
-
-        monitor.setSteps(super.getTaskCount() + 2); //Extract executable + download server jar
-        int progress = 1;
+            monitor.stage(getSponsorMessage());
+        checkCancel();
 
         // Extract main executable jar
         Artifact contained = profile.getPath();
-        monitor.setProgress(progress++);
-        info("Extractiung main jar:");
+        monitor.stage("Extractiung main jar:");
         if (!DownloadUtils.extractFile(contained, new File(target, contained.getFilename()), null)) {
             error("  Failed to extract main jar: " + contained.getFilename());
             return false;
         } else
-            info("  Extracted successfully");
+            monitor.stage("  Extracted successfully");
+        checkCancel();
 
         //Download MC Server jar
-        info("Considering minecraft server jar");
-        monitor.setProgress(progress++);
+        monitor.stage("Considering minecraft server jar");
         File serverTarget = new File(target,"minecraft_server." + profile.getMinecraft() + ".jar");
         if (!serverTarget.exists()) {
             File versionJson = new File(target, profile.getMinecraft() + ".json");
@@ -70,17 +67,15 @@ public class ServerInstall extends Action {
                 return false;
             }
         }
+        checkCancel();
 
         // Download Libraries
-        int libs = downloadLibraries(progress, librariesDir, optionals);
-        if (libs == -1)
+        if (!downloadLibraries(librariesDir, optionals))
             return false;
-        progress = libs;
 
-        int proc = processors.process(progress, librariesDir, serverTarget);
-        if (proc == -1)
+        checkCancel();
+        if (!processors.process(librariesDir, serverTarget))
             return false;
-        progress = proc;
 
         // TODO: Optionals
         //if (!OptionalLibrary.saveModListJson(librariesDir, new File(target, "mods/mod_list.json"), VersionInfo.getOptionals(), optionals))

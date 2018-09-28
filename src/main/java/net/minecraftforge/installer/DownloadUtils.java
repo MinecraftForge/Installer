@@ -11,6 +11,8 @@ import java.util.function.Predicate;
 
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
+
+import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.Artifact;
 import net.minecraftforge.installer.json.Manifest;
 import net.minecraftforge.installer.json.Mirror;
@@ -25,7 +27,7 @@ public class DownloadUtils {
 
     public static boolean OFFLINE_MODE = false;
 
-    public static boolean downloadLibrary(IMonitor monitor, Mirror mirror, Library library, File root, Predicate<String> optional, List<Artifact> grabbed) {
+    public static boolean downloadLibrary(ProgressCallback monitor, Mirror mirror, Library library, File root, Predicate<String> optional, List<Artifact> grabbed) {
         Artifact artifact = library.getName();
         File target = artifact.getLocalPath(root);
         LibraryDownload download = library.getDownloads() == null ? null :  library.getDownloads().getArtifact();
@@ -35,28 +37,28 @@ public class DownloadUtils {
         }
 
         if (!optional.test(library.getName().getDescriptor())) {
-            monitor.setNote(String.format("Considering library %s: Not Downloading {Disabled}", artifact.getDescriptor()));
+            monitor.message(String.format("Considering library %s: Not Downloading {Disabled}", artifact.getDescriptor()));
             return true;
         }
 
-        monitor.setNote(String.format("Considering library %s", artifact.getDescriptor()));
+        monitor.message(String.format("Considering library %s", artifact.getDescriptor()));
 
         if (target.exists()) {
             if (download.getSha1() != null) {
                 String sha1 = getSha1(target);
                 if (download.getSha1().equals(sha1)) {
-                    monitor.setNote("  File exists: Checksum validated.");
+                    monitor.message("  File exists: Checksum validated.");
                     return true;
                 }
-                monitor.setNote("  File exists: Checksum invalid, deleting file:");
-                monitor.setNote("    Expected: " + download.getSha1());
-                monitor.setNote("    Actual:   " + sha1);
+                monitor.message("  File exists: Checksum invalid, deleting file:");
+                monitor.message("    Expected: " + download.getSha1());
+                monitor.message("    Actual:   " + sha1);
                 if (!target.delete()) {
-                    monitor.setNote("    Failed to delete file, aborting.");
+                    monitor.stage("    Failed to delete file, aborting.");
                     return false;
                 }
             } else {
-                monitor.setNote("  File exists: No checksum, Assuming valid.");
+                monitor.message("  File exists: No checksum, Assuming valid.");
                 return true;
             }
         }
@@ -66,24 +68,24 @@ public class DownloadUtils {
         // Try extracting first
         try (final InputStream input = DownloadUtils.class.getResourceAsStream("/maven/" + artifact.getPath())) {
             if (input != null) {
-                monitor.setNote("  Extracting library from /maven/" + artifact.getPath());
+                monitor.message("  Extracting library from /maven/" + artifact.getPath());
                 Files.copy(() -> input, target);
                 if (download.getSha1() != null) {
                     String sha1 = getSha1(target);
                     if (download.getSha1().equals(sha1)) {
-                        monitor.setNote("    Extraction completed: Checksum validated.");
+                        monitor.message("    Extraction completed: Checksum validated.");
                         grabbed.add(artifact);
                         return true;
                     }
-                    monitor.setNote("    Extraction failed: Checksum invalid, deleting file:");
-                    monitor.setNote("      Expected: " + download.getSha1());
-                    monitor.setNote("      Actual:   " + sha1);
+                    monitor.message("    Extraction failed: Checksum invalid, deleting file:");
+                    monitor.message("      Expected: " + download.getSha1());
+                    monitor.message("      Actual:   " + sha1);
                     if (!target.delete()) {
-                        monitor.setNote("      Failed to delete file, aborting.");
+                        monitor.stage("      Failed to delete file, aborting.");
                         return false;
                     }
                 }
-                monitor.setNote("    Extraction completed: No checksum, Assuming valid.");
+                monitor.message("    Extraction completed: No checksum, Assuming valid.");
                 grabbed.add(artifact);
                 return true;
             }
@@ -94,7 +96,7 @@ public class DownloadUtils {
 
         String url = download.getUrl();
         if (url == null) {
-            monitor.setNote("  Invalid library, missing url");
+            monitor.stage("  Invalid library, missing url");
             return false;
         }
 
@@ -105,19 +107,19 @@ public class DownloadUtils {
         return false;
     }
 
-    public static boolean download(IMonitor monitor, Mirror mirror, LibraryDownload download, File target) {
+    public static boolean download(ProgressCallback monitor, Mirror mirror, LibraryDownload download, File target) {
         String url = download.getUrl();
         if (!url.startsWith(LIBRARIES_URL) && mirror != null)
             url = mirror.getUrl() + download.getPath();
         return download(monitor, mirror, download, target, url);
     }
 
-    public static boolean download(IMonitor monitor, Mirror mirror, Download download, File target) {
+    public static boolean download(ProgressCallback monitor, Mirror mirror, Download download, File target) {
         return download(monitor, mirror, download, target, download.getUrl());
     }
 
-    private static boolean download(IMonitor monitor, Mirror mirror, Download download, File target, String url) {
-        monitor.setNote("  Downloading library from " + url);
+    private static boolean download(ProgressCallback monitor, Mirror mirror, Download download, File target, String url) {
+        monitor.message("  Downloading library from " + url);
         try {
             URLConnection connection = getConnection(url);
             if (connection != null) {
@@ -126,18 +128,18 @@ public class DownloadUtils {
                 if (download.getSha1() != null) {
                     String sha1 = getSha1(target);
                     if (download.getSha1().equals(sha1)) {
-                        monitor.setNote("    Download completed: Checksum validated.");
+                        monitor.message("    Download completed: Checksum validated.");
                         return true;
                     }
-                    monitor.setNote("    Download failed: Checksum invalid, deleting file:");
-                    monitor.setNote("      Expected: " + download.getSha1());
-                    monitor.setNote("      Actual:   " + sha1);
+                    monitor.message("    Download failed: Checksum invalid, deleting file:");
+                    monitor.message("      Expected: " + download.getSha1());
+                    monitor.message("      Actual:   " + sha1);
                     if (!target.delete()) {
-                        monitor.setNote("      Failed to delete file, aborting.");
+                        monitor.stage("      Failed to delete file, aborting.");
                         return false;
                     }
                 }
-                monitor.setNote("    Download completed: No checksum, Assuming valid.");
+                monitor.message("    Download completed: No checksum, Assuming valid.");
             }
         } catch (IOException e) {
             e.printStackTrace();

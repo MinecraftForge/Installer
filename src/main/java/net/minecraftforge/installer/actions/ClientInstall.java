@@ -14,12 +14,12 @@ import com.google.gson.JsonParser;
 
 public class ClientInstall extends Action {
 
-    public ClientInstall(Install profile) {
-        super(profile, true);
+    public ClientInstall(Install profile, ProgressCallback monitor) {
+        super(profile, monitor, true);
     }
 
     @Override
-    public boolean run(File target, Predicate<String> optionals) {
+    public boolean run(File target, Predicate<String> optionals) throws ActionCanceledException {
         if (!target.exists()) {
             error("There is no minecraft installation at: " + target);
             return false;
@@ -34,13 +34,11 @@ public class ClientInstall extends Action {
         File versionRoot = new File(target, "versions");
         File librariesDir = new File(target, "libraries");
         librariesDir.mkdir();
-
-        monitor.setSteps(super.getTaskCount() + 2); //Extract json + download MC jar + inject profile
-        int progress = 1;
-
+        
+        checkCancel();
+        
         // Extract version json
-        monitor.setProgress(progress++);
-        info("Extracting json:");
+        monitor.stage("Extracting json");
         try (InputStream stream = Util.class.getResourceAsStream(profile.getJson())) {
             File json = new File(versionRoot, profile.getVersion() + '/' + profile.getVersion() + ".json");
             json.getParentFile().mkdirs();
@@ -50,10 +48,10 @@ public class ClientInstall extends Action {
             e.printStackTrace();
             return false;
         }
+        checkCancel();
 
         // Download Vanilla main jar/json
-        monitor.setProgress(progress++);
-        info("Considering minecraft client jar");
+        monitor.stage("Considering minecraft client jar");
         File versionVanilla = new File(versionRoot, profile.getMinecraft());
         if (!versionVanilla.mkdirs() && !versionVanilla.isDirectory()) {
             if (!versionVanilla.delete()) {
@@ -62,6 +60,8 @@ public class ClientInstall extends Action {
             } else
                 versionVanilla.mkdirs();
         }
+        checkCancel();
+        
         File clientTarget = new File(versionVanilla, profile.getMinecraft() + ".jar");
         if (!clientTarget.exists()) {
             File versionJson = new File(versionVanilla, profile.getMinecraft() + ".json");
@@ -86,10 +86,9 @@ public class ClientInstall extends Action {
         }
 
         // Download Libraries
-        int libs = downloadLibraries(progress, librariesDir, optionals);
-        if (libs == -1)
+        if (!downloadLibraries(librariesDir, optionals))
             return false;
-        progress = libs;
+        checkCancel();
 
         /*
         String modListType = VersionInfo.getModListType();
@@ -121,12 +120,12 @@ public class ClientInstall extends Action {
         }
         */
 
-        int proc = processors.process(progress, librariesDir, clientTarget);
-        if (proc == -1)
+        if (!processors.process(librariesDir, clientTarget))
             return false;
-        progress = proc;
+        
+        checkCancel();
 
-        monitor.setProgress(progress++);
+        monitor.stage("Injecting profile");
         if (!injectProfile(launcherProfiles))
             return false;
 
