@@ -1,5 +1,7 @@
 package net.minecraftforge.installer.actions;
 
+import java.text.DecimalFormat;
+
 public interface ProgressCallback
 {
     enum MessagePriority
@@ -11,12 +13,18 @@ public interface ProgressCallback
         HIGH,
     }
 
-    void start(String label);
+    default void start(String label)
+    {
+        System.out.println(label);
+    }
 
     /**
      * Indeterminate progress message, will not care about progress
      */
-    void stage(String message);
+    default void stage(String message)
+    {
+        System.out.println(message);
+    }
 
     /**
      * @see #message(String, MessagePriority)
@@ -30,8 +38,13 @@ public interface ProgressCallback
      * Does not affect indeterminacy or progress, just updates the text (or prints
      * it)
      */
-    void message(String message, MessagePriority priority);
+    default void message(String message, MessagePriority priority)
+    {
+        System.out.println(message);
+    }
 
-    void progress(double progress);
-
+    default void progress(double progress)
+    {
+        System.out.println(DecimalFormat.getPercentInstance().format(progress));
+    }
 }
