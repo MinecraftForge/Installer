@@ -7,11 +7,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import net.minecraftforge.installer.DownloadUtils;
 
 public class Util {
-    public static Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    public static Gson GSON = new GsonBuilder().setPrettyPrinting()
+            .registerTypeAdapter(Artifact.class, new Artifact.Adapter())
+            .create();
 
     public static Install loadInstallProfile() {
         try (InputStream stream = Util.class.getResourceAsStream("/install_profile.json")) {

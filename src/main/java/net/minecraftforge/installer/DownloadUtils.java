@@ -26,7 +26,7 @@ public class DownloadUtils {
     public static boolean OFFLINE_MODE = false;
 
     public static boolean downloadLibrary(IMonitor monitor, Mirror mirror, Library library, File root, Predicate<String> optional, List<Artifact> grabbed) {
-        Artifact artifact = library.getArtifact();
+        Artifact artifact = library.getName();
         File target = artifact.getLocalPath(root);
         LibraryDownload download = library.getDownloads() == null ? null :  library.getDownloads().getArtifact();
         if (download == null) {
@@ -34,7 +34,7 @@ public class DownloadUtils {
             download.setPath(artifact.getPath());
         }
 
-        if (!optional.test(library.getArtifact().getDescriptor())) {
+        if (!optional.test(library.getName().getDescriptor())) {
             monitor.setNote(String.format("Considering library %s: Not Downloading {Disabled}", artifact.getDescriptor()));
             return true;
         }
@@ -242,16 +242,39 @@ public class DownloadUtils {
         return false;
     }
 
-    public static boolean extractFile(Artifact art, File libPath, String checksum) {
+    public static boolean extractFile(Artifact art, File target, String checksum) {
         final InputStream input = DownloadUtils.class.getResourceAsStream("/maven/" + art.getPath());
         if (input == null) {
             System.out.println("File not found in installer archive: /maven/" + art.getPath());
             return false;
         }
 
+        if (!target.getParentFile().exists())
+            target.getParentFile().mkdirs();
+
         try {
-            Files.copy(() -> input, libPath);
-            return checksumValid(libPath, checksum);
+            Files.copy(() -> input, target);
+            return checksumValid(target, checksum);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean extractFile(String name, File target) {
+        final String path = name.charAt(0) == '/' ? name : '/' + name;
+        final InputStream input = DownloadUtils.class.getResourceAsStream(path);
+        if (input == null) {
+            System.out.println("File not found in installer archive: " + path);
+            return false;
+        }
+
+        if (!target.getParentFile().exists())
+            target.getParentFile().mkdirs();
+
+        try {
+            Files.copy(() -> input, target);
+            return true; //checksumValid(target, checksum); //TODO: zip checksums?
         } catch (Exception e) {
             e.printStackTrace();
             return false;

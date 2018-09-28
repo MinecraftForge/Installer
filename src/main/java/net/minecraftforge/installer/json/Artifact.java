@@ -1,53 +1,62 @@
 package net.minecraftforge.installer.json;
 
 import java.io.File;
+import java.lang.reflect.Type;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 
-public class Artifact
-{
+public class Artifact {
+    //Descriptor parts: group:name:version[:classifier][@extension]
     private String domain;
     private String name;
     private String version;
     private String classifier = null;
     private String ext = "jar";
+
+    //Caches so we don't rebuild every time we're asked.
     private String path;
     private String file;
     private String descriptor;
-    private String memo;
 
-    public Artifact(String descriptor)
+    public static Artifact from(String descriptor)
     {
-        this.descriptor = descriptor;
+        Artifact ret = new Artifact();
+        ret.descriptor = descriptor;
 
         String[] pts = Iterables.toArray(Splitter.on(':').split(descriptor), String.class);
-        domain = pts[0];
-        name = pts[1];
+        ret.domain = pts[0];
+        ret.name = pts[1];
 
         int last = pts.length - 1;
         int idx = pts[last].indexOf('@');
-        if (idx != -1)
-        {
-            ext = pts[last].substring(idx + 1);
+        if (idx != -1) {
+            ret.ext = pts[last].substring(idx + 1);
             pts[last] = pts[last].substring(0, idx);
         }
 
-        version = pts[2];
+        ret.version = pts[2];
         if (pts.length > 3)
-        {
-            classifier = pts[3];
-        }
+            ret.classifier = pts[3];
 
-        file = name + '-' + version;
-        if (classifier != null) file += '-' + classifier;
-        file += '.' + ext;
+        ret.file = ret.name + '-' + ret.version;
+        if (ret.classifier != null) ret.file += '-' + ret.classifier;
+        ret.file += '.' + ret.ext;
 
-        path = domain.replace('.', '/') + '/' + name + '/' + version + '/' + file;
+        ret.path = ret.domain.replace('.', '/') + '/' + ret.name + '/' + ret.version + '/' + ret.file;
+
+        return ret;
     }
 
-    public File getLocalPath(File base)
-    {
+    public File getLocalPath(File base) {
         return new File(base, path.replace('/', File.separatorChar));
     }
 
@@ -58,14 +67,21 @@ public class Artifact
     public String getVersion()   { return version;    }
     public String getClassifier(){ return classifier; }
     public String getExt()       { return ext;        }
-    public String getMemo()      { return memo;       }
     public String getFilename()  { return file;       }
-    public void setMemo(String v){ memo = v;          }
     @Override
-    public String toString()
-    {
-        if (getMemo() != null)
-            return getDescriptor() + "\n    " + getMemo();
+    public String toString() {
         return getDescriptor();
+    }
+
+    public static class Adapter implements JsonDeserializer<Artifact>, JsonSerializer<Artifact> {
+        @Override
+        public JsonElement serialize(Artifact src, Type typeOfSrc, JsonSerializationContext context) {
+            return src == null ? JsonNull.INSTANCE : new JsonPrimitive(src.getDescriptor());
+        }
+
+        @Override
+        public Artifact deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return json.isJsonPrimitive() ? Artifact.from(json.getAsJsonPrimitive().getAsString()) : null;
+        }
     }
 }

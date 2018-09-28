@@ -10,7 +10,7 @@ import net.minecraftforge.installer.json.Install;
 public class ExtractAction extends Action {
 
     public ExtractAction(Install profile) {
-        super(profile);
+        super(profile, true);
     }
 
     public static boolean headless;

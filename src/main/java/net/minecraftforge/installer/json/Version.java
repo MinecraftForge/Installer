@@ -52,23 +52,15 @@ public class Version {
     }
 
     public static class Library {
-        private String name;
+        private Artifact name;
         private Downloads downloads;
 
-        private Artifact _artifact;
-
-        public Artifact getArtifact() {
-            if (_artifact == null && name != null)
-                _artifact = new Artifact(name);
-            return _artifact;
+        public Artifact getName() {
+            return name;
         }
 
         public Downloads getDownloads() {
             return downloads;
-        }
-
-        public String getName() {
-            return name;
         }
     }
 

@@ -10,5 +10,123 @@
     "path": "net.minecraftforge:forge:1.13-14.23.2.0-1.13-pre",
     "logo": "/big_logo.png",
     "minecraft": "1.13",
-    "welcome": "Welcome to the simple Forge installer."
+    "welcome": "Welcome to the simple Forge installer.",
+    "processors": [
+        {
+            "jar": "net.md-5:SpecialSource:1.8.3",
+            "classpath": [
+                "org.ow2.asm:asm-commons:6.1.1",
+                "net.sf.jopt-simple:jopt-simple:4.9",
+                "com.google.guava:guava:20.0",
+                "net.sf.opencsv:opencsv:2.3",
+                "org.ow2.asm:asm-analysis:6.1.1",
+                "org.ow2.asm:asm-tree:6.1.1",
+                "org.ow2.asm:asm:6.1.1"
+            ],
+            "args": [
+                "--in-jar",
+                "{MINECRAFT_JAR}",
+                "--out-jar",
+                "[net.minecraftforge:forge:1.13-14.23.2.0-1.13-pre:srg]",
+                "--srg-in",
+                "{MAPPINGS}"
+            ]
+        }
+    ],
+    "data": {
+        "MAPPINGS":  {
+            "client": "/data/joined.tsrg",
+            "server": "/data/joined.tsrg"
+        }
+    },
+    "libraries": [
+        {
+            "name": "net.md-5:SpecialSource:1.8.3",
+            "downloads": {
+                "artifact": {
+                    "path": "net/md-5/SpecialSource/1.8.3/SpecialSource-1.8.3.jar",
+                    "url": "https://files.minecraftforge.net/maven/net/md-5/SpecialSource/1.8.3/SpecialSource-1.8.3.jar",
+                    "sha1": "9e8fa9e25bfcd93a3a52e1570d8ebf29d4a10799",
+                    "size": 78574
+                }
+            }
+        },
+        {
+            "name": "org.ow2.asm:asm-commons:6.1.1",
+            "downloads": {
+                "artifact": {
+                    "path": "org/ow2/asm/asm-commons/6.1.1/asm-commons-6.1.1.jar",
+                    "url": "https://files.minecraftforge.net/maven/org/ow2/asm/asm-commons/6.1.1/asm-commons-6.1.1.jar",
+                    "sha1": "70a7deee986e66c015cea1c9978f9654cc667020",
+                    "size": 77745
+                }
+            }
+        },
+        {
+            "name": "net.sf.jopt-simple:jopt-simple:4.9",
+            "downloads": {
+                "artifact": {
+                    "path": "net/sf/jopt-simple/jopt-simple/4.9/jopt-simple-4.9.jar",
+                    "url": "https://files.minecraftforge.net/maven/net/sf/jopt-simple/jopt-simple/4.9/jopt-simple-4.9.jar",
+                    "sha1": "ee9e9eaa0a35360dcfeac129ff4923215fd65904",
+                    "size": 66469
+                }
+            }
+        },
+        {
+            "name": "com.google.guava:guava:20.0",
+            "downloads": {
+                "artifact": {
+                    "path": "com/google/guava/guava/20.0/guava-20.0.jar",
+                    "url": "https://files.minecraftforge.net/maven/com/google/guava/guava/20.0/guava-20.0.jar",
+                    "sha1": "89507701249388e1ed5ddcf8c41f4ce1be7831ef",
+                    "size": 2442625
+                }
+            }
+        },
+        {
+            "name": "net.sf.opencsv:opencsv:2.3",
+            "downloads": {
+                "artifact": {
+                    "path": "net/sf/opencsv/opencsv/2.3/opencsv-2.3.jar",
+                    "url": "https://files.minecraftforge.net/maven/net/sf/opencsv/opencsv/2.3/opencsv-2.3.jar",
+                    "sha1": "c23708cdb9e80a144db433e23344a788a1fd6599",
+                    "size": 19827
+                }
+            }
+        },
+        {
+            "name": "org.ow2.asm:asm-analysis:6.1.1",
+            "downloads": {
+                "artifact": {
+                    "path": "org/ow2/asm/asm-analysis/6.1.1/asm-analysis-6.1.1.jar",
+                    "url": "https://files.minecraftforge.net/maven/org/ow2/asm/asm-analysis/6.1.1/asm-analysis-6.1.1.jar",
+                    "sha1": "376d85732456ec4d2c4bc020ee152061c61f00b5",
+                    "size": 31979
+                }
+            }
+        },
+        {
+            "name": "org.ow2.asm:asm-tree:6.1.1",
+            "downloads": {
+                "artifact": {
+                    "path": "org/ow2/asm/asm-tree/6.1.1/asm-tree-6.1.1.jar",
+                    "url": "https://files.minecraftforge.net/maven/org/ow2/asm/asm-tree/6.1.1/asm-tree-6.1.1.jar",
+                    "sha1": "19fdc358e7bd3986b9867de508ce6cefa693dda6",
+                    "size": 50050
+                }
+            }
+        },
+        {
+            "name": "org.ow2.asm:asm:6.1.1",
+            "downloads": {
+                "artifact": {
+                    "path": "org/ow2/asm/asm/6.1.1/asm-6.1.1.jar",
+                    "url": "https://files.minecraftforge.net/maven/org/ow2/asm/asm/6.1.1/asm-6.1.1.jar",
+                    "sha1": "264754515362d92acd39e8d40395f6b8dee7bc08",
+                    "size": 108252
+                }
+            }
+        }
+    ]
 }

@@ -2,27 +2,20 @@ package net.minecraftforge.installer.actions;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Predicate;
 import net.minecraftforge.installer.DownloadUtils;
-import net.minecraftforge.installer.json.Artifact;
 import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.Util;
 import net.minecraftforge.installer.json.Version;
 import net.minecraftforge.installer.json.Version.Download;
-import net.minecraftforge.installer.json.Version.Library;
-import net.minecraftforge.installer.json.Version.LibraryDownload;
-
 import com.google.common.io.Files;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 public class ClientInstall extends Action {
-    private List<Artifact> grabbed = new ArrayList<>();
 
     public ClientInstall(Install profile) {
-        super(profile);
+        super(profile, true);
     }
 
     @Override
@@ -38,13 +31,11 @@ public class ClientInstall extends Action {
             return false;
         }
 
-        Version version = Util.loadVersion(profile);
         File versionRoot = new File(target, "versions");
         File librariesDir = new File(target, "libraries");
         librariesDir.mkdir();
 
-        Library[] libraries = version.getLibraries();
-        monitor.setSteps(libraries.length + 2); //Extract json + download MC jar + inject profile
+        monitor.setSteps(super.getTaskCount() + 2); //Extract json + download MC jar + inject profile
         int progress = 1;
 
         // Extract version json
@@ -95,21 +86,10 @@ public class ClientInstall extends Action {
         }
 
         // Download Libraries
-        StringBuilder output = new StringBuilder();
-        for (int x = 0; x < libraries.length; x++) {
-            Library lib = libraries[x];
-            monitor.setProgress(progress++);
-            if (!DownloadUtils.downloadLibrary(monitor, profile.getMirror(), lib, librariesDir, optionals, grabbed)) {
-                LibraryDownload download = lib.getDownloads() == null ? null :  lib.getDownloads().getArtifact();
-                if (download != null && download.getUrl() != null) // If it doesn't have a URL we can't download it, assume we install it later
-                    output.append('\n').append(lib.getArtifact());
-            }
-        }
-        String bad = output.toString();
-        if (!bad.isEmpty()) {
-            error("These libraries failed to download. Try again.\n" + bad);
+        int libs = downloadLibraries(progress, librariesDir, optionals);
+        if (libs == -1)
             return false;
-        }
+        progress = libs;
 
         /*
         String modListType = VersionInfo.getModListType();
@@ -140,6 +120,11 @@ public class ClientInstall extends Action {
             }
         }
         */
+
+        int proc = processors.process(progress, librariesDir, clientTarget);
+        if (proc == -1)
+            return false;
+        progress = proc;
 
         monitor.setProgress(progress++);
         if (!injectProfile(launcherProfiles))
@@ -197,8 +182,8 @@ public class ClientInstall extends Action {
 
     @Override
     public String getSuccessMessage() {
-        if (grabbed.size() > 0)
-            return String.format("Successfully installed client profile %s for version %s into launcher, and downloaded %d libraries", profile.getProfile(), profile.getVersion(), grabbed.size());
+        if (downlaodedCount() > 0)
+            return String.format("Successfully installed client profile %s for version %s into launcher, and downloaded %d libraries", profile.getProfile(), profile.getVersion(), downlaodedCount());
         return String.format("Successfully installed client profile %s for version %s into launcher", profile.getProfile(), profile.getVersion());
     }
 }

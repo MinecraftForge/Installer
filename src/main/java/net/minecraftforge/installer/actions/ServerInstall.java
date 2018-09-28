@@ -11,13 +11,12 @@ import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.Util;
 import net.minecraftforge.installer.json.Version;
 import net.minecraftforge.installer.json.Version.Download;
-import net.minecraftforge.installer.json.Version.Library;
 
 public class ServerInstall extends Action {
     private List<Artifact> grabbed = new ArrayList<>();
 
     public ServerInstall(Install profile) {
-        super(profile);
+        super(profile, false);
     }
 
     @Override
@@ -34,10 +33,7 @@ public class ServerInstall extends Action {
         if (profile.getMirror() != null)
             monitor.setNote(getSponsorMessage());
 
-        Version version = Util.loadVersion(profile);
-
-        Library[] libraries = version.getLibraries();
-        monitor.setSteps(libraries.length + 2); //Extract executable + download server jar
+        monitor.setSteps(super.getTaskCount() + 2); //Extract executable + download server jar
         int progress = 1;
 
         // Extract main executable jar
@@ -76,21 +72,15 @@ public class ServerInstall extends Action {
         }
 
         // Download Libraries
-        StringBuilder output = new StringBuilder();
-        for (int x = 0; x < libraries.length; x++) {
-            Library lib = libraries[x];
-            monitor.setProgress(progress++);
-            if (contained.getDescriptor().equals(lib.getName())) //Executable, skip it as we extracted it above.
-                continue;
-            if (!DownloadUtils.downloadLibrary(monitor, profile.getMirror(), lib, librariesDir, optionals, grabbed)) {
-                output.append('\n').append(lib.getArtifact());
-            }
-        }
-        String bad = output.toString();
-        if (!bad.isEmpty()) {
-            error("These libraries failed to download. Try again.\n" + bad);
+        int libs = downloadLibraries(progress, librariesDir, optionals);
+        if (libs == -1)
             return false;
-        }
+        progress = libs;
+
+        int proc = processors.process(progress, librariesDir, serverTarget);
+        if (proc == -1)
+            return false;
+        progress = proc;
 
         // TODO: Optionals
         //if (!OptionalLibrary.saveModListJson(librariesDir, new File(target, "mods/mod_list.json"), VersionInfo.getOptionals(), optionals))
