@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.regex.Pattern;
 
 import javax.swing.UIManager;
 
@@ -25,18 +26,28 @@ public class SimpleInstaller
 
     public static void main(String[] args) throws IOException
     {
-        setupLogger();
+        ProgressCallback monitor;
+        try
+        {
+            monitor = ProgressCallback.withOutputs(System.out, getLog());
+            hookStdOut(monitor);
+        }
+        catch (FileNotFoundException e)
+        {
+            monitor = ProgressCallback.TO_STD_OUT;
+        }
+        
         if (System.getProperty("java.net.preferIPv4Stack") == null) //This is a dirty hack, but screw it, i'm hoping this as default will fix more things then it breaks.
         {
             System.setProperty("java.net.preferIPv4Stack", "true");
         }
-        System.out.println("java.net.preferIPv4Stack=" + System.getProperty("java.net.preferIPv4Stack"));
+        monitor.message("java.net.preferIPv4Stack=" + System.getProperty("java.net.preferIPv4Stack"));
 
         String path = SimpleInstaller.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         if (path.contains("!/"))
         {
-            System.out.println("Due to java limitation, please do not run this jar in a folder ending with !");
-            System.out.println(path);
+            monitor.stage("Due to java limitation, please do not run this jar in a folder ending with !");
+            monitor.message(path);
             return;
         }
 
@@ -57,7 +68,7 @@ public class SimpleInstaller
         if (optionSet.has(offlineOption))
         {
             DownloadUtils.OFFLINE_MODE = true;
-            System.out.println("ENABELING OFFLINE MODE");
+            monitor.message("ENABELING OFFLINE MODE");
             cnt = 1;
         }
 
@@ -79,30 +90,30 @@ public class SimpleInstaller
             try
             {
                 SimpleInstaller.headless = true;
-                System.out.println("Target Directory: " + target);
+                monitor.message("Target Directory: " + target);
                 Install install = Util.loadInstallProfile();
-                if (!action.getAction(install, new ProgressCallback(){}).run(target, a -> true))
+                if (!action.getAction(install, monitor).run(target, a -> true))
                 {
-                    System.err.println("There was an error during installation");
+                    monitor.stage("There was an error during installation");
                     System.exit(1);
                 }
                 else
                 {
-                    System.out.println(action.getSuccess(install.getPath().getName()));
-                    System.out.println("You can delete this installer file now if you wish");
+                    monitor.message(action.getSuccess(install.getPath().getName()));
+                    monitor.stage("You can delete this installer file now if you wish");
                 }
                 System.exit(0);
             }
             catch (Throwable e)
             {
-                System.err.println("A problem installing was detected, install cannot continue");
+                monitor.stage("A problem installing was detected, install cannot continue");
                 System.exit(1);
             }
         }
         else if (optionSet.specs().size() > cnt)
             parser.printHelpOn(System.err);
         else
-            launchGui();
+            launchGui(monitor);
     }
 
     private static File getMCDir()
@@ -117,7 +128,7 @@ public class SimpleInstaller
         return new File(userHomeDir, mcDir);
     }
 
-    private static void launchGui()
+    private static void launchGui(ProgressCallback monitor)
     {
         try
         {
@@ -129,72 +140,50 @@ public class SimpleInstaller
 
         Install profile = Util.loadInstallProfile();
         InstallerPanel panel = new InstallerPanel(getMCDir(), profile);
-        panel.run();
+        panel.run(monitor);
     }
 
-    private static void setupLogger()
+    private static OutputStream getLog() throws FileNotFoundException
     {
         File f = new File(SimpleInstaller.class.getProtectionDomain().getCodeSource().getLocation().getFile());
         File output;
         if (f.isFile()) output = new File(f.getName() + ".log");
         else            output = new File("installer.log");
 
-        try
-        {
-            System.out.println("Setting up logger: " + output.getAbsolutePath());
-            OutputStream fout = new BufferedOutputStream(new FileOutputStream(output));
-            System.setOut(new PrintStream(new MultiOutputStream(System.out, fout), true));
-            System.setErr(new PrintStream(new MultiOutputStream(System.err, fout), true));
-        }
-        catch (FileNotFoundException e)
-        {
-            e.printStackTrace();
-            //We errored out, lets just continue on and hope the rest runs fine.
-        }
+        return new BufferedOutputStream(new FileOutputStream(output));
     }
-
-    private static class MultiOutputStream extends OutputStream
+    
+    static void hookStdOut(ProgressCallback monitor)
     {
-        OutputStream[] outs;
-        MultiOutputStream(OutputStream... outs)
-        {
-            this.outs = outs;
-        }
+        final Pattern endingWhitespace = Pattern.compile("\\r?\\n$");
+        final OutputStream monitorStream = new OutputStream() {
 
-        @Override
-        public void write(int b) throws IOException
-        {
-            for (OutputStream out : outs)
-                out.write(b);
-        }
-
-        @Override
-        public void write(byte b[]) throws IOException
-        {
-            for (OutputStream out : outs)
-                out.write(b);
-        }
-
-        @Override
-        public void write(byte b[], int off, int len) throws IOException
-        {
-            for (OutputStream out : outs)
-                out.write(b, off, len);
-        }
-
-        @Override
-        public void flush() throws IOException
-        {
-            for (OutputStream out : outs)
-                out.flush();
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            for (OutputStream out : outs)
-                out.close();
-        }
+            @Override
+            public void write(byte[] buf, int off, int len)
+            {
+                byte[] toWrite = new byte[len];
+                System.arraycopy(buf, off, toWrite, 0, len);
+                write(toWrite);
+            }
+            
+            @Override
+            public void write(byte[] b)
+            {
+                String toWrite = new String(b);
+                toWrite = endingWhitespace.matcher(toWrite).replaceAll("");
+                if (!toWrite.isEmpty()) {
+                    monitor.message(toWrite);
+                }
+            }
+            
+            @Override
+            public void write(int b)
+            {
+                write(new byte[] { (byte) b });
+            }
+        };
+        
+        System.setOut(new PrintStream(monitorStream));
+        System.setErr(new PrintStream(monitorStream));
     }
-
 }

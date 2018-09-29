@@ -19,6 +19,8 @@ import net.minecraftforge.installer.actions.ProgressCallback;
 public class ProgressFrame extends JFrame implements ProgressCallback
 {
     private static final long serialVersionUID = 1L;
+    
+    private final ProgressCallback parent;
 
     private final JPanel panel = new JPanel();
 
@@ -26,8 +28,10 @@ public class ProgressFrame extends JFrame implements ProgressCallback
     private final JProgressBar progressBar;
     private final JTextArea consoleArea;
 
-    public ProgressFrame(String title, Runnable canceler)
+    public ProgressFrame(ProgressCallback parent, String title, Runnable canceler)
     {
+        this.parent = parent;
+        
         setResizable(false);
         setTitle(title);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -89,14 +93,14 @@ public class ProgressFrame extends JFrame implements ProgressCallback
         message(label, MessagePriority.HIGH);
         this.progressBar.setValue(0);
         this.progressBar.setIndeterminate(false);
-        ProgressCallback.super.start(label);
+        parent.start(label);
     }
 
     @Override
     public void progress(double progress)
     {
         this.progressBar.setValue((int) (progress * 100));
-        ProgressCallback.super.progress(progress);
+        parent.progress(progress);
     }
 
     @Override
@@ -104,7 +108,7 @@ public class ProgressFrame extends JFrame implements ProgressCallback
     {
         message(message, MessagePriority.HIGH);
         this.progressBar.setIndeterminate(true);
-        ProgressCallback.super.stage(message);
+        parent.stage(message);
     }
 
     @Override
@@ -116,6 +120,6 @@ public class ProgressFrame extends JFrame implements ProgressCallback
         }
         consoleArea.append(message + "\n");
         consoleArea.setCaretPosition(consoleArea.getDocument().getLength());
-        ProgressCallback.super.message(message, priority);
+        parent.message(message, priority);
     }
 }
