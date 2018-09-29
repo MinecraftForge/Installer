@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import javax.imageio.ImageIO;
@@ -48,7 +49,9 @@ import javax.swing.border.LineBorder;
 import com.google.common.base.Throwables;
 
 import net.minecraftforge.installer.actions.Action;
+import net.minecraftforge.installer.actions.ActionCanceledException;
 import net.minecraftforge.installer.actions.Actions;
+import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.OptionalLibrary;
 
@@ -66,7 +69,7 @@ public class InstallerPanel extends JPanel {
     private JPanel fileEntryPanel;
     private List<OptionalListEntry> optionals = new ArrayList<>();
     private Install profile;
-    private Map<String, Action> actions = new HashMap<>();
+    private Map<String, Function<ProgressCallback, Action>> actions = new HashMap<>();
 
     private class FileSelectAction extends AbstractAction
     {
@@ -195,7 +198,7 @@ public class InstallerPanel extends JPanel {
             if (action == Actions.CLIENT && profile.hideClient()) continue;
             if (action == Actions.SERVER && profile.hideServer()) continue;
             if (action == Actions.EXTRACT && profile.hideExtract()) continue;
-            actions.put(action.name(), action.getAction(profile));
+            actions.put(action.name(), prog -> action.getAction(profile, prog));
             JRadioButton radioButton = new JRadioButton();
             radioButton.setAction(sba);
             radioButton.setText(action.getButtonLabel());
@@ -339,7 +342,7 @@ public class InstallerPanel extends JPanel {
 
         }
 
-        Action action = actions.get(choiceButtonGroup.getSelection().getActionCommand());
+        Action action = actions.get(choiceButtonGroup.getSelection().getActionCommand()).apply(null);
         boolean valid = action.isPathValid(targetDir);
 
         if (profile.getMirror() != null)
@@ -390,17 +393,25 @@ public class InstallerPanel extends JPanel {
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
         if (result == JOptionPane.OK_OPTION)
         {
+            ProgressFrame prog = new ProgressFrame("Installing " + profile.getVersion(), Thread.currentThread()::interrupt);
             Predicate<String> optPred = input -> {
                 Optional<OptionalListEntry> ent = this.optionals.stream().filter(e -> e.lib.getArtifact().equals(input)).findFirst();
                 return !ent.isPresent() || ent.get().isEnabled();
             };
-            Action action = actions.get(choiceButtonGroup.getSelection().getActionCommand());
+            Action action = actions.get(choiceButtonGroup.getSelection().getActionCommand()).apply(prog);
             try {
-                if (action.run(targetDir, optPred))
+                prog.setVisible(true);
+                prog.toFront();
+                if (action.run(targetDir, optPred)) {
                     JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
+                }
+            } catch (ActionCanceledException e) {
+                JOptionPane.showMessageDialog(null, "Installation Canceled", "Forge Installer", JOptionPane.WARNING_MESSAGE);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(null, "There was an exception running task: " + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
                 e.printStackTrace();
+            } finally {
+                prog.dispose();
             }
         }
         dialog.dispose();

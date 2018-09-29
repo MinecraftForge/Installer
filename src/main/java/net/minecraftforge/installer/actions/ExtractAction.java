@@ -9,8 +9,8 @@ import net.minecraftforge.installer.json.Install;
 
 public class ExtractAction extends Action {
 
-    public ExtractAction(Install profile) {
-        super(profile, true);
+    public ExtractAction(Install profile, ProgressCallback monitor) {
+        super(profile, monitor, true);
     }
 
     public static boolean headless;

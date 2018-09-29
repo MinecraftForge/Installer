@@ -15,6 +15,7 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import net.minecraftforge.installer.actions.Actions;
+import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.Util;
 
@@ -80,7 +81,7 @@ public class SimpleInstaller
                 SimpleInstaller.headless = true;
                 System.out.println("Target Directory: " + target);
                 Install install = Util.loadInstallProfile();
-                if (!action.getAction(install).run(target, a -> true))
+                if (!action.getAction(install, new ProgressCallback(){}).run(target, a -> true))
                 {
                     System.err.println("There was an error during installation");
                     System.exit(1);
