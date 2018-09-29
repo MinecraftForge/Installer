@@ -1,6 +1,8 @@
 package net.minecraftforge.installer.json;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -33,7 +35,7 @@ public class Install
     // Extra libraries needed by processors, that may differ from the installer version's library list. Uses the same format as Mojang for simplicities sake.
     private Version.Library[] libraries;
     // Executable jars to be run after all libraries have been downloaded.
-    private Processor[] processors;
+    private List<Processor> processors;
     //Data files to be extracted during install, used for processor.
     private Map<String, DataFile> data;
 
@@ -103,8 +105,9 @@ public class Install
         return libraries == null ? new Version.Library[0] : libraries;
     }
 
-    public Processor[] getProcessors() {
-        return processors == null ? new Processor[0] : processors;
+    public List<Processor> getProcessors(String side) {
+        if (processors == null) return Collections.emptyList();
+        return processors.stream().filter(p -> p.isSide(side)).collect(Collectors.toList());
     }
 
     public Map<String, String> getData(boolean client) {
@@ -115,6 +118,8 @@ public class Install
     }
 
     public static class Processor {
+        // Which side this task is to be run on, Currently know sides are "client", "server" and "extract", if this omitted, assume all sides.
+        private List<String> sides;
         // The executable jar to run, The installer will run it in-process, but external tools can run it using java -jar {file}, so MANFEST Main-Class entry must be valid.
         private Artifact jar;
         // Dependency list of files needed for this jar to run. Aything listed here SHOULD be listed in {@see Install#libraries} so the installer knows to download it.
@@ -124,9 +129,13 @@ public class Install
          * [Artifact] : A artifact path in the target maven style repo, where all libraries are downloaded to.
          * {DATA_ENTRY} : A entry in the Install#data map, extract as a file, there are a few extra specified values to allow the same processor to run on both sides:
          *   {MINECRAFT_JAR} - The vanilla minecraft jar we are dealing with, /versions/VERSION/VERSION.jar on the client and /minecraft_server.VERSION.jar for the server
-         *   {SIDE} - Either the exact string "client" or "server" depending on what side we are installing.
+         *   {SIDE} - Either the exact string "client", "server", and "extract" depending on what side we are installing.
          */
         private String[] args;
+
+        public boolean isSide(String side) {
+            return sides == null || sides.contains(side);
+        }
 
         public Artifact getJar() {
             return jar;
@@ -142,9 +151,15 @@ public class Install
     }
 
     public static class DataFile {
-        // The file to use when installing the client
+        /**
+         * Can be in the following formats:
+         * [value] - An absolute path to an artifact located in the target maven style repo.
+         * 'value' - A string literal, remove the 's and use this value
+         * value - A file in the installer package, to be extracted to a temp folder, and then have the absolute path in replacements.
+         */
+        // Value to use for the client install
         private String client;
-        // The file to use when installing the server
+        // Value to use for the server install
         private String server;
 
         public String getClient() {

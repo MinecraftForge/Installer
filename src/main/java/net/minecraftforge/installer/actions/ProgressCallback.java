@@ -1,7 +1,5 @@
 package net.minecraftforge.installer.actions;
 
-import java.text.DecimalFormat;
-
 public interface ProgressCallback
 {
     enum MessagePriority
@@ -45,6 +43,7 @@ public interface ProgressCallback
 
     default void progress(double progress)
     {
-        System.out.println(DecimalFormat.getPercentInstance().format(progress));
+        //TODO: Better bar? We're in console.. so let not spam with updates
+        //System.out.println(DecimalFormat.getPercentInstance().format(progress));
     }
 }

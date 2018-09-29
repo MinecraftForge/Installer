@@ -31,12 +31,14 @@ public class PostProcessors {
     private final ProgressCallback monitor;
     private final boolean hasTasks;
     private final Map<String, String> data;
+    private final List<Processor> processors;
 
     public PostProcessors(Install profile, boolean isClient, ProgressCallback monitor) {
         this.profile = profile;
         this.isClient = isClient;
         this.monitor = monitor;
-        this.hasTasks = profile.getProcessors().length > 0;
+        this.processors = profile.getProcessors(isClient ? "client" : "server");
+        this.hasTasks = !this.processors.isEmpty();
         this.data = profile.getData(isClient);
     }
 
@@ -48,7 +50,7 @@ public class PostProcessors {
     public int getTaskCount() {
         return hasTasks ? 0 :
             profile.getLibraries().length +
-            profile.getProcessors().length +
+            processors.size() +
             profile.getData(isClient).size();
     }
 
@@ -63,11 +65,18 @@ public class PostProcessors {
                 for (String key : data.keySet()) {
                     monitor.progress(progress++ / steps);
                     String value = data.get(key);
-                    File target = Paths.get(temp.toString(), value).toFile();
-                    monitor.message("  Extracting: " + value);
-                    if (!DownloadUtils.extractFile(value, target))
-                        err.append("\n  ").append(value);
-                    data.put(key, target.getAbsolutePath());
+
+                    if (value.charAt(0) == '[' && value.charAt(value.length() - 1) == ']') { //Artifact
+                        data.put(key, Artifact.from(value.substring(1, value.length() -1)).getLocalPath(librariesDir).getAbsolutePath());
+                    } else if (value.charAt(0) == '\'' && value.charAt(value.length() - 1) == '\'') { //Literal
+                        data.put(key, value.substring(1, value.length() -1));
+                    } else {
+                        File target = Paths.get(temp.toString(), value).toFile();
+                        monitor.message("  Extracting: " + value);
+                        if (!DownloadUtils.extractFile(value, target))
+                            err.append("\n  ").append(value);
+                        data.put(key, target.getAbsolutePath());
+                    }
                 }
                 if (err.length() > 0) {
                     error("Failed to extract files from archive: " + err.toString());
@@ -77,15 +86,14 @@ public class PostProcessors {
             data.put("SIDE", isClient ? "client" : "server");
             data.put("MINECRAFT_JAR", minecraft.getAbsolutePath());
 
-            Processor[] processors = profile.getProcessors();
             int progress = 1;
-            if (processors.length == 1) {
+            if (processors.size() == 1) {
                 monitor.stage("Building Processor");
             } else {
                 monitor.start("Building Processors");
             }
             for (Processor proc : processors) {
-                monitor.progress((double) progress / processors.length);
+                monitor.progress((double) progress / processors.size());
 
                 File jar = proc.getJar().getLocalPath(librariesDir);
                 if (!jar.exists() || !jar.isFile()) {
@@ -165,6 +173,6 @@ public class PostProcessors {
         if (!SimpleInstaller.headless)
             JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
         for (String line : message.split("\n"))
-            monitor.stage(line);
+            monitor.message(line);
     }
 }
