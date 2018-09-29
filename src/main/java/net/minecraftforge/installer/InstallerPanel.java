@@ -393,7 +393,7 @@ public class InstallerPanel extends JPanel {
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
         if (result == JOptionPane.OK_OPTION)
         {
-            ProgressFrame prog = new ProgressFrame("Installing Forge " + profile.getVersion(), Thread.currentThread()::interrupt);
+            ProgressFrame prog = new ProgressFrame("Installing " + profile.getVersion(), Thread.currentThread()::interrupt);
             Predicate<String> optPred = input -> {
                 Optional<OptionalListEntry> ent = this.optionals.stream().filter(e -> e.lib.getArtifact().equals(input)).findFirst();
                 return !ent.isPresent() || ent.get().isEnabled();
