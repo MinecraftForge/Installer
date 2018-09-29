@@ -379,7 +379,7 @@ public class InstallerPanel extends JPanel {
         }
     }
 
-    public void run()
+    public void run(ProgressCallback monitor)
     {
         JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
 
@@ -393,7 +393,8 @@ public class InstallerPanel extends JPanel {
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
         if (result == JOptionPane.OK_OPTION)
         {
-            ProgressFrame prog = new ProgressFrame("Installing " + profile.getVersion(), Thread.currentThread()::interrupt);
+            ProgressFrame prog = new ProgressFrame(monitor, "Installing " + profile.getVersion(), Thread.currentThread()::interrupt);
+            SimpleInstaller.hookStdOut(prog);
             Predicate<String> optPred = input -> {
                 Optional<OptionalListEntry> ent = this.optionals.stream().filter(e -> e.lib.getArtifact().equals(input)).findFirst();
                 return !ent.isPresent() || ent.get().isEnabled();
@@ -403,6 +404,8 @@ public class InstallerPanel extends JPanel {
                 prog.setVisible(true);
                 prog.toFront();
                 if (action.run(targetDir, optPred)) {
+                    prog.start("Finished!");
+                    prog.progress(1);
                     JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
                 }
             } catch (ActionCanceledException e) {
@@ -412,6 +415,7 @@ public class InstallerPanel extends JPanel {
                 e.printStackTrace();
             } finally {
                 prog.dispose();
+                SimpleInstaller.hookStdOut(monitor);
             }
         }
         dialog.dispose();

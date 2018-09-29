@@ -93,7 +93,7 @@ public class PostProcessors {
                 monitor.start("Building Processors");
             }
             for (Processor proc : processors) {
-                monitor.progress((double) progress / processors.size());
+                monitor.progress((double) progress++ / processors.size());
 
                 File jar = proc.getJar().getLocalPath(librariesDir);
                 if (!jar.exists() || !jar.isFile()) {
