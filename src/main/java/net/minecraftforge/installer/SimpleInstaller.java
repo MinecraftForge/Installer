@@ -34,7 +34,8 @@ public class SimpleInstaller
         }
         catch (FileNotFoundException e)
         {
-            monitor = ProgressCallback.TO_STD_OUT;
+            e.printStackTrace();
+            monitor = ProgressCallback.withOutputs(System.out);
         }
         
         if (System.getProperty("java.net.preferIPv4Stack") == null) //This is a dirty hack, but screw it, i'm hoping this as default will fix more things then it breaks.
