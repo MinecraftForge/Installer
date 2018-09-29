@@ -86,7 +86,7 @@ public class ProgressFrame extends JFrame implements ProgressCallback
     @Override
     public void start(String label)
     {
-        message(label);
+        message(label, MessagePriority.HIGH);
         this.progressBar.setValue(0);
         this.progressBar.setIndeterminate(false);
         ProgressCallback.super.start(label);
@@ -102,7 +102,7 @@ public class ProgressFrame extends JFrame implements ProgressCallback
     @Override
     public void stage(String message)
     {
-        message(message);
+        message(message, MessagePriority.HIGH);
         this.progressBar.setIndeterminate(true);
         ProgressCallback.super.stage(message);
     }
@@ -110,7 +110,7 @@ public class ProgressFrame extends JFrame implements ProgressCallback
     @Override
     public void message(String message, MessagePriority priority)
     {
-        if (priority != MessagePriority.LOW)
+        if (priority == MessagePriority.HIGH)
         {
             this.progressText.setText(message);
         }
