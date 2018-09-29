@@ -3,8 +3,6 @@ package net.minecraftforge.installer.actions;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import javax.swing.ProgressMonitor;
-
 import net.minecraftforge.installer.json.Install;
 
 public enum Actions
