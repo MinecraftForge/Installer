@@ -20,6 +20,7 @@ package net.minecraftforge.installer.actions;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -169,14 +170,24 @@ public class PostProcessors {
                 }
                 monitor.message("  Args: " + args.stream().map(a -> a.indexOf(' ') != -1 || a.indexOf(',') != -1 ? '"' + a + '"' : a).collect(Collectors.joining(", ")), MessagePriority.LOW);
 
-                ClassLoader cl = new URLClassLoader(classpath.toArray(new URL[classpath.size()]), null);
+                ClassLoader cl = new URLClassLoader(classpath.toArray(new URL[classpath.size()]), getParentClassloader());
                 try {
                     Class<?> cls = Class.forName(mainClass, true, cl);
                     Method main = cls.getDeclaredMethod("main", String[].class);
                     main.invoke(null, (Object)args.toArray(new String[args.size()]));
-                } catch (ReflectiveOperationException | SecurityException | IllegalArgumentException e) {
+                } catch (InvocationTargetException ite) {
+                    Throwable e = ite.getCause();
+                    if (e.getMessage() == null)
+                        error("Failed to run processor: " + e.getClass().getName() + "\nSee log for more details.");
+                    else
+                        error("Failed to run processor: " + e.getClass().getName() + ":" + e.getMessage() + "\nSee log for more details.");
+                    return false;
+                } catch (Throwable e) {
                     e.printStackTrace();
-                    error("Failed to run processor: " + e.getMessage() + "\nSee log for more details.");
+                    if (e.getMessage() == null)
+                        error("Failed to run processor: " + e.getClass().getName() + "\nSee log for more details.");
+                    else
+                        error("Failed to run processor: " + e.getClass().getName() + ":" + e.getMessage() + "\nSee log for more details.");
                     return false;
                 }
             }
@@ -192,5 +203,26 @@ public class PostProcessors {
             JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
         for (String line : message.split("\n"))
             monitor.message(line);
+    }
+    private void log(String message) {
+        for (String line : message.split("\n"))
+            monitor.message(line);
+    }
+
+    private static boolean clChecked = false;
+    private static ClassLoader parentClassLoader = null;
+    private synchronized ClassLoader getParentClassloader() { //Reflectively try and get the platform classloader, done this way to prevent hard dep on J9.
+        if (!clChecked) {
+            clChecked = true;
+            if (!System.getProperty("java.version").startsWith("1.")) { //in 9+ the changed from 1.8 to just 9. So this essentially detects if we're <9
+                try {
+                    Method getPlatform = ClassLoader.class.getDeclaredMethod("getPlatformClassLoader");
+                    parentClassLoader = (ClassLoader)getPlatform.invoke(null);
+                } catch (NoSuchMethodException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                    log("No platform classloader: " + System.getProperty("java.version"));
+                }
+            }
+        }
+        return parentClassLoader;
     }
 }
