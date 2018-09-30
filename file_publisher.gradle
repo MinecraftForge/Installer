@@ -4,6 +4,7 @@ import java.net.URL
 repositories {
     mavenLocal()
     mavenCentral()
+    maven { url = 'https://files.minecraftforge.net/maven/' }
 }
 
 def sha1(file) {
@@ -60,7 +61,6 @@ def artifactTree(repo, artifact) {
                 println("Forge   Artifact: ${desc}")
             } else {
                 println("Pending Artifact: ${desc}")
-                project.logger.lifecycle("Artifact: ${path}")
                 def target = project.file("${repo}/${folder}")
                 target.mkdirs()
                 copy {
@@ -68,8 +68,8 @@ def artifactTree(repo, artifact) {
                     into target
                     rename { filename }
                 }
-                project.file("${target}/${path}.sha1").text = sha1(it.file)
-                project.file("${target}/${path}.md5").text = md5(it.file)
+                project.file("${target}/${filename}.sha1").text = sha1(it.file)
+                project.file("${target}/${filename}.md5").text = md5(it.file)
             }
         }
     }
@@ -83,8 +83,9 @@ def checkExists(url) {
     }
     return code == 200
 }
-
+//TODO: Make Forge's build explode if a file is missing from our repo
 task artifacts() << {
     file('dep_repo').deleteDir()
-    artifactTree('dep_repo', 'net.md-5:SpecialSource:1.8.3') //TODO: Make Forge's build explode if a file is missing from our repo
+    artifactTree('dep_repo', 'net.minecraftforge:jarsplitter:1.0.2') 
+    artifactTree('dep_repo', 'net.minecraftforge:binarypatcher:1.0.1') 
 }

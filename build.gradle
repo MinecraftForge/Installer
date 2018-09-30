@@ -1,8 +1,3 @@
-apply plugin: 'maven'
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-
 buildscript {
     repositories {
         mavenCentral()
@@ -12,14 +7,41 @@ buildscript {
     }
 }
 
+plugins {
+  id 'net.minecrell.licenser' version '0.3'
+  id 'org.ajoberstar.grgit' version '2.3.0'
+  id 'com.github.johnrengelman.shadow' version '2.0.4'
+}
+
+apply plugin: 'maven'
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
 repositories {
     mavenCentral()
 }
 
 group = 'net.minecraftforge'
 archivesBaseName = 'installer'
-version = '2.0'
+version = gitVersion()
 targetCompatibility = sourceCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+
+def gitVersion() {
+    def raw = grgit.describe(longDescr: true)
+    def desc = (raw == null ? 'unknown-offset-hash' : grgit.describe(longDescr: true)).split('-') as List
+    def hash = desc.remove(desc.size() - 1)
+    def offset = desc.remove(desc.size() - 1)
+    def tag = desc.join('-')
+    def branch = grgit.branch.current().name    
+    return "${tag}.${offset}${t -> if (branch != 'master') t << '-' + branch}"
+}
+
+license {
+  header project.file('LICENSE-header.txt')
+  include 'net/minecraftforge/installer/**/*.java'
+  newLine false
+}
 
 ext {
     MAIN_CLASS = 'net.minecraftforge.installer.SimpleInstaller'
@@ -40,25 +62,25 @@ task sourcesJar(type: Jar, dependsOn: classes) {
     from sourceSets.main.allSource
 }
 
-task fatJar(type: Jar, dependsOn: jar) {
-    inputs.file jar.archivePath
-    from(configurations.compile.collect { zipTree(it).matching { include '**/*.class' } })
-    manifest { attributes 'Main-Class': MAIN_CLASS }
+shadowJar {
+    classifier 'fatjar'
+    manifest.attributes('Main-Class': MAIN_CLASS)
+    manifest.attributes('Implementation-Version': project.version)
 }
 
-fatJar.doFirst {
-    from zipTree(jar.archivePath)
-}
-
-task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
-    inputs.file fatJar.archivePath
+task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
     ext {
+        inputJar = shadowJar.archivePath
         outDir = file("${buildDir}/proguard")
         obfuscatedJar = "${outDir}/${jar.baseName}.jar"
+        config = 'proguard.pro'
     }
+    inputs.file inputJar
+    inputs.file config
+    
     outDir.mkdirs()
 
-    injars jar.archivePath
+    injars inputJar
     outjars obfuscatedJar
     libraryjars configurations.compile
 
@@ -73,7 +95,7 @@ task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: jar) {
         libraryjars "${System.getProperty('java.home')}/jmods/java.logging.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
         libraryjars "${System.getProperty('java.home')}/jmods/jdk.unsupported.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
     }
-    configuration 'proguard.pro'
+    configuration config
 }
 
 task shrinkJar(type: Jar, dependsOn: pgShrinkJar) {
@@ -83,13 +105,12 @@ task shrinkJar(type: Jar, dependsOn: pgShrinkJar) {
 }
 
 artifacts {
-    archives fatJar
+    //archives shadowJar
     archives sourcesJar
     archives shrinkJar
 }
 
 jar {
-    classifier = 'thin'
     manifest { attributes 'Main-Class': MAIN_CLASS }
 }
 
@@ -99,11 +120,10 @@ uploadArchives {
         add getProject().repositories.mavenLocal()
     }
     repositories.mavenDeployer {
-	
-        if (project.hasProperty('forgeMavenPass')) {
+        if (project.hasProperty('forgeMavenPassword')) {
             logger.info('Publishing to files server')
             repository(url: "http://files.minecraftforge.net/maven/manage/upload") {
-                authentication(userName: "forge", password: project.getProperty('forgeMavenPass'))
+                authentication(userName: project.getProperty('forgeMavenUser'), password: project.getProperty('forgeMavenPassword'))
             }
         } else {
             logger.info('Publishing to repo folder')
