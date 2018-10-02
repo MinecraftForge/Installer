@@ -33,7 +33,8 @@ def gitVersion() {
     def hash = desc.remove(desc.size() - 1)
     def offset = desc.remove(desc.size() - 1)
     def tag = desc.join('-')
-    def branch = grgit.branch.current().name    
+    def branch = grgit.branch.current().name
+    project.ext.SPEC_VERSION = tag
     return "${tag}.${offset}" //${t -> if (branch != 'master') t << '-' + branch}"
 }
 
@@ -45,6 +46,17 @@ license {
 
 ext {
     MAIN_CLASS = 'net.minecraftforge.installer.SimpleInstaller'
+    MANIFEST = manifest{
+        attributes('Main-Class': MAIN_CLASS)
+        attributes([
+            'Specification-Title':      'Installer',
+            'Specification-Vendor':     'Forge Development LLC',
+            'Specification-Version':    SPEC_VERSION,
+            'Implementation-Title':     'SimpleInstaller',
+            'Implementation-Version':   project.version,
+            'Implementation-Vendor':    'Forge Development LLC'
+        ] as LinkedHashMap, 'net/minecraftforge/installer/')
+    }
 }
 
 dependencies {
@@ -60,12 +72,12 @@ compileJava {
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
+    manifest.from(MANIFEST)
 }
 
 shadowJar {
     classifier 'fatjar'
-    manifest.attributes('Main-Class': MAIN_CLASS)
-    manifest.attributes('Implementation-Version': project.version)
+    manifest.from(MANIFEST)
 }
 
 task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
@@ -101,7 +113,7 @@ task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
 task shrinkJar(type: Jar, dependsOn: pgShrinkJar) {
     classifier = 'shrunk'
     from zipTree(pgShrinkJar.obfuscatedJar)
-    manifest { attributes 'Main-Class': MAIN_CLASS }
+    manifest.from(MANIFEST)
 }
 
 artifacts {
@@ -111,7 +123,7 @@ artifacts {
 }
 
 jar {
-    manifest { attributes 'Main-Class': MAIN_CLASS }
+    manifest.from(MANIFEST)
 }
 
 //TODO: Maven Publish
