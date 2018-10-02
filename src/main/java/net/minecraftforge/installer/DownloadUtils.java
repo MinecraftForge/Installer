@@ -102,8 +102,10 @@ public class DownloadUtils {
                         monitor.stage("      Failed to delete file, aborting.");
                         return false;
                     }
+                    return false;
+                } else {
+                    monitor.message("    Extraction completed: No checksum, Assuming valid.");
                 }
-                monitor.message("    Extraction completed: No checksum, Assuming valid.");
                 grabbed.add(artifact);
                 return true;
             }
@@ -113,8 +115,8 @@ public class DownloadUtils {
         }
 
         String url = download.getUrl();
-        if (url == null) {
-            monitor.stage("  Invalid library, missing url");
+        if (url == null || url.isEmpty()) {
+            monitor.message("  Invalid library, missing url");
             return false;
         }
 

@@ -53,7 +53,7 @@ public class Version {
         }
 
         public String getUrl() {
-            return url;
+            return url == null ? "" : url;
         }
     }
 

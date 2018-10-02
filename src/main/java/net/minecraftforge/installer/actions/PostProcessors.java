@@ -28,8 +28,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -60,7 +62,6 @@ public class PostProcessors {
         this.hasTasks = !this.processors.isEmpty();
         this.data = profile.getData(isClient);
     }
-
 
     public Library[] getLibraries() {
         return hasTasks ? profile.getLibraries() : new Library[0];
@@ -113,6 +114,54 @@ public class PostProcessors {
             }
             for (Processor proc : processors) {
                 monitor.progress((double) progress++ / processors.size());
+
+                Map<String, String> outputs = new HashMap<>();
+                if (!proc.getOutputs().isEmpty()) {
+                    boolean miss = false;
+                    log("  Cache: ");
+                    for (Entry<String, String> e : proc.getOutputs().entrySet()) {
+                        String key = e.getKey();
+                        if (key.charAt(0) == '{' && key.charAt(key.length() - 1) == '}')
+                            key = data.get(key.substring(1, key.length() - 1));
+                        else if (key.charAt(0) == '{' && key.charAt(key.length() - 1) == '}')
+                            key = Artifact.from(key.substring(1, key.length() - 1)).getLocalPath(librariesDir).getAbsolutePath();
+
+                        String value = e.getValue();
+                        if (value != null) {
+                            if (value.charAt(0) == '{' && value.charAt(value.length() - 1) == '}')
+                                value = data.get(value.substring(1, value.length() - 1));
+                            else if (value.charAt(0) == '\'' && value.charAt(value.length() - 1) == '\'')
+                                value = value.substring(1, value.length() - 1);
+                        }
+
+                        if (key == null || value == null) {
+                            error("  Invalid configuration, bad output config: [" + e.getKey() + ": " + e.getValue() + "]");
+                            return false;
+                        }
+
+                        outputs.put(key, value);
+                        File artifact = new File(key);
+                        if (!artifact.exists()) {
+                            log("    " + key + " Missing");
+                            miss = true;
+                        } else {
+                            String sha = DownloadUtils.getSha1(artifact);
+                            if (sha.equals(value)) {
+                                log("    " + key + " Validated: " + value);
+                            } else {
+                                log("    " + key);
+                                log("      Expected: " + value);
+                                log("      Actual:   " + sha);
+                                miss = true;
+                                artifact.delete();
+                            }
+                        }
+                    }
+                    if (!miss) {
+                        log("  Cache Hit!");
+                        return true;
+                    }
+                }
 
                 File jar = proc.getJar().getLocalPath(librariesDir);
                 if (!jar.exists() || !jar.isFile()) {
@@ -190,7 +239,32 @@ public class PostProcessors {
                         error("Failed to run processor: " + e.getClass().getName() + ":" + e.getMessage() + "\nSee log for more details.");
                     return false;
                 }
+
+                if (!outputs.isEmpty()) {
+                    for (Entry<String, String> e : outputs.entrySet()) {
+                        File artifact = new File(e.getKey());
+                        if (!artifact.exists()) {
+                            err.append("\n    ").append(e.getKey()).append(" missing");
+                        } else {
+                            String sha = DownloadUtils.getSha1(artifact);
+                            if (sha.equals(e.getValue())) {
+                                log("  Output: " + e.getKey() + " Checksum Validated: " + sha);
+                            } else {
+                                err.append("\n    ").append(e.getKey())
+                                   .append("\n      Expected: ").append(e.getValue())
+                                   .append("\n      Actual:   ").append(sha);
+                                if (!artifact.delete())
+                                    err.append("\n      Could not delete file");
+                            }
+                        }
+                    }
+                    if (err.length() > 0) {
+                        error("  Processor failed, invalid outputs:" + err.toString());
+                        return false;
+                    }
+                }
             }
+
             return true;
         } catch (IOException e) {
             e.printStackTrace();

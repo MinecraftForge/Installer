@@ -150,6 +150,13 @@ public class Install
          *   {SIDE} - Either the exact string "client", "server", and "extract" depending on what side we are installing.
          */
         private String[] args;
+        /*
+         *  Files output from this task, used for verifying the process was successful, or if the task needs to be rerun.
+         *  Keys are either a [Artifact] or {DATA_ENTRRY}, if it is a {DATA_ENTRY} then that MUST be a [Artifact]
+         *  Values are either a {DATA_ENTRY} or 'value', if it is a {DATA_ENTRY} then that entry MUST be a quoted string literal
+         *    The end string literal is the sha1 hash of the specified artifact.
+         */
+        private Map<String, String> outputs;
 
         public boolean isSide(String side) {
             return sides == null || sides.contains(side);
@@ -165,6 +172,10 @@ public class Install
 
         public String[] getArgs() {
             return args == null ? new String[0] : args;
+        }
+
+        public Map<String, String> getOutputs() {
+            return outputs == null ? Collections.emptyMap() : outputs;
         }
     }
 
