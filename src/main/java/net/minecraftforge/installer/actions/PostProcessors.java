@@ -114,6 +114,7 @@ public class PostProcessors {
             }
             for (Processor proc : processors) {
                 monitor.progress((double) progress++ / processors.size());
+                log("===============================================================================");
 
                 Map<String, String> outputs = new HashMap<>();
                 if (!proc.getOutputs().isEmpty()) {
@@ -159,7 +160,7 @@ public class PostProcessors {
                     }
                     if (!miss) {
                         log("  Cache Hit!");
-                        return true;
+                        continue;
                     }
                 }
 

@@ -55,7 +55,7 @@ public class SimpleInstaller
             monitor = ProgressCallback.withOutputs(System.out);
         }
         hookStdOut(monitor);
-        
+
         if (System.getProperty("java.net.preferIPv4Stack") == null) //This is a dirty hack, but screw it, i'm hoping this as default will fix more things then it breaks.
         {
             System.setProperty("java.net.preferIPv4Stack", "true");
@@ -72,7 +72,6 @@ public class SimpleInstaller
 
         OptionParser parser = new OptionParser();
         OptionSpec<File> serverInstallOption = parser.accepts("installServer", "Install a server to the current directory").withOptionalArg().ofType(File.class).defaultsTo(new File("."));
-        OptionSpec<File> clientInstallOption = parser.accepts("installClient", "Install the client to the specified directory, defaults to normal minecraft install.").withOptionalArg().ofType(File.class).defaultsTo(getMCDir());
         OptionSpec<File> extractOption = parser.accepts("extract", "Extract the contained jar file to the specified directory").withOptionalArg().ofType(File.class).defaultsTo(new File("."));
         OptionSpec<Void> helpOption = parser.acceptsAll(Arrays.asList("h", "help"),"Help with this installer");
         OptionSpec<Void> offlineOption = parser.accepts("offline", "Don't attempt any network calls");
@@ -96,9 +95,6 @@ public class SimpleInstaller
         if (optionSet.has(serverInstallOption)) {
             action = Actions.SERVER;
             target = optionSet.valueOf(serverInstallOption);
-        } else if (optionSet.has(clientInstallOption)) {
-            action = Actions.CLIENT;
-            target = optionSet.valueOf(clientInstallOption);
         } else if (optionSet.has(extractOption)) {
             action = Actions.EXTRACT;
             target = optionSet.valueOf(extractOption);
@@ -171,7 +167,7 @@ public class SimpleInstaller
 
         return new BufferedOutputStream(new FileOutputStream(output));
     }
-    
+
     static void hookStdOut(ProgressCallback monitor)
     {
         final Pattern endingWhitespace = Pattern.compile("\\r?\\n$");
@@ -184,7 +180,7 @@ public class SimpleInstaller
                 System.arraycopy(buf, off, toWrite, 0, len);
                 write(toWrite);
             }
-            
+
             @Override
             public void write(byte[] b)
             {
@@ -194,14 +190,14 @@ public class SimpleInstaller
                     monitor.message(toWrite);
                 }
             }
-            
+
             @Override
             public void write(int b)
             {
                 write(new byte[] { (byte) b });
             }
         };
-        
+
         System.setOut(new PrintStream(monitorStream));
         System.setErr(new PrintStream(monitorStream));
     }
