@@ -7,7 +7,7 @@
   "filePath":"",
   "welcome":"Welcome to the simple forge installer.",
   "minecraft":"1.11",
-  "mirrorList" : "http://files.minecraftforge.net/mirror-brand.list",
+  "mirrorList" : "https://files.minecraftforge.net/mirror-brand.list",
   "logo":"/big_logo.png",
   "modList":"absolute",
   "transform": [
