@@ -107,6 +107,10 @@ public class SimpleInstaller
                 SimpleInstaller.headless = true;
                 monitor.message("Target Directory: " + target);
                 Install install = Util.loadInstallProfile();
+                if (install.getSpec() != 0) {
+                    monitor.stage("Invalid launcher profile spec: " + install.getSpec() + " Only 0 is supported");
+                    System.exit(1);
+                }
                 if (!action.getAction(install, monitor).run(target, a -> true))
                 {
                     monitor.stage("There was an error during installation");

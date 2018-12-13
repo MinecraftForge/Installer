@@ -30,6 +30,8 @@ import net.minecraftforge.installer.DownloadUtils;
 
 public class Install
 {
+    // Specification for this json format. Current known value is 0, or missing, This is for future use if we ever change the format/functionality of the installer..
+    private int spec = 0;
     // Profile name to install and direct at this new version
     private String profile;
     // Version name to install to.
@@ -60,6 +62,10 @@ public class Install
     // non-serialized values
     private Mirror mirror;
     private boolean triedMirrors = false;
+
+    public int getSpec() {
+        return spec;
+    }
 
     public String getProfile() {
         return profile;

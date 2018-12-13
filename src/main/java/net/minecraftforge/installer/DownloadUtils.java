@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.List;
@@ -183,16 +184,41 @@ public class DownloadUtils {
         return sha1 != null && sha1.equals(checksum);
     }
 
-    private static URLConnection getConnection(String url) {
+    private static URLConnection getConnection(String address) {
         if (OFFLINE_MODE) {
-            System.out.println("Offline Mode: Not downloading: " + url);
+            System.out.println("Offline Mode: Not downloading: " + address);
             return null;
         }
 
         try {
-            URLConnection connection = new URL(url).openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
+            int MAX = 3;
+            URL url = new URL(address);
+            URLConnection connection = null;
+            for (int x = 0; x < MAX; x++) { //Maximum of 3 redirects.
+                connection = url.openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+                if (connection instanceof HttpURLConnection) {
+                    HttpURLConnection hcon = (HttpURLConnection)connection;
+                    hcon.setInstanceFollowRedirects(false);
+                    int res = hcon.getResponseCode();
+                    if (res == HttpURLConnection.HTTP_MOVED_PERM || res == HttpURLConnection.HTTP_MOVED_TEMP) {
+                        String location = hcon.getHeaderField("Location");
+                        hcon.disconnect(); //Kill old connection.
+                        if (x == MAX-1) {
+                            System.out.println("Invalid number of redirects: " + location);
+                            return null;
+                        } else {
+                            System.out.println("Following redirect: " + location);
+                            url = new URL(url, location); // Nested in case of relative urls.
+                        }
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
             return connection;
         } catch (IOException e) {
             e.printStackTrace();

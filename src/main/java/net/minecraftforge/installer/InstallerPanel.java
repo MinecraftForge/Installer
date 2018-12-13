@@ -72,6 +72,7 @@ import net.minecraftforge.installer.actions.Actions;
 import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.OptionalLibrary;
+import net.minecraftforge.installer.json.Util;
 
 @SuppressWarnings("unused")
 public class InstallerPanel extends JPanel {
@@ -159,6 +160,12 @@ public class InstallerPanel extends JPanel {
     public InstallerPanel(File targetDir, Install profile)
     {
         this.profile = profile;
+
+        if (this.profile.getSpec() != 0) {
+            JOptionPane.showMessageDialog(null, "Invalid launcher profile spec: " + profile.getSpec() + " Only 0 is supported, Whoever package this installer messed up.", "Error", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
+
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         BufferedImage image = getImage(profile.getLogo(), null);
         //final BufferedImage urlIcon = getImage(profile.getUrlIcon(), URL);
