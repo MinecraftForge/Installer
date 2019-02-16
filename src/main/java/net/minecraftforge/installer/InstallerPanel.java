@@ -379,7 +379,7 @@ public class InstallerPanel extends JPanel {
         }
         if (valid)
         {
-            selectedDirText.setForeground(Color.BLACK);
+            selectedDirText.setForeground(null);
             infoLabel.setVisible(false);
             fileEntryPanel.setBorder(null);
         }
