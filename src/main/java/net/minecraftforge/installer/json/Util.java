@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraftforge.installer.DownloadUtils;
@@ -34,23 +35,23 @@ public class Util {
 
     public static Install loadInstallProfile() {
         try (InputStream stream = Util.class.getResourceAsStream("/install_profile.json")) {
-            return GSON.fromJson(new InputStreamReader(stream), Install.class);
+            return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Install.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     public static Mirror[] loadMirriorList(InputStream stream) {
-        return GSON.fromJson(new InputStreamReader(stream), Mirror[].class);
+        return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Mirror[].class);
     }
 
     public static Manifest loadManifest(InputStream stream) {
-        return GSON.fromJson(new InputStreamReader(stream), Manifest.class);
+        return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Manifest.class);
     }
 
     public static Version loadVersion(Install profile) {
         try (InputStream stream = Util.class.getResourceAsStream(profile.getJson())) {
-            return GSON.fromJson(new InputStreamReader(stream), Version.class);
+            return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Version.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -68,7 +69,7 @@ public class Util {
                 return null;
         }
         try (InputStream stream = new FileInputStream(target)) {
-            return GSON.fromJson(new InputStreamReader(stream), Version.class);
+            return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Version.class);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
