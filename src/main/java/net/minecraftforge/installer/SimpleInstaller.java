@@ -77,7 +77,7 @@ public class SimpleInstaller
         OptionSpec<Void> offlineOption = parser.accepts("offline", "Don't attempt any network calls");
         OptionSet optionSet = parser.parse(args);
 
-        if (optionSet.has(helpOption)) {
+        if (optionSet.has(helpOption) || (!optionSet.hasOptions() && "true".equals(System.getProperty("java.awt.headless")))) {
             parser.printHelpOn(System.out);
             return;
         }
