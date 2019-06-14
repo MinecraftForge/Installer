@@ -220,7 +220,7 @@ public class PostProcessors {
                 }
                 monitor.message("  Args: " + args.stream().map(a -> a.indexOf(' ') != -1 || a.indexOf(',') != -1 ? '"' + a + '"' : a).collect(Collectors.joining(", ")), MessagePriority.LOW);
 
-                ClassLoader cl = new URLClassLoader(classpath.toArray(new URL[classpath.size()]), null);
+                ClassLoader cl = new URLClassLoader(classpath.toArray(new URL[classpath.size()]), getParentClassloader());
                 try {
                     Class<?> cls = Class.forName(mainClass, true, cl);
                     Method main = cls.getDeclaredMethod("main", String[].class);
