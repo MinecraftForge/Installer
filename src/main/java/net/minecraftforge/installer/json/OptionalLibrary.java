@@ -20,12 +20,11 @@ package net.minecraftforge.installer.json;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
-
-import com.google.common.base.Charsets;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Lists;
-import com.google.common.io.Files;
+import java.util.function.Predicate;
 
 public class OptionalLibrary {
     private String name;
@@ -55,10 +54,10 @@ public class OptionalLibrary {
 
     public static boolean saveModListJson(File root, File json, List<OptionalLibrary> libs, Predicate<String> filter)
     {
-        List<String> artifacts = Lists.newArrayList();
+        List<String> artifacts = new ArrayList<>();
         for (OptionalLibrary lib : libs)
         {
-            if (filter.apply(lib.getArtifact()))
+            if (filter.test(lib.getArtifact()))
                 artifacts.add(lib.getArtifact());
         }
 
@@ -87,7 +86,7 @@ public class OptionalLibrary {
 
         try
         {
-            Files.write(buf.toString(), json, Charsets.UTF_8);
+            Files.write(json.toPath(), buf.toString().getBytes(StandardCharsets.UTF_8));
             return true;
         }
         catch (IOException e)

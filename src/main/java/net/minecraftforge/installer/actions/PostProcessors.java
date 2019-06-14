@@ -220,7 +220,7 @@ public class PostProcessors {
                 }
                 monitor.message("  Args: " + args.stream().map(a -> a.indexOf(' ') != -1 || a.indexOf(',') != -1 ? '"' + a + '"' : a).collect(Collectors.joining(", ")), MessagePriority.LOW);
 
-                ClassLoader cl = new URLClassLoader(classpath.toArray(new URL[classpath.size()]), getParentClassloader());
+                ClassLoader cl = new URLClassLoader(classpath.toArray(new URL[classpath.size()]), null);
                 try {
                     Class<?> cls = Class.forName(mainClass, true, cl);
                     Method main = cls.getDeclaredMethod("main", String[].class);
@@ -286,6 +286,7 @@ public class PostProcessors {
 
     private static boolean clChecked = false;
     private static ClassLoader parentClassLoader = null;
+    @SuppressWarnings("unused")
     private synchronized ClassLoader getParentClassloader() { //Reflectively try and get the platform classloader, done this way to prevent hard dep on J9.
         if (!clChecked) {
             clChecked = true;

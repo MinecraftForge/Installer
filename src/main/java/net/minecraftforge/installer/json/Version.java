@@ -43,6 +43,7 @@ public class Version {
         private String sha1;
         private int size;
         private String url;
+        private boolean provided = false;
 
         public String getSha1() {
             return sha1;
@@ -53,7 +54,11 @@ public class Version {
         }
 
         public String getUrl() {
-            return url == null ? "" : url;
+            return url == null || provided ? "" : url;
+        }
+
+        public boolean getProvided() {
+            return provided;
         }
     }
 

@@ -21,8 +21,6 @@ package net.minecraftforge.installer.json;
 import java.io.File;
 import java.lang.reflect.Type;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
@@ -50,7 +48,7 @@ public class Artifact {
         Artifact ret = new Artifact();
         ret.descriptor = descriptor;
 
-        String[] pts = Iterables.toArray(Splitter.on(':').split(descriptor), String.class);
+        String[] pts = descriptor.split(":");
         ret.domain = pts[0];
         ret.name = pts[1];
 

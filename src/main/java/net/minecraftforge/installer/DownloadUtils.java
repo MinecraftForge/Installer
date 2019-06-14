@@ -25,11 +25,10 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.function.Predicate;
-
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
 
 import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.Artifact;
@@ -88,7 +87,7 @@ public class DownloadUtils {
         try (final InputStream input = DownloadUtils.class.getResourceAsStream("/maven/" + artifact.getPath())) {
             if (input != null) {
                 monitor.message("  Extracting library from /maven/" + artifact.getPath());
-                Files.copy(() -> input, target);
+                Files.copy(input, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 if (download.getSha1() != null) {
                     String sha1 = getSha1(target);
                     if (download.getSha1().equals(sha1)) {
@@ -144,7 +143,7 @@ public class DownloadUtils {
         try {
             URLConnection connection = getConnection(url);
             if (connection != null) {
-                Files.copy(() -> connection.getInputStream(), target);
+                Files.copy(connection.getInputStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
                 if (download.getSha1() != null) {
                     String sha1 = getSha1(target);
@@ -170,7 +169,7 @@ public class DownloadUtils {
 
     public static String getSha1(File target) {
         try {
-            return Hashing.sha1().hashBytes(Files.toByteArray(target)).toString();
+            return HashFunction.SHA1.hash(Files.readAllBytes(target.toPath())).toString();
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -235,11 +234,11 @@ public class DownloadUtils {
             else if ((etag.startsWith("\"")) && (etag.endsWith("\"")))
                 etag = etag.substring(1, etag.length() - 1);
 
-            Files.copy(() -> connection.getInputStream(), target);
+            Files.copy(connection.getInputStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
             if (etag.indexOf('-') != -1) return true; //No-etag, assume valid
-            byte[] fileData = Files.toByteArray(target);
-            String md5 = Hashing.md5().hashBytes(fileData).toString();
+            byte[] fileData = Files.readAllBytes(target.toPath());
+            String md5 = HashFunction.MD5.hash(fileData).toString();
             System.out.println("  ETag: " + etag);
             System.out.println("  MD5:  " + md5);
             return etag.equalsIgnoreCase(md5);
@@ -281,7 +280,7 @@ public class DownloadUtils {
         try {
             URLConnection connection = getConnection(url);
             if (connection != null) {
-                Files.copy(() -> connection.getInputStream(), target);
+                Files.copy(connection.getInputStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 return true;
             }
         } catch (IOException e) {
@@ -301,7 +300,7 @@ public class DownloadUtils {
             target.getParentFile().mkdirs();
 
         try {
-            Files.copy(() -> input, target);
+            Files.copy(input, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
             return checksumValid(target, checksum);
         } catch (Exception e) {
             e.printStackTrace();
@@ -321,7 +320,7 @@ public class DownloadUtils {
             target.getParentFile().mkdirs();
 
         try {
-            Files.copy(() -> input, target);
+            Files.copy(input, target.toPath(), StandardCopyOption.REPLACE_EXISTING);
             return true; //checksumValid(target, checksum); //TODO: zip checksums?
         } catch (Exception e) {
             e.printStackTrace();

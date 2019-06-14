@@ -5,6 +5,7 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven { url = 'https://files.minecraftforge.net/maven/' }
+    maven { url = 'https://libraries.minecraft.net/' }
 }
 
 def sha1(file) {
@@ -22,10 +23,11 @@ def md5(file) {
     return md.digest().collect {String.format "%02x", it}.join()
 }
 
-def artifactTree(repo, artifact) {
+def artifactTree(repo, artifact, transitive) {
     if (!project.ext.has('tree_resolver'))
         project.ext.tree_resolver = 1
     def cfg = project.configurations.create('tree_resolver_' + project.ext.tree_resolver++)
+    cfg.transitive = transitive
     def dep = project.dependencies.create(artifact)
     cfg.dependencies.add(dep)
     def files = cfg.resolve()
@@ -84,8 +86,11 @@ def checkExists(url) {
     return code == 200
 }
 //TODO: Make Forge's build explode if a file is missing from our repo
-task artifacts() << {
-    file('dep_repo').deleteDir()
-    artifactTree('dep_repo', 'net.minecraftforge:jarsplitter:1.0.2') 
-    artifactTree('dep_repo', 'net.minecraftforge:binarypatcher:1.0.1') 
+task artifacts() {
+    doLast {
+        file('dep_repo').deleteDir()
+        [
+            'com.google.code.findbugs:jsr305:3.0.1'
+        ].forEach{art -> artifactTree('dep_repo', art, false)}
+    }
 }

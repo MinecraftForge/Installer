@@ -54,7 +54,7 @@ public abstract class Action {
             JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
         monitor.stage(message);
     }
-    
+
     public abstract boolean run(File target, Predicate<String> optionals) throws ActionCanceledException;
     public abstract boolean isPathValid(File targetDir);
     public abstract String getFileError(File targetDir);
@@ -78,7 +78,7 @@ public abstract class Action {
             monitor.progress(progress++ / steps);
             if (!DownloadUtils.downloadLibrary(monitor, profile.getMirror(), lib, librariesDir, optionals, grabbed)) {
                 LibraryDownload download = lib.getDownloads() == null ? null :  lib.getDownloads().getArtifact();
-                if (download != null && download.getUrl() != null) // If it doesn't have a URL we can't download it, assume we install it later
+                if (download != null && !download.getUrl().isEmpty()) // If it doesn't have a URL we can't download it, assume we install it later
                     output.append('\n').append(lib.getName());
             }
         }
@@ -97,7 +97,7 @@ public abstract class Action {
     protected int getTaskCount() {
         return profile.getLibraries().length + processors.getTaskCount();
     }
-    
+
     protected void checkCancel() throws ActionCanceledException {
         try {
             Thread.sleep(1);

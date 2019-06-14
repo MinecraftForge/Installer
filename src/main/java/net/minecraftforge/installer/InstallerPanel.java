@@ -64,8 +64,6 @@ import javax.swing.ListCellRenderer;
 import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
-import com.google.common.base.Throwables;
-
 import net.minecraftforge.installer.actions.Action;
 import net.minecraftforge.installer.actions.ActionCanceledException;
 import net.minecraftforge.installer.actions.Actions;
@@ -150,11 +148,10 @@ public class InstallerPanel extends JPanel {
         catch (IOException e)
         {
             if (default_ == null)
-                Throwables.propagate(e);
+                throw new RuntimeException(e);
             else
                 return new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
         }
-        return null;
     }
 
     public InstallerPanel(File targetDir, Install profile)

@@ -20,13 +20,14 @@ package net.minecraftforge.installer.actions;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.function.Predicate;
 import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.Util;
 import net.minecraftforge.installer.json.Version;
 import net.minecraftforge.installer.json.Version.Download;
-import com.google.common.io.Files;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -52,15 +53,15 @@ public class ClientInstall extends Action {
         File versionRoot = new File(target, "versions");
         File librariesDir = new File(target, "libraries");
         librariesDir.mkdir();
-        
+
         checkCancel();
-        
+
         // Extract version json
         monitor.stage("Extracting json");
         try (InputStream stream = Util.class.getResourceAsStream(profile.getJson())) {
             File json = new File(versionRoot, profile.getVersion() + '/' + profile.getVersion() + ".json");
             json.getParentFile().mkdirs();
-            Files.copy(() -> stream, json);
+            Files.copy(stream, json.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             error("  Failed to extract");
             e.printStackTrace();
@@ -79,7 +80,7 @@ public class ClientInstall extends Action {
                 versionVanilla.mkdirs();
         }
         checkCancel();
-        
+
         File clientTarget = new File(versionVanilla, profile.getMinecraft() + ".jar");
         if (!clientTarget.exists()) {
             File versionJson = new File(versionVanilla, profile.getMinecraft() + ".json");
@@ -140,7 +141,7 @@ public class ClientInstall extends Action {
 
         if (!processors.process(librariesDir, clientTarget))
             return false;
-        
+
         checkCancel();
 
         monitor.stage("Injecting profile");
@@ -176,7 +177,7 @@ public class ClientInstall extends Action {
             }
             _profile.addProperty("lastVersionId", profile.getVersion());
             String jstring = Util.GSON.toJson(json);
-            Files.write(jstring.getBytes(StandardCharsets.UTF_8), target);
+            Files.write(target.toPath(), jstring.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             error("There was a problem writing the launch profile,  is it write protected?");
             return false;
