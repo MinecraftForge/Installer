@@ -39,6 +39,10 @@ public class ServerInstall extends Action {
 
     @Override
     public boolean run(File target, Predicate<String> optionals) throws ActionCanceledException {
+        if (!DownloadUtils.OFFLINE_MODE && !hasJavaForDownload()) {
+            error("Your java version is too old to use the installer, please use an up to data version of java 8 or above");
+            return false;
+        }
         if (target.exists() && !target.isDirectory()) {
             error("There is a file at this location, the server cannot be installed here!");
             return false;
