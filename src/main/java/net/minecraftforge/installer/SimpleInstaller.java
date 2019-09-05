@@ -62,6 +62,10 @@ public class SimpleInstaller
             System.out.println("ENABELING OFFLINE MODE");
             cnt = 1;
         }
+        else
+        {
+            FixSSL.fixup(System.out::println);
+        }
 
         if (optionSet.specs().size() > cnt)
         {
