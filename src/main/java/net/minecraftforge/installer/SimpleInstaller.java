@@ -93,6 +93,10 @@ public class SimpleInstaller
             monitor.message("ENABELING OFFLINE MODE");
             cnt = 1;
         }
+        else
+        {
+            FixSSL.fixup(monitor);
+        }
 
         Actions action = null;
         File target = null;
