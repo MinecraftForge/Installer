@@ -105,20 +105,4 @@ public abstract class Action {
             throw new ActionCanceledException(e);
         }
     }
-
-    protected boolean hasJavaForDownload()
-    {
-        String javaVersion = System.getProperty("java.version");
-        monitor.message("Found java version " + javaVersion);
-        if (javaVersion != null && javaVersion.startsWith("1.8.0_")) {
-            try {
-                if (Integer.parseInt(javaVersion.substring("1.8.0_".length())) < 101)
-                    return false;
-            } catch (NumberFormatException e) {
-                e.printStackTrace();
-                monitor.message("Could not parse java version!");
-            }
-        }
-        return true;
-    }
 }
