@@ -176,6 +176,9 @@ public class ClientInstall extends Action {
                 _profiles.add(profile.getProfile(), _profile);
             }
             _profile.addProperty("lastVersionId", profile.getVersion());
+            String icon = profile.getIcon();
+            if (icon != null)
+                _profile.addProperty("icon", icon);
             String jstring = Util.GSON.toJson(json);
             Files.write(target.toPath(), jstring.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {

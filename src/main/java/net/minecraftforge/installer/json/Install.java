@@ -36,6 +36,8 @@ public class Install
     private String profile;
     // Version name to install to.
     private String version;
+    // Icon to display in the list
+    private String icon;
     // Vanilla version this is based off of.
     private String minecraft;
     // Version json to install into the client
@@ -74,6 +76,11 @@ public class Install
     public String getVersion() {
         return version;
     }
+
+    public String getIcon() {
+        return this.icon;
+    }
+
 
     public String getMinecraft() {
         return minecraft;
@@ -140,7 +147,6 @@ public class Install
 
         return data.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> client ? e.getValue().client : e.getValue().server));
     }
-
     public static class Processor {
         // Which side this task is to be run on, Currently know sides are "client", "server" and "extract", if this omitted, assume all sides.
         private List<String> sides;
