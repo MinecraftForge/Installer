@@ -81,7 +81,6 @@ public class Install
         return this.icon;
     }
 
-
     public String getMinecraft() {
         return minecraft;
     }
@@ -147,6 +146,7 @@ public class Install
 
         return data.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> client ? e.getValue().client : e.getValue().server));
     }
+
     public static class Processor {
         // Which side this task is to be run on, Currently know sides are "client", "server" and "extract", if this omitted, assume all sides.
         private List<String> sides;
