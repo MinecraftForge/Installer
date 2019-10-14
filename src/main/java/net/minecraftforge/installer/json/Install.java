@@ -36,6 +36,8 @@ public class Install
     private String profile;
     // Version name to install to.
     private String version;
+    // Icon to display in the list
+    private String icon;
     // Vanilla version this is based off of.
     private String minecraft;
     // Version json to install into the client
@@ -73,6 +75,10 @@ public class Install
 
     public String getVersion() {
         return version;
+    }
+
+    public String getIcon() {
+        return this.icon;
     }
 
     public String getMinecraft() {
