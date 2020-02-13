@@ -90,7 +90,7 @@ public class SimpleInstaller
         if (optionSet.has(offlineOption))
         {
             DownloadUtils.OFFLINE_MODE = true;
-            monitor.message("ENABELING OFFLINE MODE");
+            monitor.message("ENABLING OFFLINE MODE");
             cnt = 1;
         }
         else
