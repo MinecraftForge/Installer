@@ -62,7 +62,7 @@ ext {
 
 dependencies {
     compile 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    compile 'com.google.code.gson:gson:2.8.5'
+    compile 'com.google.code.gson:gson:2.8.6'
 }
 
 compileJava {
