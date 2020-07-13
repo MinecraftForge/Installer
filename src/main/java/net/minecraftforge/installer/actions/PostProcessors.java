@@ -124,7 +124,7 @@ public class PostProcessors {
                         String key = e.getKey();
                         if (key.charAt(0) == '{' && key.charAt(key.length() - 1) == '}')
                             key = data.get(key.substring(1, key.length() - 1));
-                        else if (key.charAt(0) == '{' && key.charAt(key.length() - 1) == '}')
+                        else if (key.charAt(0) == '[' && key.charAt(key.length() - 1) == ']')
                             key = Artifact.from(key.substring(1, key.length() - 1)).getLocalPath(librariesDir).getAbsolutePath();
 
                         String value = e.getValue();
