@@ -54,7 +54,7 @@ public class ServerInstall extends Action {
 
         // Extract main executable jar
         Artifact contained = profile.getPath();
-        monitor.stage("Extractiung main jar:");
+        monitor.stage("Extracting main jar:");
         if (!DownloadUtils.extractFile(contained, new File(target, contained.getFilename()), null)) {
             error("  Failed to extract main jar: " + contained.getFilename());
             return false;
