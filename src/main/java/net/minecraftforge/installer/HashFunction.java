@@ -39,7 +39,8 @@ public enum HashFunction {
 
     private HashFunction(String algo, int length) {
         this.algo = algo;
-        this.pad = String.format("%0" + length + "d", 0);
+        // must specify locale to get correct number formatting
+        this.pad = String.format(Locale.ENGLISH, "%0" + length + "d", 0);
     }
 
     public String getExtension() {
