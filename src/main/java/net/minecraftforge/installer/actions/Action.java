@@ -64,7 +64,17 @@ public abstract class Action {
         return profile.getMirror() != null ? String.format(SimpleInstaller.headless ? "Data kindly mirrored by %2$s at %1$s" : "<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", profile.getMirror().getHomepage(), profile.getMirror().getName()) : null;
     }
 
-    protected boolean downloadLibraries(File librariesDir, Predicate<String> optionals) throws ActionCanceledException {
+    protected boolean downloadLibraries(File librariesDir, Predicate<String> optionals, List<File> additionalLibDirs) throws ActionCanceledException {
+        monitor.start("Downloading libraries");
+        String userHome = System.getProperty("user.home");
+        if (userHome != null && !userHome.isEmpty()) {
+            File mavenLocalHome = new File(userHome, ".m2/repository");
+            if (mavenLocalHome.exists()) {
+                additionalLibDirs.add(mavenLocalHome);
+            }
+        }
+        monitor.message(String.format("Found %d additional library directories", additionalLibDirs.size()));
+
         List<Library> libraries = new ArrayList<>();
         libraries.addAll(Arrays.asList(version.getLibraries()));
         libraries.addAll(Arrays.asList(processors.getLibraries()));
@@ -72,11 +82,11 @@ public abstract class Action {
         StringBuilder output = new StringBuilder();
         final double steps = libraries.size();
         int progress = 1;
-        monitor.start("Downloading libraries");
+
         for (Library lib : libraries) {
             checkCancel();
             monitor.progress(progress++ / steps);
-            if (!DownloadUtils.downloadLibrary(monitor, profile.getMirror(), lib, librariesDir, optionals, grabbed)) {
+            if (!DownloadUtils.downloadLibrary(monitor, profile.getMirror(), lib, librariesDir, optionals, grabbed, additionalLibDirs)) {
                 LibraryDownload download = lib.getDownloads() == null ? null :  lib.getDownloads().getArtifact();
                 if (download != null && !download.getUrl().isEmpty()) // If it doesn't have a URL we can't download it, assume we install it later
                     output.append('\n').append(lib.getName());
