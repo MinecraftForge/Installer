@@ -139,7 +139,7 @@ public class ClientInstall extends Action {
         }
         */
 
-        if (!processors.process(librariesDir, clientTarget))
+        if (!processors.process(target, librariesDir, clientTarget))
             return false;
 
         checkCancel();

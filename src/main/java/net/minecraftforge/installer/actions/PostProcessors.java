@@ -74,7 +74,7 @@ public class PostProcessors {
             profile.getData(isClient).size();
     }
 
-    public boolean process(File librariesDir, File minecraft) {
+    public boolean process(File baseDir, File librariesDir, File minecraft) {
         try {
             if (!data.isEmpty()) {
                 StringBuilder err = new StringBuilder();
@@ -90,6 +90,8 @@ public class PostProcessors {
                         data.put(key, Artifact.from(value.substring(1, value.length() -1)).getLocalPath(librariesDir).getAbsolutePath());
                     } else if (value.charAt(0) == '\'' && value.charAt(value.length() - 1) == '\'') { //Literal
                         data.put(key, value.substring(1, value.length() -1));
+                    } else if (value.charAt(0) == '|' && value.charAt(value.length() - 1) == '|') { //Relative
+                        data.put(key, new File(baseDir, value.substring(1, value.length() -1)).getAbsolutePath());
                     } else {
                         File target = Paths.get(temp.toString(), value).toFile();
                         monitor.message("  Extracting: " + value);

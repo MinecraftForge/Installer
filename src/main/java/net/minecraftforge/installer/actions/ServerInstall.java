@@ -92,7 +92,7 @@ public class ServerInstall extends Action {
             return false;
 
         checkCancel();
-        if (!processors.process(librariesDir, serverTarget))
+        if (!processors.process(target, librariesDir, serverTarget))
             return false;
 
         // TODO: Optionals
