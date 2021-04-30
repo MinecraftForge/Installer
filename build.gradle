@@ -9,7 +9,7 @@ buildscript {
 
 plugins {
     id 'org.cadixdev.licenser' version '0.5.0'
-    id 'org.ajoberstar.grgit' version '2.3.0'
+    id 'org.ajoberstar.grgit' version '3.1.1'
     id 'com.github.johnrengelman.shadow' version '6.1.0'
 }
 
@@ -29,8 +29,8 @@ version = gitVersion()
 targetCompatibility = sourceCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
 
 def gitVersion() {
-    def raw = grgit.describe(longDescr: true)
-    def desc = (raw == null ? 'unknown-offset-hash' : grgit.describe(longDescr: true)).split('-') as List
+    def raw = grgit.describe(longDescr: true, tags: true)
+    def desc = (raw == null ? 'unknown-offset-hash' : grgit.describe(longDescr: true, tags: true)).split('-') as List
     def hash = desc.remove(desc.size() - 1)
     def offset = desc.remove(desc.size() - 1)
     def tag = desc.join('-')
