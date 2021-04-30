@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'net.sf.proguard:proguard-gradle:6.0.3'
+        classpath 'net.sf.proguard:proguard-gradle:6.2.2'
     }
 }
 
@@ -26,7 +26,7 @@ repositories {
 group = 'net.minecraftforge'
 archivesBaseName = 'installer'
 version = gitVersion()
-targetCompatibility = sourceCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 def gitVersion() {
     def raw = grgit.describe(longDescr: true, tags: true)
@@ -61,8 +61,8 @@ ext {
 }
 
 dependencies {
-    compile 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    compile 'com.google.code.gson:gson:2.8.5'
+    implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
+    implementation 'com.google.code.gson:gson:2.8.5'
 }
 
 compileJava {
@@ -82,9 +82,9 @@ shadowJar {
 
 task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
     ext {
-        inputJar = shadowJar.archivePath
+        inputJar = shadowJar.archiveFile.get().asFile
         outDir = file("${buildDir}/proguard")
-        obfuscatedJar = "${outDir}/${jar.baseName}.jar"
+        obfuscatedJar = "${outDir}/${jar.archiveBaseName}.jar"
         config = 'proguard.pro'
     }
     inputs.file inputJar
