@@ -13,13 +13,12 @@ import static net.minecraftforge.installer.tasks.Util.*
 plugins {
     id 'org.cadixdev.licenser' version '0.5.0'
     id 'com.github.johnrengelman.shadow' version '6.1.0'
+    id 'maven'
+    id 'maven-publish'
+    id 'java'
+    id 'eclipse'
+    id 'idea'
 }
-
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
 
 repositories {
     mavenCentral()
