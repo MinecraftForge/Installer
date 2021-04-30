@@ -7,9 +7,11 @@ buildscript {
     }
 }
 
+import net.minecraftforge.installer.tasks.*
+import static net.minecraftforge.installer.tasks.Util.*
+
 plugins {
     id 'org.cadixdev.licenser' version '0.5.0'
-    id 'org.ajoberstar.grgit' version '3.1.1'
     id 'com.github.johnrengelman.shadow' version '6.1.0'
 }
 
@@ -23,21 +25,11 @@ repositories {
     mavenCentral()
 }
 
+Util.init() // Init all our extension methods!
+
 group = 'net.minecraftforge'
 archivesBaseName = 'installer'
-version = gitVersion()
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
-
-def gitVersion() {
-    def raw = grgit.describe(longDescr: true, tags: true)
-    def desc = (raw == null ? 'unknown-offset-hash' : grgit.describe(longDescr: true, tags: true)).split('-') as List
-    def hash = desc.remove(desc.size() - 1)
-    def offset = desc.remove(desc.size() - 1)
-    def tag = desc.join('-')
-    def branch = grgit.branch.current().name
-    project.ext.SPEC_VERSION = tag
-    return "${tag}.${offset}" //${t -> if (branch != 'master') t << '-' + branch}"
-}
 
 license {
   header project.file('LICENSE-header.txt')
@@ -46,6 +38,8 @@ license {
 }
 
 ext {
+    GIT_INFO = Util.gitInfo(rootProject.file('.'))
+    SPEC_VERSION = GIT_INFO.tag
     MAIN_CLASS = 'net.minecraftforge.installer.SimpleInstaller'
     MANIFEST = manifest{
         attributes('Main-Class': MAIN_CLASS)
@@ -59,6 +53,9 @@ ext {
         ] as LinkedHashMap, 'net/minecraftforge/installer/')
     }
 }
+
+version = Util.getVersion(GIT_INFO)
+println('Installer Version: ' + version)
 
 dependencies {
     implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
