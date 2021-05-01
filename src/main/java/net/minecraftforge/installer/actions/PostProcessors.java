@@ -128,6 +128,9 @@ public class PostProcessors {
                             key = data.get(key.substring(1, key.length() - 1));
                         else if (key.charAt(0) == '[' && key.charAt(key.length() - 1) == ']')
                             key = Artifact.from(key.substring(1, key.length() - 1)).getLocalPath(librariesDir).getAbsolutePath();
+                        else if (key.charAt(0) == '|' && key.charAt(key.length() - 1) == '|')
+                            key = new File(baseDir, key.substring(1, key.length() -1)).getAbsolutePath();
+
 
                         String value = e.getValue();
                         if (value != null) {
@@ -213,6 +216,8 @@ public class PostProcessors {
                         if (value == null)
                             err.append("\n  ").append(key);
                         args.add(value);
+                    } else if (start == '|' && end == '|') { // Relative
+                        args.add(new File(baseDir, arg.substring(1, arg.length() - 1)).getAbsolutePath());
                     } else
                         args.add(arg);
                 }
