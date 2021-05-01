@@ -408,6 +408,7 @@ public class InstallerPanel extends JPanel {
         emptyFrame.setLocationRelativeTo(null);
         emptyFrame.setUndecorated(true);
         emptyFrame.setVisible(true);
+        emptyFrame.setBackground(new Color(0, true));
         emptyFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         dialog = optionPane.createDialog(emptyFrame, "Mod system installer");
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
