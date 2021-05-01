@@ -15,9 +15,27 @@ pipeline {
     }
 
     stages {
+        stage('notify_start') {
+            when {
+                not {
+                    changeRequest()
+                }
+            }
+            steps {
+                discordSend(
+                    title: "${DISCORD_PREFIX} Started",
+                    successful: true,
+                    result: 'ABORTED', //White border
+                    thumbnail: JENKINS_HEAD,
+                    webhookURL: DISCORD_WEBHOOK
+                )
+            }
+        }
         stage('buildandtest') {
             steps {
-                sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
+                withGradle {
+                    sh './gradlew ${GRADLE_ARGS} --refresh-dependencies --continue build test'
+                }
                 script {
                     env.MYVERSION = sh(returnStdout: true, script: './gradlew properties -q | grep "version:" | awk \'{print $2}\'').trim()
                 }
@@ -39,26 +57,30 @@ pipeline {
                 FORGE_MAVEN = credentials('forge-maven-forge-user')
             }
             steps {
-                sh './gradlew ${GRADLE_ARGS} publish -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW}'
-                sh 'curl --user ${FORGE_MAVEN} http://files.minecraftforge.net/maven/manage/promote/latest/net.minecraftforge.installer/${MYVERSION}'
+                withGradle {
+                    sh './gradlew ${GRADLE_ARGS} publish -PforgeMavenUser=${FORGE_MAVEN_USR} -PforgeMavenPassword=${FORGE_MAVEN_PSW}'
+                }
+            }
+             post {
+                success {
+                    build job: 'filegenerator', parameters: [string(name: 'COMMAND', value: "promote net.minecraftforge:installer ${env.MYVERSION} latest")], propagate: false, wait: false
+                }
             }
         }
     }
     post {
         always {
-            archiveArtifacts artifacts: 'build/libs/**/*.jar', fingerprint: true, onlyIfSuccessful: true
-            //junit 'build/test-results/*/*.xml'
-            //jacoco sourcePattern: '**/src/*/java'
-
-            if (env.CHANGE_ID == null) { // This is unset for non-PRs
-                discordSend(
-                    title: "${DISCORD_PREFIX} Finished ${currentBuild.currentResult}",
-                    description: '```\n' + getChanges(currentBuild) + '\n```',
-                    successful: currentBuild.resultIsBetterOrEqualTo("SUCCESS"),
-                    result: currentBuild.currentResult,
-                    thumbnail: JENKINS_HEAD,
-                    webhookURL: DISCORD_WEBHOOK
-                )
+            script {
+                if (env.CHANGE_ID == null) { // This is unset for non-PRs
+                    discordSend(
+                        title: "${DISCORD_PREFIX} Finished ${currentBuild.currentResult}",
+                        description: '```\n' + getChanges(currentBuild) + '\n```',
+                        successful: currentBuild.resultIsBetterOrEqualTo("SUCCESS"),
+                        result: currentBuild.currentResult,
+                        thumbnail: JENKINS_HEAD,
+                        webhookURL: DISCORD_WEBHOOK
+                    )
+                }
             }
         }
     }
