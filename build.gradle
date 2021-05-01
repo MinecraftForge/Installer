@@ -3,21 +3,21 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'net.sf.proguard:proguard-gradle:6.0.3'
+        classpath 'net.sf.proguard:proguard-gradle:6.2.2'
     }
 }
 
-plugins {
-  id 'net.minecrell.licenser' version '0.3'
-  id 'org.ajoberstar.grgit' version '2.3.0'
-  id 'com.github.johnrengelman.shadow' version '2.0.4'
-}
+import net.minecraftforge.installer.tasks.JGitUtil
 
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
+plugins {
+    id 'org.cadixdev.licenser' version '0.5.0'
+    id 'com.github.johnrengelman.shadow' version '6.1.0'
+    id 'maven'
+    id 'maven-publish'
+    id 'java'
+    id 'eclipse'
+    id 'idea'
+}
 
 repositories {
     mavenCentral()
@@ -25,19 +25,7 @@ repositories {
 
 group = 'net.minecraftforge'
 archivesBaseName = 'installer'
-version = gitVersion()
-targetCompatibility = sourceCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
-
-def gitVersion() {
-    def raw = grgit.describe(longDescr: true)
-    def desc = (raw == null ? 'unknown-offset-hash' : grgit.describe(longDescr: true)).split('-') as List
-    def hash = desc.remove(desc.size() - 1)
-    def offset = desc.remove(desc.size() - 1)
-    def tag = desc.join('-')
-    def branch = grgit.branch.current().name
-    project.ext.SPEC_VERSION = tag
-    return "${tag}.${offset}" //${t -> if (branch != 'master') t << '-' + branch}"
-}
+java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 
 license {
   header project.file('LICENSE-header.txt')
@@ -46,6 +34,8 @@ license {
 }
 
 ext {
+    GIT_INFO = JGitUtil.gitInfo(rootProject.file('.'))
+    SPEC_VERSION = GIT_INFO.tag
     MAIN_CLASS = 'net.minecraftforge.installer.SimpleInstaller'
     MANIFEST = manifest{
         attributes('Main-Class': MAIN_CLASS)
@@ -60,9 +50,12 @@ ext {
     }
 }
 
+version = JGitUtil.getVersion(GIT_INFO)
+println('Installer Version: ' + version)
+
 dependencies {
-    compile 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    compile 'com.google.code.gson:gson:2.8.5'
+    implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
+    implementation 'com.google.code.gson:gson:2.8.5'
 }
 
 compileJava {
@@ -82,9 +75,9 @@ shadowJar {
 
 task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
     ext {
-        inputJar = shadowJar.archivePath
+        inputJar = shadowJar.archiveFile.get().asFile
         outDir = file("${buildDir}/proguard")
-        obfuscatedJar = "${outDir}/${jar.baseName}.jar"
+        obfuscatedJar = "${outDir}/${jar.archiveBaseName}.jar"
         config = 'proguard.pro'
     }
     inputs.file inputJar
@@ -175,8 +168,4 @@ publishing {
             }
         }
     }
-}
-
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.10'
 }

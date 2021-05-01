@@ -13,3 +13,4 @@ src/main/resources/data/
 src/main/resources/maven/
 src/main/resources/version.json
 src/main/resources/install_profile.json
+.idea/
