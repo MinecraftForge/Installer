@@ -5,7 +5,7 @@ import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.ObjectId
 
-public class Util {
+public class JGitUtil {
 
     public static def gitInfo(dir) {
         def git = null
