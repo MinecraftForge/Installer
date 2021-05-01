@@ -23,9 +23,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.EventQueue;
-import java.awt.Frame;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
@@ -53,6 +51,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
@@ -236,7 +235,7 @@ public class InstallerPanel extends JPanel {
 
         choicePanel.setAlignmentX(RIGHT_ALIGNMENT);
         choicePanel.setAlignmentY(CENTER_ALIGNMENT);
-        add(choicePanel);
+        this.add(choicePanel);
 
         /*
         if (VersionInfo.hasOptionals())
@@ -405,10 +404,11 @@ public class InstallerPanel extends JPanel {
     {
         JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
 
-        Frame emptyFrame = new Frame("Mod system installer");
+        JFrame emptyFrame = new JFrame("Mod system installer");
         emptyFrame.setLocationRelativeTo(null);
         emptyFrame.setUndecorated(true);
         emptyFrame.setVisible(true);
+        emptyFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         dialog = optionPane.createDialog(emptyFrame, "Mod system installer");
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         dialog.setVisible(true);
