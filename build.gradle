@@ -7,8 +7,7 @@ buildscript {
     }
 }
 
-import net.minecraftforge.installer.tasks.*
-import static net.minecraftforge.installer.tasks.Util.*
+import net.minecraftforge.installer.tasks.JGitUtil
 
 plugins {
     id 'org.cadixdev.licenser' version '0.5.0'
@@ -24,8 +23,6 @@ repositories {
     mavenCentral()
 }
 
-Util.init() // Init all our extension methods!
-
 group = 'net.minecraftforge'
 archivesBaseName = 'installer'
 java.toolchain.languageVersion = JavaLanguageVersion.of(8)
@@ -37,7 +34,7 @@ license {
 }
 
 ext {
-    GIT_INFO = Util.gitInfo(rootProject.file('.'))
+    GIT_INFO = JGitUtil.gitInfo(rootProject.file('.'))
     SPEC_VERSION = GIT_INFO.tag
     MAIN_CLASS = 'net.minecraftforge.installer.SimpleInstaller'
     MANIFEST = manifest{
@@ -53,7 +50,7 @@ ext {
     }
 }
 
-version = Util.getVersion(GIT_INFO)
+version = JGitUtil.getVersion(GIT_INFO)
 println('Installer Version: ' + version)
 
 dependencies {
