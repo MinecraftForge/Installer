@@ -1,9 +1,6 @@
 @Library('forge-shared-library')_
 
 pipeline {
-    options {
-        disableConcurrentBuilds()
-    }
     agent {
         docker {
             image 'gradle:jdk8'
