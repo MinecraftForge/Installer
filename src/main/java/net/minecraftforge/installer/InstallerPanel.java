@@ -405,11 +405,7 @@ public class InstallerPanel extends JPanel {
     {
         JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
 
-        Frame emptyFrame = new Frame("Mod system installer");
-        emptyFrame.setLocationRelativeTo(null);
-        emptyFrame.setUndecorated(true);
-        emptyFrame.setVisible(true);
-        dialog = optionPane.createDialog(emptyFrame, "Mod system installer");
+        dialog = optionPane.createDialog("Mod system installer");
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         dialog.setVisible(true);
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
@@ -441,7 +437,6 @@ public class InstallerPanel extends JPanel {
             }
         }
         dialog.dispose();
-        emptyFrame.dispose();
     }
 
     private void openURL(String url)
