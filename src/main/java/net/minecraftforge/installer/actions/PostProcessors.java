@@ -221,6 +221,10 @@ public class PostProcessors {
                 monitor.message("  Args: " + args.stream().map(a -> a.indexOf(' ') != -1 || a.indexOf(',') != -1 ? '"' + a + '"' : a).collect(Collectors.joining(", ")), MessagePriority.LOW);
 
                 ClassLoader cl = new URLClassLoader(classpath.toArray(new URL[classpath.size()]), getParentClassloader());
+                // Set the thread context classloader to be our newly constructed one so that service loaders work
+                Thread currentThread = Thread.currentThread();
+                ClassLoader threadClassloader = currentThread.getContextClassLoader();
+                currentThread.setContextClassLoader(cl);
                 try {
                     Class<?> cls = Class.forName(mainClass, true, cl);
                     Method main = cls.getDeclaredMethod("main", String[].class);
@@ -239,6 +243,9 @@ public class PostProcessors {
                     else
                         error("Failed to run processor: " + e.getClass().getName() + ":" + e.getMessage() + "\nSee log for more details.");
                     return false;
+                } finally {
+                    // Set back to the previous classloader
+                    currentThread.setContextClassLoader(threadClassloader);
                 }
 
                 if (!outputs.isEmpty()) {
