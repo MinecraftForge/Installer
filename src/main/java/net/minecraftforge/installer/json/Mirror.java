@@ -32,6 +32,15 @@ public class Mirror {
     private boolean triedImage;
     private Icon _image_;
 
+    public Mirror() {}
+
+    public Mirror(String name, String image, String homepage, String url) {
+        this.name = name;
+        this.image = image;
+        this.homepage = homepage;
+        this.url = url;
+    }
+
     public Icon getImage() {
         if (!triedImage) {
             try {

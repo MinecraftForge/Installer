@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -41,6 +42,8 @@ import net.minecraftforge.installer.json.Util;
 public class SimpleInstaller
 {
     public static boolean headless = false;
+    public static boolean debug = false;
+    public static URL mirror = null;
 
     public static void main(String[] args) throws IOException
     {
@@ -79,6 +82,8 @@ public class SimpleInstaller
         OptionSpec<File> extractOption = parser.accepts("extract", "Extract the contained jar file to the specified directory").withOptionalArg().ofType(File.class).defaultsTo(new File("."));
         OptionSpec<Void> helpOption = parser.acceptsAll(Arrays.asList("h", "help"),"Help with this installer");
         OptionSpec<Void> offlineOption = parser.accepts("offline", "Don't attempt any network calls");
+        OptionSpec<Void> debugOption = parser.accepts("debug", "Run in debug mode -- don't delete any files");
+        OptionSpec<URL> mirrorOption = parser.accepts("mirror", "Use a specific mirror URL").withRequiredArg().ofType(URL.class);
         OptionSet optionSet = parser.parse(args);
 
         if (optionSet.has(helpOption)) {
@@ -86,12 +91,15 @@ public class SimpleInstaller
             return;
         }
 
-        int cnt = 0;
+        debug = optionSet.has(debugOption);
+        if (optionSet.has(mirrorOption)) {
+            mirror = optionSet.valueOf(mirrorOption);
+        }
+
         if (optionSet.has(offlineOption))
         {
             DownloadUtils.OFFLINE_MODE = true;
             monitor.message("ENABELING OFFLINE MODE");
-            cnt = 1;
         }
         else
         {
@@ -137,8 +145,6 @@ public class SimpleInstaller
                 System.exit(1);
             }
         }
-        else if (optionSet.specs().size() > cnt)
-            parser.printHelpOn(System.err);
         else
             launchGui(monitor);
     }

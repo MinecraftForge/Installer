@@ -261,7 +261,7 @@ public class PostProcessors {
                                 err.append("\n    ").append(e.getKey())
                                    .append("\n      Expected: ").append(e.getValue())
                                    .append("\n      Actual:   ").append(sha);
-                                if (!artifact.delete())
+                                if (!SimpleInstaller.debug && !artifact.delete())
                                     err.append("\n      Could not delete file");
                             }
                         }
