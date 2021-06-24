@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 
 import net.minecraftforge.installer.DownloadUtils;
+import net.minecraftforge.installer.SimpleInstaller;
 
 public class Install
 {
@@ -110,9 +111,15 @@ public class Install
     }
 
     public Mirror getMirror() {
+        if (mirror != null)
+            return mirror;
+        if (SimpleInstaller.mirror != null) {
+            mirror = new Mirror("Mirror", "", "", SimpleInstaller.mirror.toString());
+            return mirror;
+        }
         if (getMirrorList() == null)
             return null;
-        if (!triedMirrors && mirror == null) {
+        if (!triedMirrors) {
             Mirror[] list = DownloadUtils.downloadMirrors(getMirrorList());
             mirror = list == null ? null : list[new Random().nextInt(list.length)];
         }

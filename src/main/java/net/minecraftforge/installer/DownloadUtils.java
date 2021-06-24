@@ -129,7 +129,7 @@ public class DownloadUtils {
 
     public static boolean download(ProgressCallback monitor, Mirror mirror, LibraryDownload download, File target) {
         String url = download.getUrl();
-        if (!url.startsWith(LIBRARIES_URL) && mirror != null)
+        if (url.startsWith("http") && !url.startsWith(LIBRARIES_URL) && mirror != null)
             url = mirror.getUrl() + download.getPath();
         return download(monitor, mirror, download, target, url);
     }
