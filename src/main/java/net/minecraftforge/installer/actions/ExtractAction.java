@@ -23,27 +23,29 @@ import java.util.function.Predicate;
 
 import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.json.Artifact;
-import net.minecraftforge.installer.json.Install;
+import net.minecraftforge.installer.json.InstallV1;
 
 public class ExtractAction extends Action {
 
-    public ExtractAction(Install profile, ProgressCallback monitor) {
+    public ExtractAction(InstallV1 profile, ProgressCallback monitor) {
         super(profile, monitor, true);
     }
 
     public static boolean headless;
     @Override
-    public boolean run(File target, Predicate<String> optionals)
+    public boolean run(File target, Predicate<String> optionals, File Installer)
     {
         boolean result = true;
         String failed = "An error occurred extracting the files:";
 
         Artifact contained = profile.getPath();
-        File file = new File(target, contained.getFilename());
+        if (contained != null) {
+            File file = new File(target, contained.getFilename());
 
-        if (!DownloadUtils.extractFile(contained, file, null)) {
-            result = false;
-            failed += "\n" + contained.getFilename();
+            if (!DownloadUtils.extractFile(contained, file, null)) {
+                result = false;
+                failed += "\n" + contained.getFilename();
+            }
         }
 
         /*

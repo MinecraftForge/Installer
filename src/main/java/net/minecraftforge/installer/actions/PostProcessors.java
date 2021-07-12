@@ -42,19 +42,19 @@ import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.SimpleInstaller;
 import net.minecraftforge.installer.actions.ProgressCallback.MessagePriority;
 import net.minecraftforge.installer.json.Artifact;
-import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.Install.Processor;
+import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Version.Library;
 
 public class PostProcessors {
-    private final Install profile;
+    private final InstallV1 profile;
     private final boolean isClient;
     private final ProgressCallback monitor;
     private final boolean hasTasks;
     private final Map<String, String> data;
     private final List<Processor> processors;
 
-    public PostProcessors(Install profile, boolean isClient, ProgressCallback monitor) {
+    public PostProcessors(InstallV1 profile, boolean isClient, ProgressCallback monitor) {
         this.profile = profile;
         this.isClient = isClient;
         this.monitor = monitor;
@@ -74,7 +74,7 @@ public class PostProcessors {
             profile.getData(isClient).size();
     }
 
-    public boolean process(File librariesDir, File minecraft) {
+    public boolean process(File librariesDir, File minecraft, File root, File installer) {
         try {
             if (!data.isEmpty()) {
                 StringBuilder err = new StringBuilder();
@@ -105,6 +105,10 @@ public class PostProcessors {
             }
             data.put("SIDE", isClient ? "client" : "server");
             data.put("MINECRAFT_JAR", minecraft.getAbsolutePath());
+            data.put("MINECRAFT_VERSION", profile.getMinecraft());
+            data.put("ROOT", root.getAbsolutePath());
+            data.put("INSTALLER", installer.getAbsolutePath());
+            data.put("LIBRARY_DIR", librariesDir.getAbsolutePath());
 
             int progress = 1;
             if (processors.size() == 1) {

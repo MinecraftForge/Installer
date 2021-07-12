@@ -25,7 +25,7 @@ import java.util.function.Predicate;
 
 import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.json.Artifact;
-import net.minecraftforge.installer.json.Install;
+import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
 import net.minecraftforge.installer.json.Version;
 import net.minecraftforge.installer.json.Version.Download;
@@ -33,12 +33,12 @@ import net.minecraftforge.installer.json.Version.Download;
 public class ServerInstall extends Action {
     private List<Artifact> grabbed = new ArrayList<>();
 
-    public ServerInstall(Install profile, ProgressCallback monitor) {
+    public ServerInstall(InstallV1 profile, ProgressCallback monitor) {
         super(profile, monitor, false);
     }
 
     @Override
-    public boolean run(File target, Predicate<String> optionals) throws ActionCanceledException {
+    public boolean run(File target, Predicate<String> optionals, File installer) throws ActionCanceledException {
         if (target.exists() && !target.isDirectory()) {
             error("There is a file at this location, the server cannot be installed here!");
             return false;
@@ -54,18 +54,29 @@ public class ServerInstall extends Action {
 
         // Extract main executable jar
         Artifact contained = profile.getPath();
-        monitor.stage("Extracting main jar:");
-        if (!DownloadUtils.extractFile(contained, new File(target, contained.getFilename()), null)) {
-            error("  Failed to extract main jar: " + contained.getFilename());
-            return false;
-        } else
-            monitor.stage("  Extracted successfully");
+        if (contained != null) {
+            monitor.stage("Extracting main jar:");
+            if (!DownloadUtils.extractFile(contained, new File(target, contained.getFilename()), null)) {
+                error("  Failed to extract main jar: " + contained.getFilename());
+                return false;
+            } else
+                monitor.stage("  Extracted successfully");
+        }
         checkCancel();
 
         //Download MC Server jar
         monitor.stage("Considering minecraft server jar");
-        File serverTarget = new File(target,"minecraft_server." + profile.getMinecraft() + ".jar");
+        String path = profile.getServerJarPath()
+            .replace("{ROOT}", target.getAbsolutePath())
+            .replace("{MINECRAFT_VERSION}", profile.getMinecraft())
+            .replace("{LIBRARY_DIR}", librariesDir.getAbsolutePath());
+        File serverTarget = new File(path);
         if (!serverTarget.exists()) {
+            File parent = serverTarget.getParentFile();
+            if (!parent.exists()) {
+                parent.mkdirs();
+            }
+
             File versionJson = new File(target, profile.getMinecraft() + ".json");
             Version vanilla = Util.getVanillaVersion(profile.getMinecraft(), versionJson);
             if (vanilla == null) {
@@ -77,6 +88,8 @@ public class ServerInstall extends Action {
                 error("Failed to download minecraft server, info missing from manifest: " + versionJson);
                 return false;
             }
+
+            versionJson.delete();
 
             if (!DownloadUtils.download(monitor, profile.getMirror(), server, serverTarget)) {
                 serverTarget.delete();
@@ -92,7 +105,7 @@ public class ServerInstall extends Action {
             return false;
 
         checkCancel();
-        if (!processors.process(librariesDir, serverTarget))
+        if (!processors.process(librariesDir, serverTarget, target, installer))
             return false;
 
         // TODO: Optionals

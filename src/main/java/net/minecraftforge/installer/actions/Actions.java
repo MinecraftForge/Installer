@@ -19,22 +19,22 @@
 package net.minecraftforge.installer.actions;
 
 import java.util.function.BiFunction;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
-import net.minecraftforge.installer.json.Install;
+import net.minecraftforge.installer.json.InstallV1;
 
 public enum Actions
 {
-    CLIENT("Install client", "Install a new profile to the Mojang client launcher", ClientInstall::new, jar -> "Successfully installed client into launcher."),
-    SERVER("Install server", "Create a new modded server installation", ServerInstall::new, jar -> "The server installed successfully, you should now be able to run the file " + jar),
-    EXTRACT("Extract", "Extract the contained jar file", ExtractAction::new, jar -> "All files successfully extract.");
+    CLIENT("Install client", "Install a new profile to the Mojang client launcher", ClientInstall::new, () -> "Successfully installed client into launcher."),
+    SERVER("Install server", "Create a new modded server installation", ServerInstall::new, () -> "The server installed successfully"),
+    EXTRACT("Extract", "Extract the contained jar file", ExtractAction::new, () -> "All files successfully extract.");
 
     private String label;
     private String tooltip;
-    private BiFunction<Install, ProgressCallback, Action> action;
-    private Function<String, String> success;
+    private BiFunction<InstallV1, ProgressCallback, Action> action;
+    private Supplier<String> success;
 
-    private Actions(String label, String tooltip, BiFunction<Install, ProgressCallback, Action> action, Function<String, String> success)
+    private Actions(String label, String tooltip, BiFunction<InstallV1, ProgressCallback, Action> action, Supplier<String> success)
     {
         this.label = label;
         this.tooltip = tooltip;
@@ -52,12 +52,12 @@ public enum Actions
         return tooltip;
     }
 
-    public String getSuccess(String jar)
+    public String getSuccess()
     {
-        return success.apply(jar);
+        return success.get();
     }
 
-    public Action getAction(Install profile, ProgressCallback monitor) {
+    public Action getAction(InstallV1 profile, ProgressCallback monitor) {
         return action.apply(profile, monitor);
     }
 }

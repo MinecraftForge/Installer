@@ -69,6 +69,7 @@ import net.minecraftforge.installer.actions.ActionCanceledException;
 import net.minecraftforge.installer.actions.Actions;
 import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.Install;
+import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.OptionalLibrary;
 import net.minecraftforge.installer.json.Util;
 
@@ -85,8 +86,10 @@ public class InstallerPanel extends JPanel {
     private JPanel sponsorPanel;
     private JPanel fileEntryPanel;
     private List<OptionalListEntry> optionals = new ArrayList<>();
-    private Install profile;
     private Map<String, Function<ProgressCallback, Action>> actions = new HashMap<>();
+
+    private final InstallV1 profile;
+    private final File installer;
 
     private class FileSelectAction extends AbstractAction
     {
@@ -154,14 +157,10 @@ public class InstallerPanel extends JPanel {
         }
     }
 
-    public InstallerPanel(File targetDir, Install profile)
+    public InstallerPanel(File targetDir, InstallV1 profile, File installer)
     {
         this.profile = profile;
-
-        if (this.profile.getSpec() != 0) {
-            JOptionPane.showMessageDialog(null, "Invalid launcher profile spec: " + profile.getSpec() + " Only 0 is supported, Whoever package this installer messed up.", "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
+        this.installer = installer;
 
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         BufferedImage image = getImage(profile.getLogo(), null);
@@ -421,7 +420,7 @@ public class InstallerPanel extends JPanel {
             try {
                 prog.setVisible(true);
                 prog.toFront();
-                if (action.run(targetDir, optPred)) {
+                if (action.run(targetDir, optPred, installer)) {
                     prog.start("Finished!");
                     prog.progress(1);
                     JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);

@@ -29,20 +29,20 @@ import javax.swing.JOptionPane;
 import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.SimpleInstaller;
 import net.minecraftforge.installer.json.Artifact;
-import net.minecraftforge.installer.json.Install;
+import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
 import net.minecraftforge.installer.json.Version;
 import net.minecraftforge.installer.json.Version.Library;
 import net.minecraftforge.installer.json.Version.LibraryDownload;
 
 public abstract class Action {
-    protected final Install profile;
+    protected final InstallV1 profile;
     protected final ProgressCallback monitor;
     protected final PostProcessors processors;
     protected final Version version;
     private List<Artifact> grabbed = new ArrayList<>();
 
-    protected Action(Install profile, ProgressCallback monitor, boolean isClient) {
+    protected Action(InstallV1 profile, ProgressCallback monitor, boolean isClient) {
         this.profile = profile;
         this.monitor = monitor;
         this.processors = new PostProcessors(profile, isClient, monitor);
@@ -55,7 +55,7 @@ public abstract class Action {
         monitor.stage(message);
     }
 
-    public abstract boolean run(File target, Predicate<String> optionals) throws ActionCanceledException;
+    public abstract boolean run(File target, Predicate<String> optionals, File installer) throws ActionCanceledException;
     public abstract boolean isPathValid(File targetDir);
     public abstract String getFileError(File targetDir);
     public abstract String getSuccessMessage();

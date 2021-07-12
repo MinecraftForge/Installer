@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
 import joptsimple.OptionParser;
@@ -36,7 +37,7 @@ import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import net.minecraftforge.installer.actions.Actions;
 import net.minecraftforge.installer.actions.ProgressCallback;
-import net.minecraftforge.installer.json.Install;
+import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
 
 public class SimpleInstaller
@@ -122,19 +123,15 @@ public class SimpleInstaller
             {
                 SimpleInstaller.headless = true;
                 monitor.message("Target Directory: " + target);
-                Install install = Util.loadInstallProfile();
-                if (install.getSpec() != 0) {
-                    monitor.stage("Invalid launcher profile spec: " + install.getSpec() + " Only 0 is supported");
-                    System.exit(1);
-                }
-                if (!action.getAction(install, monitor).run(target, a -> true))
+                InstallV1 install = Util.loadInstallProfile();
+                if (!action.getAction(install, monitor).run(target, a -> true, new File(path)))
                 {
                     monitor.stage("There was an error during installation");
                     System.exit(1);
                 }
                 else
                 {
-                    monitor.message(action.getSuccess(install.getPath().getName()));
+                    monitor.message(action.getSuccess());
                     monitor.stage("You can delete this installer file now if you wish");
                 }
                 System.exit(0);
@@ -146,7 +143,7 @@ public class SimpleInstaller
             }
         }
         else
-            launchGui(monitor);
+            launchGui(monitor, new File(path));
     }
 
     private static File getMCDir()
@@ -161,7 +158,7 @@ public class SimpleInstaller
         return new File(userHomeDir, mcDir);
     }
 
-    private static void launchGui(ProgressCallback monitor)
+    private static void launchGui(ProgressCallback monitor, File installer)
     {
         try
         {
@@ -171,9 +168,13 @@ public class SimpleInstaller
         {
         }
 
-        Install profile = Util.loadInstallProfile();
-        InstallerPanel panel = new InstallerPanel(getMCDir(), profile);
-        panel.run(monitor);
+        try {
+            InstallV1 profile = Util.loadInstallProfile();
+            InstallerPanel panel = new InstallerPanel(getMCDir(), profile, installer);
+            panel.run(monitor);
+        } catch (Throwable e) {
+            JOptionPane.showMessageDialog(null,"Something went wrong while installing.<br />Check log for more details:<br/>" + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private static OutputStream getLog() throws FileNotFoundException

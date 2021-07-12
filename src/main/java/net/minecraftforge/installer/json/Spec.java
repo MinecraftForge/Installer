@@ -1,0 +1,28 @@
+/*
+ * Installer
+ * Copyright (c) 2016-2018.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation version 2.1
+ * of the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+package net.minecraftforge.installer.json;
+
+public class Spec {
+    // Specification for this json format. Current known value is 0, or missing, This is for future use if we ever change the format/functionality of the installer..
+    private int spec = 0;
+
+    public int getSpec() {
+        return spec;
+    }
+}

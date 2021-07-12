@@ -18,12 +18,15 @@
  */
 package net.minecraftforge.installer.json;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraftforge.installer.DownloadUtils;
@@ -33,11 +36,18 @@ public class Util {
             .registerTypeAdapter(Artifact.class, new Artifact.Adapter())
             .create();
 
-    public static Install loadInstallProfile() {
+    public static InstallV1 loadInstallProfile() {
+        byte[] data = null;
         try (InputStream stream = Util.class.getResourceAsStream("/install_profile.json")) {
-            return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Install.class);
+            data = readFully(stream);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+        Spec spec = GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8), Spec.class);
+        switch (spec.getSpec()) {
+            case 0: return new InstallV1(GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8), Install.class));
+            case 1: return GSON.fromJson(new InputStreamReader(new ByteArrayInputStream(data), StandardCharsets.UTF_8), InstallV1.class);
+            default: throw new IllegalArgumentException("Invalid launcher profile spec: " + spec.getSpec() + " Only 0, and 1 are supported");
         }
     }
 
@@ -73,5 +83,18 @@ public class Util {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static byte[] readFully(InputStream stream) throws IOException {
+        byte[] data = new byte[4096];
+        ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
+        int len;
+        do {
+            len = stream.read(data);
+            if (len > 0)
+                entryBuffer.write(data, 0, len);
+        } while (len != -1);
+
+        return entryBuffer.toByteArray();
     }
 }

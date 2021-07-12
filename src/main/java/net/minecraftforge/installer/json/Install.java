@@ -29,46 +29,39 @@ import java.util.stream.Collectors;
 import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.SimpleInstaller;
 
-public class Install
-{
-    // Specification for this json format. Current known value is 0, or missing, This is for future use if we ever change the format/functionality of the installer..
-    private int spec = 0;
+public class Install extends Spec {
     // Profile name to install and direct at this new version
-    private String profile;
+    protected String profile;
     // Version name to install to.
-    private String version;
+    protected String version;
     // Icon to display in the list
-    private String icon;
+    protected String icon;
     // Vanilla version this is based off of.
-    private String minecraft;
+    protected String minecraft;
     // Version json to install into the client
-    private String json;
+    protected String json;
     // Logo to be displayed on the installer GUI.
-    private String logo;
+    protected String logo;
     // Maven artifact path for the 'main' jar to install.
-    private Artifact path;
+    protected Artifact path;
     // Icon to use for the url button
-    private String urlIcon;
+    protected String urlIcon;
     // Welcome message displayed on main install panel.
-    private String welcome;
+    protected String welcome;
     // URL for mirror list, which needs to be a json file in the format of an array of Mirror
-    private String mirrorList;
+    protected String mirrorList;
     //Hides an entry from the install UI
-    private boolean hideClient, hideServer, hideExtract = false;
+    protected boolean hideClient, hideServer, hideExtract = false;
     // Extra libraries needed by processors, that may differ from the installer version's library list. Uses the same format as Mojang for simplicities sake.
-    private Version.Library[] libraries;
+    protected Version.Library[] libraries;
     // Executable jars to be run after all libraries have been downloaded.
-    private List<Processor> processors;
+    protected List<Processor> processors;
     //Data files to be extracted during install, used for processor.
-    private Map<String, DataFile> data;
+    protected Map<String, DataFile> data;
 
     // non-serialized values
     private Mirror mirror;
     private boolean triedMirrors = false;
-
-    public int getSpec() {
-        return spec;
-    }
 
     public String getProfile() {
         return profile;

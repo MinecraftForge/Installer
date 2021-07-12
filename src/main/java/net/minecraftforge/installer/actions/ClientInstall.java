@@ -24,7 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Predicate;
 import net.minecraftforge.installer.DownloadUtils;
-import net.minecraftforge.installer.json.Install;
+import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
 import net.minecraftforge.installer.json.Version;
 import net.minecraftforge.installer.json.Version.Download;
@@ -33,12 +33,12 @@ import com.google.gson.JsonParser;
 
 public class ClientInstall extends Action {
 
-    public ClientInstall(Install profile, ProgressCallback monitor) {
+    public ClientInstall(InstallV1 profile, ProgressCallback monitor) {
         super(profile, monitor, true);
     }
 
     @Override
-    public boolean run(File target, Predicate<String> optionals) throws ActionCanceledException {
+    public boolean run(File target, Predicate<String> optionals, File installer) throws ActionCanceledException {
         if (!target.exists()) {
             error("There is no minecraft installation at: " + target);
             return false;
@@ -139,7 +139,7 @@ public class ClientInstall extends Action {
         }
         */
 
-        if (!processors.process(librariesDir, clientTarget))
+        if (!processors.process(librariesDir, clientTarget, target, installer))
             return false;
 
         checkCancel();
