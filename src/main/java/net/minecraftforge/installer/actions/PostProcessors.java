@@ -235,6 +235,7 @@ public class PostProcessors {
                     main.invoke(null, (Object)args.toArray(new String[args.size()]));
                 } catch (InvocationTargetException ite) {
                     Throwable e = ite.getCause();
+                    e.printStackTrace();
                     if (e.getMessage() == null)
                         error("Failed to run processor: " + e.getClass().getName() + "\nSee log for more details.");
                     else
