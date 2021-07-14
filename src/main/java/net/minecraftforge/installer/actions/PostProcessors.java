@@ -206,14 +206,8 @@ public class PostProcessors {
 
                     if (start == '[' && end == ']') //Library
                         args.add(Artifact.from(arg.substring(1, arg.length() - 1)).getLocalPath(librariesDir).getAbsolutePath());
-                    else if (start == '{' && end == '}') { // Data
-                        String key = arg.substring(1, arg.length() - 1);
-                        String value = data.get(key);
-                        if (value == null)
-                            err.append("\n  ").append(key);
-                        args.add(value);
-                    } else
-                        args.add(arg);
+                    else
+                        args.add(Util.replaceTokens(data, arg));
                 }
                 if (err.length() > 0) {
                     error("  Missing Processor data values: " + err.toString());
