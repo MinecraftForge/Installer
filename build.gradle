@@ -4,15 +4,15 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'net.sf.proguard:proguard-gradle:6.2.2'
+        classpath 'com.guardsquare:proguard-gradle:7.1.0'
         classpath 'net.minecraftforge:GradleUtils:1.+'
     }
 }
 
 plugins {
-    id 'org.cadixdev.licenser' version '0.5.0'
-    id 'com.github.johnrengelman.shadow' version '6.1.0'
-    id 'maven'
+    id 'org.cadixdev.licenser' version '0.6.1'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    //id 'maven'
     id 'maven-publish'
     id 'java'
     id 'eclipse'
@@ -56,12 +56,15 @@ ext {
 dependencies {
     implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
     implementation 'com.google.code.gson:gson:2.8.7'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
+	testImplementation(platform('org.junit:junit-bom:5.7.2'))
+	testImplementation('org.junit.jupiter:junit-jupiter')
 }
 
 test {
-    useJUnitPlatform()
+  useJUnitPlatform()
+  testLogging {
+    events "passed", "skipped", "failed"
+  }
 }
 
 compileJava {
@@ -93,7 +96,6 @@ task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
 
     injars inputJar
     outjars obfuscatedJar
-    libraryjars configurations.compile
 
     // Automatically handle the Java version of this build.
     if (System.getProperty('java.version').startsWith('1.')) {
