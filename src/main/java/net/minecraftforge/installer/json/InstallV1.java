@@ -20,12 +20,12 @@ package net.minecraftforge.installer.json;
 
 /*
  * Changes in v1 of the spec:
- * Add support for an 'extract' task. This simply extracts a file to a specified path.
  * Adds a new value into the processor argument types:
  *    {ROOT} the root directory that we are installing to.
  *    {INSTALLER} the absolute path to the currently running installer.
  *    {MINECRAFT_VERSION} the version number specified in the config.
  *    {LIBRARY_DIR} Path to libraries folder. Typically {ROOT}/libraries/ but can be changed in the future.
+ * Expands the token replacement for processors to allow in-line replacements. See Util.replaceTokens
  */
 public class InstallV1 extends Install {
     /*

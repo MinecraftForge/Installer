@@ -45,6 +45,7 @@ import net.minecraftforge.installer.json.Artifact;
 import net.minecraftforge.installer.json.Install.Processor;
 import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Version.Library;
+import net.minecraftforge.installer.json.Util;
 
 public class PostProcessors {
     private final InstallV1 profile;
@@ -126,18 +127,14 @@ public class PostProcessors {
                     log("  Cache: ");
                     for (Entry<String, String> e : proc.getOutputs().entrySet()) {
                         String key = e.getKey();
-                        if (key.charAt(0) == '{' && key.charAt(key.length() - 1) == '}')
-                            key = data.get(key.substring(1, key.length() - 1));
-                        else if (key.charAt(0) == '[' && key.charAt(key.length() - 1) == ']')
+                        if (key.charAt(0) == '[' && key.charAt(key.length() - 1) == ']')
                             key = Artifact.from(key.substring(1, key.length() - 1)).getLocalPath(librariesDir).getAbsolutePath();
+                        else
+                            key = Util.replaceTokens(data, key);
 
                         String value = e.getValue();
-                        if (value != null) {
-                            if (value.charAt(0) == '{' && value.charAt(value.length() - 1) == '}')
-                                value = data.get(value.substring(1, value.length() - 1));
-                            else if (value.charAt(0) == '\'' && value.charAt(value.length() - 1) == '\'')
-                                value = value.substring(1, value.length() - 1);
-                        }
+                        if (value != null)
+                            value = Util.replaceTokens(data, value);
 
                         if (key == null || value == null) {
                             error("  Invalid configuration, bad output config: [" + e.getKey() + ": " + e.getValue() + "]");

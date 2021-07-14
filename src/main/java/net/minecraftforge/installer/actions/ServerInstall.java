@@ -20,7 +20,9 @@ package net.minecraftforge.installer.actions;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 import net.minecraftforge.installer.DownloadUtils;
@@ -66,10 +68,12 @@ public class ServerInstall extends Action {
 
         //Download MC Server jar
         monitor.stage("Considering minecraft server jar");
-        String path = profile.getServerJarPath()
-            .replace("{ROOT}", target.getAbsolutePath())
-            .replace("{MINECRAFT_VERSION}", profile.getMinecraft())
-            .replace("{LIBRARY_DIR}", librariesDir.getAbsolutePath());
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("ROOT", target.getAbsolutePath());
+        tokens.put("MINECRAFT_VERSION", profile.getMinecraft());
+        tokens.put("LIBRARY_DIR", librariesDir.getAbsolutePath());
+
+        String path = Util.replaceTokens(tokens, profile.getServerJarPath());
         File serverTarget = new File(path);
         if (!serverTarget.exists()) {
             File parent = serverTarget.getParentFile();
