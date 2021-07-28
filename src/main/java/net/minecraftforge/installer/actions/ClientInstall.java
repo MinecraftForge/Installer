@@ -203,8 +203,8 @@ public class ClientInstall extends Action {
 
     @Override
     public String getSuccessMessage() {
-        if (downlaodedCount() > 0)
-            return String.format("Successfully installed client profile %s for version %s into launcher, and downloaded %d libraries", profile.getProfile(), profile.getVersion(), downlaodedCount());
+        if (downloadedCount() > 0)
+            return String.format("Successfully installed client profile %s for version %s into launcher, and downloaded %d libraries", profile.getProfile(), profile.getVersion(), downloadedCount());
         return String.format("Successfully installed client profile %s for version %s into launcher", profile.getProfile(), profile.getVersion());
     }
 }

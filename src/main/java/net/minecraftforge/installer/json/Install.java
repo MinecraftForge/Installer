@@ -150,9 +150,9 @@ public class Install extends Spec {
     public static class Processor {
         // Which side this task is to be run on, Currently know sides are "client", "server" and "extract", if this omitted, assume all sides.
         private List<String> sides;
-        // The executable jar to run, The installer will run it in-process, but external tools can run it using java -jar {file}, so MANFEST Main-Class entry must be valid.
+        // The executable jar to run, The installer will run it in-process, but external tools can run it using java -jar {file}, so MANIFEST Main-Class entry must be valid.
         private Artifact jar;
-        // Dependency list of files needed for this jar to run. Aything listed here SHOULD be listed in {@see Install#libraries} so the installer knows to download it.
+        // Dependency list of files needed for this jar to run. Anything listed here SHOULD be listed in {@see Install#libraries} so the installer knows to download it.
         private Artifact[] classpath;
         /*
          * Arguments to pass to the jar, can be in the following formats:
@@ -164,7 +164,7 @@ public class Install extends Spec {
         private String[] args;
         /*
          *  Files output from this task, used for verifying the process was successful, or if the task needs to be rerun.
-         *  Keys are either a [Artifact] or {DATA_ENTRRY}, if it is a {DATA_ENTRY} then that MUST be a [Artifact]
+         *  Keys are either a [Artifact] or {DATA_ENTRY}, if it is a {DATA_ENTRY} then that MUST be a [Artifact]
          *  Values are either a {DATA_ENTRY} or 'value', if it is a {DATA_ENTRY} then that entry MUST be a quoted string literal
          *    The end string literal is the sha1 hash of the specified artifact.
          */

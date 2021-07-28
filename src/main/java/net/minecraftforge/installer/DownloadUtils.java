@@ -252,7 +252,7 @@ public class DownloadUtils {
             URLConnection connection = getConnection(url);
             if (connection != null) {
                 try (InputStream stream = connection.getInputStream()) {
-                    return Util.loadMirriorList(stream);
+                    return Util.loadMirrorList(stream);
                 }
             }
         } catch (IOException e) {

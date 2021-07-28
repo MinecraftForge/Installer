@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Locale;
@@ -46,7 +47,7 @@ public class SimpleInstaller
     public static boolean debug = false;
     public static URL mirror = null;
 
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args) throws IOException, URISyntaxException
     {
         ProgressCallback monitor;
         try
@@ -70,11 +71,11 @@ public class SimpleInstaller
         monitor.message(String.format("JVM info: %s - %s - %s", vendor, javaVersion, jvmVersion));
         monitor.message("java.net.preferIPv4Stack=" + System.getProperty("java.net.preferIPv4Stack"));
 
-        String path = SimpleInstaller.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-        if (path.contains("!/"))
+        File installer = new File(SimpleInstaller.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        if (installer.getAbsolutePath().contains("!/"))
         {
             monitor.stage("Due to java limitation, please do not run this jar in a folder ending with !");
-            monitor.message(path);
+            monitor.message(installer.getAbsolutePath());
             return;
         }
 
@@ -100,7 +101,7 @@ public class SimpleInstaller
         if (optionSet.has(offlineOption))
         {
             DownloadUtils.OFFLINE_MODE = true;
-            monitor.message("ENABELING OFFLINE MODE");
+            monitor.message("ENABLING OFFLINE MODE");
         }
         else
         {
@@ -124,7 +125,7 @@ public class SimpleInstaller
                 SimpleInstaller.headless = true;
                 monitor.message("Target Directory: " + target);
                 InstallV1 install = Util.loadInstallProfile();
-                if (!action.getAction(install, monitor).run(target, a -> true, new File(path)))
+                if (!action.getAction(install, monitor).run(target, a -> true, installer))
                 {
                     monitor.stage("There was an error during installation");
                     System.exit(1);
@@ -143,7 +144,7 @@ public class SimpleInstaller
             }
         }
         else
-            launchGui(monitor, new File(path));
+            launchGui(monitor, installer);
     }
 
     private static File getMCDir()
