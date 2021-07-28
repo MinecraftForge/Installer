@@ -127,6 +127,13 @@ jar {
     manifest.from(MANIFEST)
 }
 
+task testJar(type: Jar, dependsOn: shrinkJar) {
+    from zipTree(shrinkJar.archiveFile.get().asFile)
+    from sourceSets.test.output
+    classifier 'test'
+    manifest.from(MANIFEST)
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {

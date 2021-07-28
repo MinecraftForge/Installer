@@ -195,7 +195,7 @@ public class PostProcessors {
                     monitor.message("    " + lib.getAbsolutePath(), MessagePriority.LOW);
                 }
                 if (err.length() > 0) {
-                    error("  Missing Processor dependancies: " + err.toString());
+                    error("  Missing Processor Dependencies: " + err.toString());
                     return false;
                 }
 

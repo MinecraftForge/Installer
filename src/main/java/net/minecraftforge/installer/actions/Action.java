@@ -90,7 +90,7 @@ public abstract class Action {
         return true;
     }
 
-    protected int downlaodedCount() {
+    protected int downloadedCount() {
         return grabbed.size();
     }
 

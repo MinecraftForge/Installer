@@ -52,7 +52,7 @@ public class Util {
         }
     }
 
-    public static Mirror[] loadMirriorList(InputStream stream) {
+    public static Mirror[] loadMirrorList(InputStream stream) {
         return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Mirror[].class);
     }
 
