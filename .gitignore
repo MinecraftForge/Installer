@@ -8,7 +8,7 @@ build/
 .settings/
 /repo/
 *.log
-src/test/resources/
+src/test/resources/maven/
 src/main/resources/data/
 src/main/resources/maven/
 src/main/resources/version.json
