@@ -128,8 +128,12 @@ public class DownloadUtils {
 
     public static boolean download(ProgressCallback monitor, Mirror mirror, LibraryDownload download, File target) {
         String url = download.getUrl();
-        if (url.startsWith("http") && !url.startsWith(LIBRARIES_URL) && mirror != null)
-            url = mirror.getUrl() + download.getPath();
+        if (url.startsWith("http") && !url.startsWith(LIBRARIES_URL) && mirror != null && url.endsWith(download.getPath())) {
+            // TODO: Vanilla launcher is dumb so we fake classifier only deps. One day the launcher will be sane/document...
+            // Anyways, the path is not the same as the real maven path. So we don't have a good way to determine the mirrored url
+            if (download(monitor, mirror, download, target, mirror.getUrl() + download.getPath())) // Use unmirrored if mirror fails.
+                return true;
+        }
         return download(monitor, mirror, download, target, url);
     }
 
