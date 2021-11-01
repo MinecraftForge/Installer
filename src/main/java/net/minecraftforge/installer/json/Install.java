@@ -113,8 +113,9 @@ public class Install extends Spec {
         if (getMirrorList() == null)
             return null;
         if (!triedMirrors) {
+            triedMirrors = true;
             Mirror[] list = DownloadUtils.downloadMirrors(getMirrorList());
-            mirror = list == null ? null : list[new Random().nextInt(list.length)];
+            mirror = list == null || list.length == 0 ? null : list[new Random().nextInt(list.length)];
         }
         return mirror;
     }

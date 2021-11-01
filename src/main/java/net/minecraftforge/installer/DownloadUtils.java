@@ -259,7 +259,7 @@ public class DownloadUtils {
                     return Util.loadMirrorList(stream);
                 }
             }
-        } catch (IOException e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
         return null;

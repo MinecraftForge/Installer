@@ -120,8 +120,8 @@ class FixSSL {
         }
     }
 
+    @SuppressWarnings("serial")
     private static class UncheckedKeyStoreException extends RuntimeException {
-
         public UncheckedKeyStoreException(Throwable cause) {
             super(cause);
         }

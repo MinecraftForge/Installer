@@ -155,7 +155,7 @@ public class ClientInstall extends Action {
         try {
             JsonObject json = null;
             try (InputStream stream = new FileInputStream(target)) {
-                json = new JsonParser().parse(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
+                json = JsonParser.parseReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).getAsJsonObject();
             } catch (IOException e) {
                 error("Failed to read " + target);
                 e.printStackTrace();
