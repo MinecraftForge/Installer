@@ -46,8 +46,9 @@ public class ClientInstall extends Action {
         }
 
         File launcherProfiles = new File(target, "launcher_profiles.json");
-        if (!launcherProfiles.exists()) {
-            error("There is no minecraft launcher profile at \"" + launcherProfiles + "\", you need to run the launcher first!");
+        File launcherProfilesMS = new File(target, "launcher_profiles_microsoft_store.json");
+        if (!launcherProfiles.exists() && !launcherProfilesMS.exists()) {
+            error("There is no minecraft launcher profile in \"" + target + "\", you need to run the launcher first!");
             return false;
         }
 
@@ -146,7 +147,9 @@ public class ClientInstall extends Action {
         checkCancel();
 
         monitor.stage("Injecting profile");
-        if (!injectProfile(launcherProfiles))
+        if (launcherProfiles.exists() && !injectProfile(launcherProfiles))
+            return false;
+        if (launcherProfilesMS.exists() && !injectProfile(launcherProfilesMS))
             return false;
 
         return true;
@@ -191,7 +194,10 @@ public class ClientInstall extends Action {
 
     @Override
     public boolean isPathValid(File targetDir) {
-        return targetDir.exists() && new File(targetDir, "launcher_profiles.json").exists();
+        return targetDir.exists() && (
+            new File(targetDir, "launcher_profiles.json").exists() ||
+            new File(targetDir, "launcher_profiles_microsoft_store.json").exists()
+         );
     }
 
     @Override
