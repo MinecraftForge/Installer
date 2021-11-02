@@ -22,6 +22,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.function.Predicate;
 import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.json.InstallV1;
@@ -105,7 +106,7 @@ public class ClientInstall extends Action {
         }
 
         // Download Libraries
-        if (!downloadLibraries(librariesDir, optionals))
+        if (!downloadLibraries(librariesDir, optionals, new ArrayList<>()))
             return false;
         checkCancel();
 

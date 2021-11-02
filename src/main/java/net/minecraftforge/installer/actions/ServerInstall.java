@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import net.minecraftforge.installer.DownloadUtils;
+import net.minecraftforge.installer.SimpleInstaller;
 import net.minecraftforge.installer.json.Artifact;
 import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
@@ -105,7 +106,12 @@ public class ServerInstall extends Action {
         checkCancel();
 
         // Download Libraries
-        if (!downloadLibraries(librariesDir, optionals))
+        List<File> libDirs = new ArrayList<>();
+        File mcLibDir = new File(SimpleInstaller.getMCDir(), "libraries");
+        if (mcLibDir.exists()) {
+            libDirs.add(mcLibDir);
+        }
+        if (!downloadLibraries(librariesDir, optionals, libDirs))
             return false;
 
         checkCancel();

@@ -147,7 +147,7 @@ public class SimpleInstaller
             launchGui(monitor, installer);
     }
 
-    private static File getMCDir()
+    public static File getMCDir()
     {
         String userHomeDir = System.getProperty("user.home", ".");
         String osType = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
