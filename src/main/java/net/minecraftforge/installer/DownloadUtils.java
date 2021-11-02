@@ -1,28 +1,38 @@
+/*
+ * Installer
+ * Copyright (c) 2016-2021.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation version 2.1
+ * of the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package net.minecraftforge.installer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Pack200;
-
 import javax.swing.ProgressMonitor;
-
-import org.tukaani.xz.XZInputStream;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
@@ -33,10 +43,9 @@ import com.google.common.io.InputSupplier;
 
 public class DownloadUtils {
     public static final String LIBRARIES_URL = "https://libraries.minecraft.net/";
+    //TODO: Pull from manifests
     public static final String VERSION_URL_SERVER = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/minecraft_server.{MCVER}.jar";
     public static final String VERSION_URL_CLIENT = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/{MCVER}.jar";
-
-    private static final String PACK_NAME = ".pack.xz";
     public static boolean OFFLINE_MODE = false;
 
     public static int downloadInstalledLibraries(boolean isClient, File librariesDir, IMonitor monitor, List<LibraryInfo> libraries, int progress, List<Artifact> grabbed, List<Artifact> bad)
@@ -60,56 +69,22 @@ public class DownloadUtils {
                 monitor.setNote(String.format("Downloading library %s", artifact.getDescriptor()));
                 libURL += artifact.getPath();
 
-                File packFile = new File(libPath.getParentFile(), libPath.getName() + PACK_NAME);
-                if (!downloadFile(artifact.getDescriptor(), packFile, libURL + PACK_NAME, null))
+                monitor.setNote(String.format("Trying unpacked library %s", artifact.getDescriptor()));
+                if (!downloadFile(artifact.getDescriptor(), libPath, libURL, checksums) &&
+                    !extractFile(artifact, libPath, checksums))
                 {
-                    monitor.setNote(String.format("Trying unpacked library %s", artifact.getDescriptor()));
-                    if (!downloadFile(artifact.getDescriptor(), libPath, libURL, checksums) &&
-                        !extractFile(artifact, libPath, checksums))
+                    if (!libURL.startsWith(LIBRARIES_URL) || !isClient)
                     {
-                        if (!libURL.startsWith(LIBRARIES_URL) || !isClient)
-                        {
-                            bad.add(artifact);
-                        }
-                        else
-                        {
-                            monitor.setNote("Unmrriored file failed, Mojang launcher should download at next run, non fatal");
-                        }
+                        bad.add(artifact);
                     }
                     else
                     {
-                        grabbed.add(artifact);
+                        monitor.setNote("Unmrriored file failed, Mojang launcher should download at next run, non fatal");
                     }
                 }
                 else
                 {
-                    try
-                    {
-                        monitor.setNote(String.format("Unpacking packed file %s", packFile.getName()));
-                        unpackLibrary(libPath, Files.toByteArray(packFile));
-                        monitor.setNote(String.format("Successfully unpacked packed file %s",packFile.getName()));
-                        packFile.delete();
-
-                        if (checksumValid(libPath, checksums))
-                        {
-                            grabbed.add(artifact);
-                        }
-                        else
-                        {
-                            bad.add(artifact);
-                        }
-                    }
-                    catch (OutOfMemoryError oom)
-                    {
-                        oom.printStackTrace();
-                        bad.add(artifact);
-                        artifact.setMemo("Out of Memory: Try restarting installer with JVM Argument: -Xmx1G");
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                        bad.add(artifact);
-                    }
+                    grabbed.add(artifact);
                 }
             }
             else
@@ -190,10 +165,7 @@ public class DownloadUtils {
         }
         catch (FileNotFoundException fnf)
         {
-            if (!libURL.endsWith(PACK_NAME))
-            {
-                fnf.printStackTrace();
-            }
+            fnf.printStackTrace();
             return false;
         }
         catch (Exception e)
@@ -201,66 +173,6 @@ public class DownloadUtils {
             e.printStackTrace();
             return false;
         }
-    }
-
-    public static void unpackLibrary(File output, byte[] data) throws IOException
-    {
-        if (output.exists())
-        {
-            output.delete();
-        }
-
-        byte[] decompressed = DownloadUtils.readFully(new XZInputStream(new ByteArrayInputStream(data)));
-
-        //Snag the checksum signature
-        String end = new String(decompressed, decompressed.length - 4, 4);
-        if (!end.equals("SIGN"))
-        {
-            System.out.println("Unpacking failed, signature missing " + end);
-            return;
-        }
-
-        int x = decompressed.length;
-        int len =
-                ((decompressed[x - 8] & 0xFF)      ) |
-                ((decompressed[x - 7] & 0xFF) << 8 ) |
-                ((decompressed[x - 6] & 0xFF) << 16) |
-                ((decompressed[x - 5] & 0xFF) << 24);
-
-        File temp = File.createTempFile("art", ".pack");
-        System.out.println("  Signed");
-        System.out.println("  Checksum Length: " + len);
-        System.out.println("  Total Length:    " + (decompressed.length - len - 8));
-        System.out.println("  Temp File:       " + temp.getAbsolutePath());
-
-        byte[] checksums = Arrays.copyOfRange(decompressed, decompressed.length - len - 8, decompressed.length - 8);
-
-        //As Pack200 copies all the data from the input, this creates duplicate data in memory.
-        //Which on some systems triggers a OutOfMemoryError, to counter this, we write the data
-        //to a temporary file, force GC to run {I know, eww} and then unpack.
-        //This is a tradeoff of disk IO for memory.
-        //Should help mac users who have a lower standard max memory then the rest of the world (-.-)
-        OutputStream out = new FileOutputStream(temp);
-        out.write(decompressed, 0, decompressed.length - len - 8);
-        out.close();
-        decompressed = null;
-        data = null;
-        System.gc();
-
-        FileOutputStream jarBytes = new FileOutputStream(output);
-        JarOutputStream jos = new JarOutputStream(jarBytes);
-
-        Pack200.newUnpacker().unpack(temp, jos);
-
-        JarEntry checksumsFile = new JarEntry("checksums.sha1");
-        checksumsFile.setTime(0);
-        jos.putNextEntry(checksumsFile);
-        jos.write(checksums);
-        jos.closeEntry();
-
-        jos.close();
-        jarBytes.close();
-        temp.delete();
     }
 
     public static boolean validateJar(File libPath, byte[] data, List<String> checksums) throws IOException
@@ -384,10 +296,7 @@ public class DownloadUtils {
         }
         catch (FileNotFoundException fnf)
         {
-            if (!libURL.endsWith(PACK_NAME))
-            {
-                fnf.printStackTrace();
-            }
+            fnf.printStackTrace();
             return false;
         }
         catch (Exception e)

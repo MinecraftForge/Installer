@@ -1,3 +1,21 @@
+/*
+ * Installer
+ * Copyright (c) 2016-2021.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation version 2.1
+ * of the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 package net.minecraftforge.installer;
 
 import java.io.*;
@@ -43,9 +61,9 @@ public class ClientInstall implements ActionType {
             return false;
         }
         File launcherProfiles = new File(target,"launcher_profiles.json");
-        if (!launcherProfiles.exists())
-        {
-            JOptionPane.showMessageDialog(null, "There is no minecraft launcher profile at this location, you need to run the launcher first!", "Error", JOptionPane.ERROR_MESSAGE);
+        File launcherProfilesMS = new File(target,"launcher_profiles.json");
+        if (!launcherProfiles.exists() && !launcherProfilesMS.exists()) {
+            JOptionPane.showMessageDialog(null, "There is no minecraft launcher profile in \"" + target + "\", you need to run the launcher first!", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
         }
 
@@ -276,12 +294,21 @@ public class ClientInstall implements ActionType {
             return false;
         }
 
+        if (launcherProfiles.exists() && !injectProfile(launcherProfiles))
+            return false;
+        if (launcherProfilesMS.exists() && !injectProfile(launcherProfilesMS))
+            return false;
+
+        return true;
+    }
+
+    private boolean injectProfile(File path) {
         JdomParser parser = new JdomParser();
         JsonRootNode jsonProfileData;
 
         try
         {
-            jsonProfileData = parser.parse(Files.newReader(launcherProfiles, Charsets.UTF_8));
+            jsonProfileData = parser.parse(Files.newReader(path, Charsets.UTF_8));
         }
         catch (InvalidSyntaxException e)
         {
@@ -316,7 +343,7 @@ public class ClientInstall implements ActionType {
 
         try
         {
-            BufferedWriter newWriter = Files.newWriter(launcherProfiles, Charsets.UTF_8);
+            BufferedWriter newWriter = Files.newWriter(path, Charsets.UTF_8);
             PrettyJsonFormatter.fieldOrderPreservingPrettyJsonFormatter().format(jsonProfileData,newWriter);
             newWriter.close();
         }
@@ -383,8 +410,8 @@ public class ClientInstall implements ActionType {
     {
         if (targetDir.exists())
         {
-            File launcherProfiles = new File(targetDir,"launcher_profiles.json");
-            return launcherProfiles.exists();
+            return new File(targetDir,"launcher_profiles.json").exists() ||
+                   new File(targetDir,"launcher_profiles_microsoft_store.json").exists();
         }
         return false;
     }
