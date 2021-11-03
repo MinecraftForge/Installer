@@ -90,7 +90,7 @@ public class ClientInstall implements ActionType {
 
         File versionJsonFile = new File(versionTarget,VersionInfo.getVersionTarget()+".json");
 
-        boolean downloadMCJar = VersionInfo.isInheritedJson() || VersionInfo.needsMCDownload(SIDE);
+        boolean downloadMCJar = true; //VersionInfo.isInheritedJson() || VersionInfo.needsMCDownload(SIDE);
         File minecraftJarFile = VersionInfo.getMinecraftFile(versionRootDir);
 
         if (downloadMCJar) {
