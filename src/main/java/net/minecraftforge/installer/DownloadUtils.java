@@ -146,6 +146,8 @@ public class DownloadUtils {
             }
 
             InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
+            if (!libPath.getParentFile().exists())
+                libPath.getParentFile().mkdirs();
             Files.copy(urlSupplier, libPath);
 
             if (etag.indexOf('-') != -1) return true; //No-etag, assume valid
