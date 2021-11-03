@@ -61,7 +61,7 @@ public class ClientInstall implements ActionType {
             return false;
         }
         File launcherProfiles = new File(target,"launcher_profiles.json");
-        File launcherProfilesMS = new File(target,"launcher_profiles.json");
+        File launcherProfilesMS = new File(target,"launcher_profiles_microsoft_store.json");
         if (!launcherProfiles.exists() && !launcherProfilesMS.exists()) {
             JOptionPane.showMessageDialog(null, "There is no minecraft launcher profile in \"" + target + "\", you need to run the launcher first!", "Error", JOptionPane.ERROR_MESSAGE);
             return false;
