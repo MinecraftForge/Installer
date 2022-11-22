@@ -10,6 +10,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 import argo.jdom.JsonNode;
+import net.minecraftforge.installer.json.Artifact;
 
 public class LibraryInfo
 {
@@ -21,7 +22,7 @@ public class LibraryInfo
 
     public LibraryInfo(JsonNode node, String marker)
     {
-        this.artifact = new Artifact(node.getStringValue("name"));
+        this.artifact = Artifact.from(node.getStringValue("name"));
 
         if (node.isArrayNode("checksums"))
         {
@@ -44,7 +45,7 @@ public class LibraryInfo
 
     public LibraryInfo(OptionalLibrary lib, String marker)
     {
-        this.artifact = new Artifact(lib.getArtifact());
+        this.artifact = Artifact.from(lib.getArtifact());
         this.side = (lib.isServer() && "serverreq".equals(marker)) ||
                     (lib.isClient() && "clientreq".equals(marker));
         this.url = lib.getMaven();

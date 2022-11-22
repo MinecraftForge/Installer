@@ -22,7 +22,6 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpecBuilder;
 
-
 public class SimpleInstaller
 {
     public static void main(String[] args) throws IOException
@@ -32,6 +31,10 @@ public class SimpleInstaller
         {
             System.setProperty("java.net.preferIPv4Stack", "true");
         }
+        String vendor = System.getProperty("java.vendor", "missing vendor");
+        String javaVersion = System.getProperty("java.version", "missing java version");
+        String jvmVersion = System.getProperty("java.vm.version", "missing jvm version");
+        System.out.println(String.format("JVM info: %s - %s - %s", vendor, javaVersion, jvmVersion));
         System.out.println("java.net.preferIPv4Stack=" + System.getProperty("java.net.preferIPv4Stack"));
 
         OptionParser parser = new OptionParser();

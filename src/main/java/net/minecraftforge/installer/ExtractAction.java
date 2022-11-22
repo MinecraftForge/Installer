@@ -16,6 +16,8 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.google.common.io.OutputSupplier;
 
+import net.minecraftforge.installer.json.Artifact;
+
 public class ExtractAction implements ActionType {
 
     public static boolean headless;
@@ -38,7 +40,7 @@ public class ExtractAction implements ActionType {
 
         for (OptionalLibrary opt : VersionInfo.getOptionals())
         {
-            Artifact art = new Artifact(opt.getArtifact());
+            Artifact art = Artifact.from(opt.getArtifact());
             InputStream input = ExtractAction.class.getResourceAsStream("/maven/" + art.getPath());
             if (input == null)
                 continue;

@@ -14,6 +14,10 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Lists;
 
+import net.minecraftforge.installer.json.Artifact;
+import net.minecraftforge.installer.json.Util;
+import net.minecraftforge.installer.json.Version;
+import net.minecraftforge.installer.json.Version.Download;
 import net.minecraftforge.installer.transform.TransformInfo;
 
 public class ServerInstall implements ActionType {
@@ -51,29 +55,38 @@ public class ServerInstall implements ActionType {
         List<Artifact> bad = Lists.newArrayList();
 
         //Download MC Server jar
-        String mcServerURL = String.format(DownloadUtils.VERSION_URL_SERVER.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
-        File mcServerFile = new File(target,"minecraft_server."+VersionInfo.getMinecraftVersion()+".jar");
+        File mcServerFile = new File(target, "minecraft_server." + VersionInfo.getMinecraftVersion() + ".jar");
         if (!mcServerFile.exists())
         {
+            File parent = mcServerFile.getParentFile();
+            if (!parent.exists()) {
+                parent.mkdirs();
+            }
             monitor.setNote("Considering minecraft server jar");
             monitor.setProgress(1);
             monitor.setNote(String.format("Downloading minecraft server version %s",VersionInfo.getMinecraftVersion()));
-            if (!DownloadUtils.downloadFileEtag("minecraft server", mcServerFile, mcServerURL))
-            {
-                mcServerFile.delete();
-                if (!headless)
-                {
-                    JOptionPane.showMessageDialog(null, "Downloading minecraft server failed, invalid e-tag checksum.\n"+
-                                                        "Try again, or manually place server jar to skip download.",
-                                                        "Error downloading", JOptionPane.ERROR_MESSAGE);
-                }
-                else
-                {
-                    System.err.println("Downloading minecraft server failed, invalid e-tag checksum.");
-                    System.err.println("Try again, or manually place server jar to skip download.");
-                }
+
+            File versionJson = new File(target, VersionInfo.getMinecraftVersion() + ".json");
+            Version vanilla = Util.getVanillaVersion(VersionInfo.getMinecraftVersion(), versionJson);
+            if (vanilla == null) {
+                error(monitor, "Failed to download version manifest, can not find server jar URL.");
                 return false;
             }
+            Download server = vanilla.getDownload("server");
+            if (server == null) {
+                error(monitor, "Failed to download minecraft server, info missing from manifest: " + versionJson);
+                return false;
+            }
+
+            versionJson.delete();
+
+            if (!DownloadUtils.download(monitor, server, mcServerFile)) {
+                mcServerFile.delete();
+                error(monitor, "Downloading minecraft server failed, invalid checksum.\n" +
+                               "Try again, or manually place server jar to skip download.");
+                return false;
+            }
+
             monitor.setProgress(2);
         }
         progress = DownloadUtils.downloadInstalledLibraries(false, librariesDir, monitor, libraries, progress, grabbed, bad);
@@ -159,5 +172,11 @@ public class ServerInstall implements ActionType {
     public String getSponsorMessage()
     {
         return MirrorData.INSTANCE.hasMirrors() ? String.format(headless ? "Data kindly mirrored by %2$s at %1$s" : "<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", MirrorData.INSTANCE.getSponsorURL(),MirrorData.INSTANCE.getSponsorName()) : null;
+    }
+
+    protected void error(IMonitor monitor, String message) {
+        if (!headless)
+            JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+        monitor.setNote(message);
     }
 }

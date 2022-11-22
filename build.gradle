@@ -61,7 +61,8 @@ ext {
 
 dependencies {
     implementation 'net.sf.jopt-simple:jopt-simple:4.5'
-    implementation 'net.sourceforge.argo:argo:3.7'
+    implementation 'net.sourceforge.argo:argo:3.7' //TODO: Move to Gson explicitly
+    implementation 'com.google.code.gson:gson:2.10'
     implementation 'com.google.guava:guava:14.0'
     implementation 'org.ow2.asm:asm:5.2' //TODO Remove?
 	testImplementation(platform('org.junit:junit-bom:5.7.2'))

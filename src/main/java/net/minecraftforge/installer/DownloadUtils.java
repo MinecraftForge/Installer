@@ -4,34 +4,30 @@
  */
 package net.minecraftforge.installer;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
 import javax.swing.ProgressMonitor;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
-import com.google.common.hash.Hashing;
-import com.google.common.io.CharStreams;
-import com.google.common.io.Files;
-import com.google.common.io.InputSupplier;
+import net.minecraftforge.installer.json.Artifact;
+import net.minecraftforge.installer.json.Manifest;
+import net.minecraftforge.installer.json.Util;
+import net.minecraftforge.installer.json.Version.Download;
 
 public class DownloadUtils {
     public static final String LIBRARIES_URL = "https://libraries.minecraft.net/";
-    //TODO: Pull from manifests
-    public static final String VERSION_URL_SERVER = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/minecraft_server.{MCVER}.jar";
-    public static final String VERSION_URL_CLIENT = "https://s3.amazonaws.com/Minecraft.Download/versions/{MCVER}/{MCVER}.jar";
+    public static final String MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     public static boolean OFFLINE_MODE = false;
 
     public static int downloadInstalledLibraries(boolean isClient, File librariesDir, IMonitor monitor, List<LibraryInfo> libraries, int progress, List<Artifact> grabbed, List<Artifact> bad)
@@ -87,60 +83,33 @@ public class DownloadUtils {
 
     private static boolean checksumValid(File libPath, List<String> checksums)
     {
-        try
-        {
-            if (checksums == null || checksums.isEmpty())
-                return true;
-            byte[] fileData = Files.toByteArray(libPath);
-            boolean valid = checksums.contains(Hashing.sha1().hashBytes(fileData).toString());
-            if (!valid && libPath.getName().endsWith(".jar"))
-            {
-                valid = validateJar(libPath, fileData, checksums);
-            }
-            return valid;
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            return false;
-        }
+        if (checksums == null || checksums.isEmpty())
+            return true;
+        return checksums.contains(getSha1(libPath));
     }
 
     public static boolean downloadFileEtag(String libName, File libPath, String libURL)
     {
-        if (OFFLINE_MODE)
-        {
-            System.out.println("Offline Mode: Not downloading: " + libURL);
-            return false;
-        }
-
         try
         {
-            URL url = new URL(libURL);
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-
+            URLConnection connection = getConnection(libURL);
+            if (connection == null)
+                return false;
             String etag = connection.getHeaderField("ETag");
             if (etag == null)
-            {
-              etag = "-";
-            }
+                etag = "-";
             else if ((etag.startsWith("\"")) && (etag.endsWith("\"")))
-            {
                 etag = etag.substring(1, etag.length() - 1);
-            }
 
-            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
             if (!libPath.getParentFile().exists())
                 libPath.getParentFile().mkdirs();
-            Files.copy(urlSupplier, libPath);
+            Files.copy(connection.getInputStream(), libPath.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
             if (etag.indexOf('-') != -1) return true; //No-etag, assume valid
             try
             {
-                byte[] fileData = Files.toByteArray(libPath);
-                String md5 = Hashing.md5().hashBytes(fileData).toString();
+                byte[] fileData = Files.readAllBytes(libPath.toPath());
+                String md5 = HashFunction.MD5.hash(fileData).toString();
                 System.out.println("  ETag: " + etag);
                 System.out.println("  MD5:  " + md5);
                 return etag.equalsIgnoreCase(md5);
@@ -151,11 +120,6 @@ public class DownloadUtils {
                 return false;
             }
         }
-        catch (FileNotFoundException fnf)
-        {
-            fnf.printStackTrace();
-            return false;
-        }
         catch (Exception e)
         {
             e.printStackTrace();
@@ -163,92 +127,16 @@ public class DownloadUtils {
         }
     }
 
-    public static boolean validateJar(File libPath, byte[] data, List<String> checksums) throws IOException
-    {
-        System.out.println("Checking \"" + libPath.getAbsolutePath() + "\" internal checksums");
-
-        HashMap<String, String> files = new HashMap<String, String>();
-        String[] hashes = null;
-        JarInputStream jar = new JarInputStream(new ByteArrayInputStream(data));
-        JarEntry entry = jar.getNextJarEntry();
-        while (entry != null)
-        {
-            byte[] eData = readFully(jar);
-
-            if (entry.getName().equals("checksums.sha1"))
-            {
-                hashes = new String(eData, Charset.forName("UTF-8")).split("\n");
-            }
-
-            if (!entry.isDirectory())
-            {
-                files.put(entry.getName(), Hashing.sha1().hashBytes(eData).toString());
-            }
-            entry = jar.getNextJarEntry();
-        }
-        jar.close();
-
-        if (hashes != null)
-        {
-            boolean failed = !checksums.contains(files.get("checksums.sha1"));
-            if (failed)
-            {
-                System.out.println("    checksums.sha1 failed validation");
-            }
-            else
-            {
-                System.out.println("    checksums.sha1 validated successfully");
-                for (String hash : hashes)
-                {
-                    if (hash.trim().equals("") || !hash.contains(" ")) continue;
-                    String[] e = hash.split(" ");
-                    String validChecksum = e[0];
-                    String target = hash.substring(validChecksum.length() + 1);
-                    String checksum = files.get(target);
-
-                    if (!files.containsKey(target) || checksum == null)
-                    {
-                        System.out.println("    " + target + " : missing");
-                        failed = true;
-                    }
-                    else if (!checksum.equals(validChecksum))
-                    {
-                        System.out.println("    " + target + " : failed (" + checksum + ", " + validChecksum + ")");
-                        failed = true;
-                    }
-                }
-            }
-
-            if (!failed)
-            {
-                System.out.println("    Jar contents validated successfully");
-            }
-
-            return !failed;
-        }
-        else
-        {
-            System.out.println("    checksums.sha1 was not found, validation failed");
-            return false; //Missing checksums
-        }
-    }
-
     public static List<String> downloadList(String libURL)
     {
-        if (OFFLINE_MODE)
-        {
-            System.out.println("Offline Mode: Not downloading: " + libURL);
-            return Lists.newArrayList();
-        }
-
         try
         {
-            URL url = new URL(libURL);
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
-            return CharStreams.readLines(CharStreams.newReaderSupplier(urlSupplier, Charsets.UTF_8));
+            URLConnection connection = getConnection(libURL);
+            if (connection == null)
+                return new ArrayList<>();
+            byte[] data = readFully(connection.getInputStream());
+            String[] lines = new String(data, StandardCharsets.UTF_8).split("\\r?\\n|\\r");
+            return Arrays.asList(lines);
         }
         catch (Exception e)
         {
@@ -259,39 +147,33 @@ public class DownloadUtils {
 
     public static boolean downloadFile(String libName, File libPath, String libURL, List<String> checksums)
     {
-        if (OFFLINE_MODE)
-        {
-            System.out.println("Offline Mode: Not downloading: " + libURL);
-            return false;
-        }
-
         try
         {
-            URL url = new URL(libURL);
-            URLConnection connection = url.openConnection();
-            connection.setConnectTimeout(5000);
-            connection.setReadTimeout(5000);
-            InputSupplier<InputStream> urlSupplier = new URLISSupplier(connection);
-            Files.copy(urlSupplier, libPath);
-            if (checksumValid(libPath, checksums))
-            {
-                return true;
-            }
-            else
-            {
+            URLConnection connection = getConnection(libURL);
+            if (connection == null)
                 return false;
-            }
-        }
-        catch (FileNotFoundException fnf)
-        {
-            fnf.printStackTrace();
-            return false;
+
+            Files.copy(connection.getInputStream(), libPath.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            return checksumValid(libPath, checksums);
         }
         catch (Exception e)
         {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public static boolean downloadFile(File target, String url) {
+        try {
+            URLConnection connection = getConnection(url);
+            if (connection != null) {
+                Files.copy(connection.getInputStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public static boolean extractFile(Artifact art, File libPath, List<String> checksums)
@@ -305,14 +187,7 @@ public class DownloadUtils {
 
         try
         {
-            Files.copy(new InputSupplier<InputStream>()
-            {
-                @Override
-                public InputStream getInput() throws IOException
-                {
-                    return input;
-                }
-            }, libPath);
+            Files.copy(input, libPath.toPath(), StandardCopyOption.REPLACE_EXISTING);
             return checksumValid(libPath, checksums);
         }
         catch (Exception e)
@@ -337,22 +212,6 @@ public class DownloadUtils {
         } while (len != -1);
 
         return entryBuffer.toByteArray();
-    }
-
-    static class URLISSupplier implements InputSupplier<InputStream>
-    {
-        private final URLConnection connection;
-
-        private URLISSupplier(URLConnection connection)
-        {
-            this.connection = connection;
-        }
-
-        @Override
-        public InputStream getInput() throws IOException
-        {
-            return connection.getInputStream();
-        }
     }
 
     public static IMonitor buildMonitor()
@@ -422,5 +281,103 @@ public class DownloadUtils {
                 }
             };
         }
+    }
+
+    public static String getSha1(File target) {
+        try {
+            return HashFunction.SHA1.hash(Files.readAllBytes(target.toPath())).toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static URLConnection getConnection(String address) {
+        if (OFFLINE_MODE) {
+            System.out.println("Offline Mode: Not downloading: " + address);
+            return null;
+        }
+
+        try {
+            int MAX = 3;
+            URL url = new URL(address);
+            URLConnection connection = null;
+            for (int x = 0; x < MAX; x++) { //Maximum of 3 redirects.
+                connection = url.openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+                if (connection instanceof HttpURLConnection) {
+                    HttpURLConnection hcon = (HttpURLConnection)connection;
+                    hcon.setInstanceFollowRedirects(false);
+                    int res = hcon.getResponseCode();
+                    if (res == HttpURLConnection.HTTP_MOVED_PERM || res == HttpURLConnection.HTTP_MOVED_TEMP) {
+                        String location = hcon.getHeaderField("Location");
+                        hcon.disconnect(); //Kill old connection.
+                        if (x == MAX-1) {
+                            System.out.println("Invalid number of redirects: " + location);
+                            return null;
+                        } else {
+                            System.out.println("Following redirect: " + location);
+                            url = new URL(url, location); // Nested in case of relative urls.
+                        }
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+            return connection;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static Manifest downloadManifest() {
+        try {
+            URLConnection connection = getConnection(MANIFEST_URL);
+            if (connection != null) {
+                try (InputStream stream = connection.getInputStream()) {
+                    return Util.loadManifest(stream);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static boolean download(IMonitor monitor, Download download, File target) {
+        return download(monitor, download, target, download.getUrl());
+    }
+
+    private static boolean download(IMonitor monitor, Download download, File target, String url) {
+        monitor.setNote("  Downloading library from " + url);
+        try {
+            URLConnection connection = getConnection(url);
+            if (connection != null) {
+                Files.copy(connection.getInputStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                if (download.getSha1() != null) {
+                    String sha1 = getSha1(target);
+                    if (download.getSha1().equals(sha1)) {
+                        monitor.setNote("    Download completed: Checksum validated.");
+                        return true;
+                    }
+                    monitor.setNote("    Download failed: Checksum invalid, deleting file:");
+                    monitor.setNote("      Expected: " + download.getSha1());
+                    monitor.setNote("      Actual:   " + sha1);
+                    if (!target.delete()) {
+                        monitor.setNote("      Failed to delete file, aborting.");
+                        return false;
+                    }
+                }
+                monitor.setNote("    Download completed: No checksum, Assuming valid.");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

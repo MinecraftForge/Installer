@@ -9,7 +9,7 @@ import java.util.Locale;
 import com.google.common.base.Strings;
 
 import argo.jdom.JsonNode;
-import net.minecraftforge.installer.Artifact;
+import net.minecraftforge.installer.json.Artifact;
 
 public class TransformInfo {
     public final String side;
@@ -24,7 +24,7 @@ public class TransformInfo {
     {
         side     = node.isStringValue("side") ? node.getStringValue("side").toUpperCase(Locale.ENGLISH) : null;
         input    = node.getStringValue("input");
-        output   = new Artifact(node.getStringValue("output"));
+        output   = Artifact.from(node.getStringValue("output"));
         map      = node.getStringValue("map");
         append   = getBool(node, "append", false);
         maven    = node.isStringValue("maven") ? node.getStringValue("maven") : null;
@@ -45,7 +45,7 @@ public class TransformInfo {
     public Artifact getInputArtifact()
     {
         if (this.inputArtifact == null)
-            this.inputArtifact = new Artifact(input);
+            this.inputArtifact = Artifact.from(input);
         return this.inputArtifact;
     }
 

@@ -23,6 +23,10 @@ import argo.jdom.JsonNodeFactories;
 import argo.jdom.JsonRootNode;
 import argo.jdom.JsonStringNode;
 import argo.saj.InvalidSyntaxException;
+import net.minecraftforge.installer.json.Artifact;
+import net.minecraftforge.installer.json.Util;
+import net.minecraftforge.installer.json.Version;
+import net.minecraftforge.installer.json.Version.Download;
 import net.minecraftforge.installer.transform.TransformInfo;
 
 import com.google.common.base.Charsets;
@@ -74,31 +78,10 @@ public class ClientInstall implements ActionType {
         monitor.setMaximum(libraries.size() + transforms.size() + 3);
         int progress = 3;
 
-        File versionJsonFile = new File(versionTarget,VersionInfo.getVersionTarget()+".json");
 
-        boolean downloadMCJar = true; //VersionInfo.isInheritedJson() || VersionInfo.needsMCDownload(SIDE);
-        File minecraftJarFile = VersionInfo.getMinecraftFile(versionRootDir);
-
-        if (downloadMCJar) {
-            monitor.setNote("Considering minecraft client jar");
-            monitor.setProgress(1);
-
-            if (!minecraftJarFile.exists()) {
-                monitor.setNote(String.format("Downloading minecraft client version %s", VersionInfo.getMinecraftVersion()));
-                String clientUrl = String.format(DownloadUtils.VERSION_URL_CLIENT.replace("{MCVER}", VersionInfo.getMinecraftVersion()));
-
-                if (!DownloadUtils.downloadFileEtag("minecraft server", minecraftJarFile, clientUrl)) {
-                    minecraftJarFile.delete();
-                    JOptionPane.showMessageDialog(null, "Downloading minecraft failed, invalid e-tag checksum.\n" +
-                            "Try again, or use the official launcher to run Minecraft " +
-                            VersionInfo.getMinecraftVersion() + " first.",
-                            "Error downloading", JOptionPane.ERROR_MESSAGE);
-                    return false;
-                }
-                monitor.setProgress(2);
-            }
-        }
-
+        File minecraftJarFile = downloadVanillaClientJar(monitor, versionRootDir);
+        if (minecraftJarFile == null)
+            return false;
 
         if (!VersionInfo.isInheritedJson())
         {
@@ -192,6 +175,7 @@ public class ClientInstall implements ActionType {
 
         monitor.close();
 
+        File versionJsonFile = new File(versionTarget,VersionInfo.getVersionTarget()+".json");
         try
         {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -439,5 +423,48 @@ public class ClientInstall implements ActionType {
             this.artifact = artifact;
             this.maven = maven;
         }
+    }
+
+    private File downloadVanillaClientJar(IMonitor monitor, File root) {
+        // Download Vanilla main jar/json
+        monitor.setNote("Considering minecraft client jar");
+        File versionVanilla = new File(root, VersionInfo.getMinecraftVersion());
+        if (!versionVanilla.mkdirs() && !versionVanilla.isDirectory()) {
+            if (!versionVanilla.delete()) {
+                error(monitor, "There was a problem with the launcher version data. You will need to clear " + versionVanilla + " manually.");
+                return null;
+            } else
+                versionVanilla.mkdirs();
+        }
+
+        File clientTarget = new File(versionVanilla, VersionInfo.getMinecraftVersion() + ".jar");
+        if (!clientTarget.exists()) {
+            File versionJson = new File(versionVanilla, VersionInfo.getMinecraftVersion() + ".json");
+            Version vanilla = Util.getVanillaVersion(VersionInfo.getMinecraftVersion(), versionJson);
+            if (vanilla == null) {
+                error(monitor, "Failed to download version manifest, can not find client jar URL.");
+                return null;
+            }
+
+            Download client = vanilla.getDownload("client");
+            if (client == null) {
+                error(monitor, "Failed to download minecraft client, info missing from manifest: " + versionJson);
+                return null;
+            }
+
+            if (!DownloadUtils.download(monitor, client, clientTarget)) {
+                clientTarget.delete();
+                error(monitor, "Downloading minecraft client failed, invalid checksum.\n" +
+                      "Try again, or use the vanilla launcher to install the vanilla version.");
+                return null;
+            }
+        }
+
+        return clientTarget;
+    }
+
+    protected void error(IMonitor monitor, String message) {
+        JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+        monitor.setNote(message);
     }
 }
