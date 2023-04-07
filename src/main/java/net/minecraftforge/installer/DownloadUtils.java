@@ -22,12 +22,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import javax.net.ssl.SSLHandshakeException;
 
 import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.Artifact;
@@ -229,9 +236,16 @@ public class DownloadUtils {
             return null;
         }
 
+        URL url = null;
+        try {
+            url = new URL(address);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
+
         try {
             int MAX = 3;
-            URL url = new URL(address);
             URLConnection connection = null;
             for (int x = 0; x < MAX; x++) { //Maximum of 3 redirects.
                 connection = url.openConnection();
@@ -259,10 +273,26 @@ public class DownloadUtils {
                 }
             }
             return connection;
+        } catch (SSLHandshakeException e) {
+            System.out.println("Failed to establish connection to " + address);
+            String host = url.getHost();
+            System.out.println(" Host: " + host + " [" + getIps(host).stream().collect(Collectors.joining(", ")) + "]");
+            e.printStackTrace();
+            return null;
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public static List<String> getIps(String host) {
+        try {
+            InetAddress[] addresses = InetAddress.getAllByName(host);
+            return Arrays.stream(addresses).map(InetAddress::getHostAddress).collect(Collectors.toList());
+        } catch (UnknownHostException e1) {
+            e1.printStackTrace();
+        }
+        return null;
     }
 
     public static boolean downloadFileEtag(File target, String url) {

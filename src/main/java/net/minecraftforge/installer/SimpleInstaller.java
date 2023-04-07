@@ -26,9 +26,12 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
@@ -70,6 +73,7 @@ public class SimpleInstaller
         String jvmVersion = System.getProperty("java.vm.version", "missing jvm version");
         monitor.message(String.format("JVM info: %s - %s - %s", vendor, javaVersion, jvmVersion));
         monitor.message("java.net.preferIPv4Stack=" + System.getProperty("java.net.preferIPv4Stack"));
+        monitor.message("Current Time: " + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()));
 
         File installer = new File(SimpleInstaller.class.getProtectionDomain().getCodeSource().getLocation().toURI());
         if (installer.getAbsolutePath().contains("!/"))
@@ -105,6 +109,16 @@ public class SimpleInstaller
         }
         else
         {
+            for(String host : new String[] {
+                "files.minecraftforge.net",
+                "maven.minecraftforge.net",
+                "libraries.minecraft.net",
+                "launchermeta.mojang.com",
+                "piston-meta.mojang.com",
+                "authserver.mojang.com",
+            }) {
+                monitor.message("Host: " + host + " [" + DownloadUtils.getIps(host).stream().collect(Collectors.joining(", ")) + "]");
+            }
             FixSSL.fixup(monitor);
         }
 
