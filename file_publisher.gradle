@@ -1,5 +1,4 @@
 import java.security.MessageDigest
-import java.net.URL
 
 repositories {
     mavenLocal()
@@ -8,16 +7,17 @@ repositories {
     maven { url = 'https://libraries.minecraft.net/' }
 }
 
-def sha1(file) {
+static String sha1(File file) {
     MessageDigest md = MessageDigest.getInstance('SHA-1')
-    file.eachByte 4096, {bytes, size ->
+    file.eachByte(4096) {bytes, size ->
         md.update(bytes, 0, size)
     }
     return md.digest().collect {String.format "%02x", it}.join()
 }
-def md5(file) {
+
+static String md5(File file) {
     MessageDigest md = MessageDigest.getInstance('MD5')
-    file.eachByte 4096, {bytes, size ->
+    file.eachByte(4096) {bytes, size ->
         md.update(bytes, 0, size)
     }
     return md.digest().collect {String.format "%02x", it}.join()
@@ -86,7 +86,7 @@ def checkExists(url) {
     return code == 200
 }
 //TODO: Make Forge's build explode if a file is missing from our repo
-task artifacts() {
+tasks.register('artifacts') {
     doLast {
         file('dep_repo').deleteDir()
         [

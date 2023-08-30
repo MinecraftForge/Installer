@@ -1,24 +1,19 @@
 buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net' }
-        mavenCentral()
-    }
     dependencies {
         classpath 'com.guardsquare:proguard-gradle:7.1.0'
-        classpath 'net.minecraftforge:GradleUtils:1.+'
     }
 }
 
 plugins {
     id 'org.cadixdev.licenser' version '0.6.1'
-    id 'com.github.johnrengelman.shadow' version '7.0.0'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'net.minecraftforge.gradleutils' version '2.+'
     //id 'maven'
     id 'maven-publish'
     id 'java'
     id 'eclipse'
     id 'idea'
 }
-apply plugin: 'net.minecraftforge.gradleutils'
 
 repositories {
     mavenCentral()
@@ -37,58 +32,58 @@ license {
 version = gradleutils.getTagOffsetBranchVersion(null, 'master', 'HEAD', '2.0')
 println('Installer Version: ' + version)
 
-ext {
-    SPEC_VERSION = gradleutils.gitInfo.tag
-    MAIN_CLASS = 'net.minecraftforge.installer.SimpleInstaller'
-    MANIFEST = manifest{
-        attributes('Main-Class': MAIN_CLASS)
-        attributes([
+final String SPEC_VERSION = gradleutils.gitInfo.tag
+final String MAIN_CLASS = 'net.minecraftforge.installer.SimpleInstaller'
+final MANIFEST = manifest {
+    attributes('Main-Class': MAIN_CLASS)
+    attributes([
             'Specification-Title':      'Installer',
             'Specification-Vendor':     'Forge Development LLC',
             'Specification-Version':    SPEC_VERSION,
             'Implementation-Title':     'SimpleInstaller',
             'Implementation-Version':   project.version,
             'Implementation-Vendor':    'Forge Development LLC'
-        ] as LinkedHashMap, 'net/minecraftforge/installer/')
-    }
+    ], 'net/minecraftforge/installer/')
 }
 
 dependencies {
     implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    implementation 'com.google.code.gson:gson:2.8.7'
+    implementation 'com.google.code.gson:gson:2.9.0'
 	testImplementation(platform('org.junit:junit-bom:5.7.2'))
 	testImplementation('org.junit.jupiter:junit-jupiter')
 }
 
-test {
+tasks.named('test', Test).configure {
   useJUnitPlatform()
   testLogging {
     events "passed", "skipped", "failed"
   }
 }
 
-compileJava {
+tasks.named('compileJava', JavaCompile).configure {
     options.encoding = 'UTF-8'
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+tasks.register('sourcesJar', Jar) {
+    dependsOn 'classes'
+    archiveClassifier = 'sources'
     from sourceSets.main.allSource
     manifest.from(MANIFEST)
 }
 
-shadowJar {
-    classifier 'fatjar'
+tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar).configure {
+    archiveClassifier = 'fatjar'
     manifest.from(MANIFEST)
 }
 
-task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
-    ext {
-        inputJar = shadowJar.archiveFile.get().asFile
-        outDir = file("${buildDir}/proguard")
-        obfuscatedJar = "${outDir}/${jar.archiveBaseName}.jar"
-        config = 'proguard.pro'
-    }
+tasks.register('pgShrinkJar', proguard.gradle.ProGuardTask) {
+    dependsOn 'shadowJar'
+
+    final File inputJar = shadowJar.archiveFile.get().asFile
+    final File outDir = file("${buildDir}/proguard")
+    final String obfuscatedJar = "${outDir}/installer.jar"
+    final String config = 'proguard.pro'
+
     inputs.file inputJar
     inputs.file config
     
@@ -111,9 +106,10 @@ task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
     configuration config
 }
 
-task shrinkJar(type: Jar, dependsOn: pgShrinkJar) {
-    classifier = 'shrunk'
-    from zipTree(pgShrinkJar.obfuscatedJar)
+tasks.register('shrinkJar', Jar) {
+    dependsOn 'pgShrinkJar'
+    archiveClassifier = 'shrunk'
+    from zipTree(file("${buildDir}/proguard/installer.jar"))
     manifest.from(MANIFEST)
 }
 
@@ -123,20 +119,20 @@ artifacts {
     archives shrinkJar
 }
 
-jar {
+tasks.named('jar', Jar).configure {
     manifest.from(MANIFEST)
 }
 
-task testJar(type: Jar, dependsOn: shrinkJar) {
+tasks.register('testJar', Jar) {
     from zipTree(shrinkJar.archiveFile.get().asFile)
     from sourceSets.test.output
-    classifier 'test'
+    archiveClassifier = 'test'
     manifest.from(MANIFEST)
 }
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        register('mavenJava', MavenPublication) {
             artifact sourcesJar
             artifact shrinkJar
             artifact jar
@@ -172,14 +168,14 @@ publishing {
     }
     repositories {
         maven {
-            if (System.env.MAVEN_USER) {
+            if (System.getenv().MAVEN_USER) {
                 url 'https://maven.minecraftforge.net/'
                 authentication {
                     basic(BasicAuthentication)
                 }
                 credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
+                    username = System.getenv().MAVEN_USER ?: 'not'
+                    password = System.getenv().MAVEN_PASSWORD ?: 'set'
                 }
             } else {
                 url 'file://' + rootProject.file('repo').getAbsolutePath()
