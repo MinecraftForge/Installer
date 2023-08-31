@@ -81,7 +81,6 @@ tasks.register('pgShrinkJar', proguard.gradle.ProGuardTask) {
 
     final File inputJar = shadowJar.archiveFile.get().asFile
     final File outDir = file("${buildDir}/proguard")
-    final String obfuscatedJar = "${outDir}/installer.jar"
     final String config = 'proguard.pro'
 
     inputs.file inputJar
@@ -90,7 +89,7 @@ tasks.register('pgShrinkJar', proguard.gradle.ProGuardTask) {
     outDir.mkdirs()
 
     injars inputJar
-    outjars obfuscatedJar
+    outjars "${outDir}/installer.jar"
 
     // Automatically handle the Java version of this build.
     if (System.getProperty('java.version').startsWith('1.')) {
