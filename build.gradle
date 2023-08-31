@@ -130,8 +130,7 @@ tasks.register('testJar', Jar) {
 }
 
 publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
+    publications.register('mavenJava', MavenPublication) {
             artifact sourcesJar
             artifact shrinkJar
             artifact jar
