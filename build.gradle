@@ -131,35 +131,34 @@ tasks.register('testJar', Jar) {
 
 publishing {
     publications.register('mavenJava', MavenPublication) {
-            artifact sourcesJar
-            artifact shrinkJar
-            artifact jar
-            pom {
-                name = project.archivesBaseName
-                packaging = 'jar'
-                description = 'Minecraft Forge Installer'
+        artifact sourcesJar
+        artifact shrinkJar
+        artifact jar
+        pom {
+            name = project.archivesBaseName
+            packaging = 'jar'
+            description = 'Minecraft Forge Installer'
+            url = 'https://github.com/MinecraftForge/Installer'
+
+            scm {
                 url = 'https://github.com/MinecraftForge/Installer'
+                connection = 'scm:git:git://github.com/MinecraftForge/Installer.git'
+                developerConnection = 'scm:git:git@github.com:MinecraftForge/Installer.git'
+            }
 
-                scm {
-                    url = 'https://github.com/MinecraftForge/Installer'
-                    connection = 'scm:git:git://github.com/MinecraftForge/Installer.git'
-                    developerConnection = 'scm:git:git@github.com:MinecraftForge/Installer.git'
+            issueManagement {
+                system = 'github'
+                url = 'https://github.com/MinecraftForge/Installer/issues'
+            }
+
+            developers {
+                developer {
+                    id = 'cpw'
+                    name = 'cpw'
                 }
-
-                issueManagement {
-                    system = 'github'
-                    url = 'https://github.com/MinecraftForge/Installer/issues'
-                }
-
-                developers {
-                    developer {
-                        id = 'cpw'
-                        name = 'cpw'
-                    }
-                    developer {
-                        id = 'LexManos'
-                        name = 'Lex Manos'
-                    }
+                developer {
+                    id = 'LexManos'
+                    name = 'Lex Manos'
                 }
             }
         }
