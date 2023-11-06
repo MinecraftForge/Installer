@@ -1,189 +1,97 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.guardsquare:proguard-gradle:7.1.0'
-        classpath 'net.minecraftforge:GradleUtils:1.+'
-    }
-}
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import net.minecraftforge.gradleutils.PomUtils
 
 plugins {
-    id 'org.cadixdev.licenser' version '0.6.1'
-    id 'com.github.johnrengelman.shadow' version '7.0.0'
-    //id 'maven'
-    id 'maven-publish'
     id 'java'
     id 'eclipse'
-    id 'idea'
-}
-apply plugin: 'net.minecraftforge.gradleutils'
-
-repositories {
-    mavenCentral()
+    id 'maven-publish'
+    id 'org.cadixdev.licenser' version '0.6.1'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'com.github.ben-manes.versions' version '0.49.0'
+    id 'net.minecraftforge.gradleutils' version '2.+'
 }
 
 group = 'net.minecraftforge'
-archivesBaseName = 'installer'
-java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+version = gradleutils.tagOffsetVersion
+println "Version: $version"
+
+repositories {
+    mavenCentral()
+    maven gradleutils.forgeMaven
+}
 
 license {
-  header project.file('LICENSE-header.txt')
-  include 'net/minecraftforge/installer/**/*.java'
-  newLine false
+    header = file('LICENSE-header.txt')
+    newLine = false
 }
 
-version = gradleutils.getTagOffsetBranchVersion(null, 'master', 'HEAD', '2.0')
-println('Installer Version: ' + version)
-
-ext {
-    SPEC_VERSION = gradleutils.gitInfo.tag
-    MAIN_CLASS = 'net.minecraftforge.installer.SimpleInstaller'
-    MANIFEST = manifest{
-        attributes('Main-Class': MAIN_CLASS)
-        attributes([
-            'Specification-Title':      'Installer',
-            'Specification-Vendor':     'Forge Development LLC',
-            'Specification-Version':    SPEC_VERSION,
-            'Implementation-Title':     'SimpleInstaller',
-            'Implementation-Version':   project.version,
-            'Implementation-Vendor':    'Forge Development LLC'
-        ] as LinkedHashMap, 'net/minecraftforge/installer/')
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
     }
-}
-
-dependencies {
-    implementation 'net.sf.jopt-simple:jopt-simple:5.0.4'
-    implementation 'com.google.code.gson:gson:2.8.7'
-	testImplementation(platform('org.junit:junit-bom:5.7.2'))
-	testImplementation('org.junit.jupiter:junit-jupiter')
+    withSourcesJar()
 }
 
 test {
   useJUnitPlatform()
-  testLogging {
-    events "passed", "skipped", "failed"
-  }
+}
+
+dependencies {
+    implementation(libs.jopt.simple)
+    implementation(libs.gson)
+    testImplementation(libs.junit.api)
+    testRuntimeOnly(libs.bundles.junit.runtime)
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes('Main-Class': 'net.minecraftforge.installer.SimpleInstaller')
+        attributes([
+            'Specification-Title':    'Installer',
+            'Specification-Vendor':   'Forge Development LLC',
+            'Specification-Version':   gradleutils.gitInfo.tag,
+            'Implementation-Title':   'SimpleInstaller',
+            'Implementation-Vendor':  'Forge Development LLC',
+            'Implementation-Version':  project.version
+        ] as LinkedHashMap, 'net/minecraftforge/installer/')
+    }
+}
+
+tasks.named('shadowJar', ShadowJar).configure {
+    archiveClassifier = 'fatjar'
+    minimize()
 }
 
 compileJava {
     options.encoding = 'UTF-8'
 }
 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-    manifest.from(MANIFEST)
-}
-
-shadowJar {
-    classifier 'fatjar'
-    manifest.from(MANIFEST)
-}
-
-task pgShrinkJar(type: proguard.gradle.ProGuardTask, dependsOn: shadowJar) {
-    ext {
-        inputJar = shadowJar.archiveFile.get().asFile
-        outDir = file("${buildDir}/proguard")
-        obfuscatedJar = "${outDir}/${jar.archiveBaseName}.jar"
-        config = 'proguard.pro'
-    }
-    inputs.file inputJar
-    inputs.file config
-    
-    outDir.mkdirs()
-
-    injars inputJar
-    outjars obfuscatedJar
-
-    // Automatically handle the Java version of this build.
-    if (System.getProperty('java.version').startsWith('1.')) {
-        // Before Java 9, the runtime classes were packaged in a single jar file.
-        libraryjars "${System.getProperty('java.home')}/lib/rt.jar"
-    } else {
-        // As of Java 9, the runtime classes are packaged in modular jmod files.
-        libraryjars "${System.getProperty('java.home')}/jmods/java.base.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
-        libraryjars "${System.getProperty('java.home')}/jmods/java.desktop.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
-        libraryjars "${System.getProperty('java.home')}/jmods/java.logging.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
-        libraryjars "${System.getProperty('java.home')}/jmods/jdk.unsupported.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
-    }
-    configuration config
-}
-
-task shrinkJar(type: Jar, dependsOn: pgShrinkJar) {
-    classifier = 'shrunk'
-    from zipTree(pgShrinkJar.obfuscatedJar)
-    manifest.from(MANIFEST)
-}
-
 artifacts {
-    //archives shadowJar
-    archives sourcesJar
-    archives shrinkJar
-}
-
-jar {
-    manifest.from(MANIFEST)
-}
-
-task testJar(type: Jar, dependsOn: shrinkJar) {
-    from zipTree(shrinkJar.archiveFile.get().asFile)
-    from sourceSets.test.output
-    classifier 'test'
-    manifest.from(MANIFEST)
+    archives shadowJar
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            artifact sourcesJar
-            artifact shrinkJar
-            artifact jar
-            pom {
-                name = project.archivesBaseName
-                packaging = 'jar'
-                description = 'Minecraft Forge Installer'
-                url = 'https://github.com/MinecraftForge/Installer'
+    publications.register('mavenJava', MavenPublication) {
+        from components.java
 
-                scm {
-                    url = 'https://github.com/MinecraftForge/Installer'
-                    connection = 'scm:git:git://github.com/MinecraftForge/Installer.git'
-                    developerConnection = 'scm:git:git@github.com:MinecraftForge/Installer.git'
-                }
+        artifactId = 'installer'
 
-                issueManagement {
-                    system = 'github'
-                    url = 'https://github.com/MinecraftForge/Installer/issues'
-                }
+        pom {
+            name = 'Installer'
+            description = 'Minecraft Forge Installer'
+            url = 'https://github.com/MinecraftForge/MergeTool'
 
-                developers {
-                    developer {
-                        id = 'cpw'
-                        name = 'cpw'
-                    }
-                    developer {
-                        id = 'LexManos'
-                        name = 'Lex Manos'
-                    }
-                }
+            PomUtils.setGitHubDetails(pom, 'Installer')
+
+            license PomUtils.Licenses.LGPLv2_1
+
+            developers {
+                developer PomUtils.Developers.LexManos
             }
         }
     }
+
     repositories {
-        maven {
-            if (System.env.MAVEN_USER) {
-                url 'https://maven.minecraftforge.net/'
-                authentication {
-                    basic(BasicAuthentication)
-                }
-                credentials {
-                    username = System.env.MAVEN_USER ?: 'not'
-                    password = System.env.MAVEN_PASSWORD ?: 'set'
-                }
-            } else {
-                url 'file://' + rootProject.file('repo').getAbsolutePath()
-            }
-        }
+        maven gradleutils.publishingForgeMaven
     }
 }

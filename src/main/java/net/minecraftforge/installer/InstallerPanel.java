@@ -1,20 +1,6 @@
 /*
- * Installer
- * Copyright (c) 2016-2018.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation version 2.1
- * of the License.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * Copyright (c) Forge Development LLC
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 package net.minecraftforge.installer;
 
@@ -90,6 +76,7 @@ public class InstallerPanel extends JPanel {
 
     private final InstallV1 profile;
     private final File installer;
+    private final String badCerts;
 
     private class FileSelectAction extends AbstractAction
     {
@@ -157,10 +144,11 @@ public class InstallerPanel extends JPanel {
         }
     }
 
-    public InstallerPanel(File targetDir, InstallV1 profile, File installer)
+    public InstallerPanel(File targetDir, InstallV1 profile, File installer, String badCerts)
     {
         this.profile = profile;
         this.installer = installer;
+        this.badCerts = badCerts;
 
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         BufferedImage image = getImage(profile.getLogo(), null);
@@ -428,7 +416,13 @@ public class InstallerPanel extends JPanel {
             } catch (ActionCanceledException e) {
                 JOptionPane.showMessageDialog(null, "Installation Canceled", "Forge Installer", JOptionPane.WARNING_MESSAGE);
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(null, "There was an exception running task: " + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+                String message = "There was an exception running task: " + e.toString();
+                if (badCerts != null && !badCerts.isEmpty()) {
+                    message += "<br>" +
+                        "The following addresse did not have valid certificates: " + badCerts + "<br>" +
+                        "This typically happens with an outdated java install. Try updating your java install from https://adoptium.net/";
+                }
+                JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
                 e.printStackTrace();
             } finally {
                 prog.dispose();

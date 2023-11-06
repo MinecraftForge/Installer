@@ -1,20 +1,6 @@
 /*
- * Installer
- * Copyright (c) 2016-2018.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation version 2.1
- * of the License.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * Copyright (c) Forge Development LLC
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 package net.minecraftforge.installer.actions;
 
@@ -36,6 +22,7 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
+import javax.net.ssl.SSLException;
 import javax.swing.JOptionPane;
 
 import net.minecraftforge.installer.DownloadUtils;
@@ -226,18 +213,10 @@ public class PostProcessors {
                     main.invoke(null, (Object)args.toArray(new String[args.size()]));
                 } catch (InvocationTargetException ite) {
                     Throwable e = ite.getCause();
-                    e.printStackTrace();
-                    if (e.getMessage() == null)
-                        error("Failed to run processor: " + e.getClass().getName() + "\nSee log for more details.");
-                    else
-                        error("Failed to run processor: " + e.getClass().getName() + ":" + e.getMessage() + "\nSee log for more details.");
+                    handleError(e);
                     return false;
                 } catch (Throwable e) {
-                    e.printStackTrace();
-                    if (e.getMessage() == null)
-                        error("Failed to run processor: " + e.getClass().getName() + "\nSee log for more details.");
-                    else
-                        error("Failed to run processor: " + e.getClass().getName() + ":" + e.getMessage() + "\nSee log for more details.");
+                    handleError(e);
                     return false;
                 } finally {
                     // Set back to the previous classloader
@@ -274,6 +253,25 @@ public class PostProcessors {
             e.printStackTrace();
             return false;
         }
+    }
+
+    private void handleError(Throwable e) {
+        e.printStackTrace();
+        StringBuilder buf = new StringBuilder();
+        buf.append("Failed to run processor: ").append(e.getClass().getName());
+        if (e.getMessage() != null)
+            buf.append(':').append(e.getMessage());
+        if (e instanceof SSLException) {
+            buf.append("\nThis is a SSL Exception, this might be caused by you having an outdated java install.")
+                .append("\nTry updating your java before trying again.");
+        }
+        buf.append("\nSee log for more details");
+        error(buf.toString());
+        if (e.getMessage() == null)
+            error("Failed to run processor: " + e.getClass().getName() + "\nSee log for more details.");
+        else
+            error("Failed to run processor: " + e.getClass().getName() + ":" + e.getMessage() + "\nSee log for more details.");
+
     }
 
     private void error(String message) {

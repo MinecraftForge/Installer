@@ -1,20 +1,6 @@
 /*
- * Installer
- * Copyright (c) 2016-2018.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation version 2.1
- * of the License.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ * Copyright (c) Forge Development LLC
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
 package net.minecraftforge.installer;
 import java.io.BufferedOutputStream;
@@ -102,6 +88,7 @@ public class SimpleInstaller
             mirror = optionSet.valueOf(mirrorOption);
         }
 
+        String badCerts = "";
         if (optionSet.has(offlineOption))
         {
             DownloadUtils.OFFLINE_MODE = true;
@@ -119,7 +106,17 @@ public class SimpleInstaller
             }) {
                 monitor.message("Host: " + host + " [" + DownloadUtils.getIps(host).stream().collect(Collectors.joining(", ")) + "]");
             }
-            FixSSL.fixup(monitor);
+
+            for (String host : new String[] {
+                "https://files.minecraftforge.net/",
+                "https://launchermeta.mojang.com/"
+            }) {
+                if (DownloadUtils.checkCertificate(host))
+                    continue;
+                if (!badCerts.isEmpty())
+                    badCerts += ", ";
+                 badCerts += host;
+            }
         }
 
         Actions action = null;
@@ -136,6 +133,12 @@ public class SimpleInstaller
         {
             try
             {
+                if (!badCerts.isEmpty())
+                {
+                    monitor.message("Failed to validate certificates for " + badCerts + " this typically means you have an outdated java.");
+                    monitor.message("If instalation fails try updating your java!");
+                    return;
+                }
                 SimpleInstaller.headless = true;
                 monitor.message("Target Directory: " + target);
                 InstallV1 install = Util.loadInstallProfile();
@@ -158,7 +161,7 @@ public class SimpleInstaller
             }
         }
         else
-            launchGui(monitor, installer);
+            launchGui(monitor, installer, badCerts);
     }
 
     public static File getMCDir()
@@ -173,7 +176,7 @@ public class SimpleInstaller
         return new File(userHomeDir, mcDir);
     }
 
-    private static void launchGui(ProgressCallback monitor, File installer)
+    private static void launchGui(ProgressCallback monitor, File installer, String badCerts)
     {
         try
         {
@@ -185,7 +188,7 @@ public class SimpleInstaller
 
         try {
             InstallV1 profile = Util.loadInstallProfile();
-            InstallerPanel panel = new InstallerPanel(getMCDir(), profile, installer);
+            InstallerPanel panel = new InstallerPanel(getMCDir(), profile, installer, badCerts);
             panel.run(monitor);
         } catch (Throwable e) {
             JOptionPane.showMessageDialog(null,"Something went wrong while installing.<br />Check log for more details:<br/>" + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
