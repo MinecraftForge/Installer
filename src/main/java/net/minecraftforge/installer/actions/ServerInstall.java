@@ -37,8 +37,6 @@ public class ServerInstall extends Action {
         if (!target.exists())
             target.mkdirs();
         librariesDir.mkdir();
-        if (profile.getMirror() != null)
-            monitor.stage(getSponsorMessage());
         checkCancel();
 
         // Extract main executable jar

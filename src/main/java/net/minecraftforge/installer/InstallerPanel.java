@@ -56,6 +56,7 @@ import net.minecraftforge.installer.actions.Actions;
 import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.InstallV1;
+import net.minecraftforge.installer.json.Mirror;
 import net.minecraftforge.installer.json.OptionalLibrary;
 import net.minecraftforge.installer.json.Util;
 
@@ -356,7 +357,8 @@ public class InstallerPanel extends JPanel {
 
         if (profile.getMirror() != null)
         {
-            sponsorButton.setText(action.getSponsorMessage());
+            String message = String.format("<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", profile.getMirror().getName(), profile.getMirror().getHomepage());
+            sponsorButton.setText(message);
             sponsorButton.setToolTipText(profile.getMirror().getHomepage());
             if (profile.getMirror().getImageAddress() != null)
                 sponsorButton.setIcon(profile.getMirror().getImage());
@@ -408,6 +410,7 @@ public class InstallerPanel extends JPanel {
             try {
                 prog.setVisible(true);
                 prog.toFront();
+
                 if (action.run(targetDir, optPred, installer)) {
                     prog.start("Finished!");
                     prog.progress(1);

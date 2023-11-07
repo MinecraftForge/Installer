@@ -46,10 +46,6 @@ public abstract class Action {
     public abstract String getFileError(File targetDir);
     public abstract String getSuccessMessage();
 
-    public String getSponsorMessage() {
-        return profile.getMirror() != null ? String.format(SimpleInstaller.headless ? "Data kindly mirrored by %2$s at %1$s" : "<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", profile.getMirror().getHomepage(), profile.getMirror().getName()) : null;
-    }
-
     protected boolean downloadLibraries(File librariesDir, Predicate<String> optionals, List<File> additionalLibDirs) throws ActionCanceledException {
         monitor.start("Downloading libraries");
         String userHome = System.getProperty("user.home");

@@ -142,6 +142,9 @@ public class SimpleInstaller
                 SimpleInstaller.headless = true;
                 monitor.message("Target Directory: " + target);
                 InstallV1 install = Util.loadInstallProfile();
+                if (install.getMirror() != null)
+                    monitor.stage(String.format("Data kindly mirrored by %s at %s", install.getMirror().getName(), install.getMirror().getHomepage()));
+
                 if (!action.getAction(install, monitor).run(target, a -> true, installer))
                 {
                     monitor.stage("There was an error during installation");
@@ -188,6 +191,8 @@ public class SimpleInstaller
 
         try {
             InstallV1 profile = Util.loadInstallProfile();
+            if (profile.getMirror() != null)
+                monitor.stage(String.format("Data kindly mirrored by %s at %s", profile.getMirror().getName(), profile.getMirror().getHomepage()));
             InstallerPanel panel = new InstallerPanel(getMCDir(), profile, installer, badCerts);
             panel.run(monitor);
         } catch (Throwable e) {
