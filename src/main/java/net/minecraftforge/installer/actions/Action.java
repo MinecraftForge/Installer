@@ -48,13 +48,6 @@ public abstract class Action {
 
     protected boolean downloadLibraries(File librariesDir, Predicate<String> optionals, List<File> additionalLibDirs) throws ActionCanceledException {
         monitor.start("Downloading libraries");
-        String userHome = System.getProperty("user.home");
-        if (userHome != null && !userHome.isEmpty()) {
-            File mavenLocalHome = new File(userHome, ".m2/repository");
-            if (mavenLocalHome.exists()) {
-                additionalLibDirs.add(mavenLocalHome);
-            }
-        }
         monitor.message(String.format("Found %d additional library directories", additionalLibDirs.size()));
 
         List<Library> libraries = new ArrayList<>();
