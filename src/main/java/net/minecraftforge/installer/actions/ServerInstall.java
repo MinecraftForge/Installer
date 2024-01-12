@@ -9,8 +9,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
-
 import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.SimpleInstaller;
 import net.minecraftforge.installer.json.Artifact;
@@ -27,7 +25,7 @@ public class ServerInstall extends Action {
     }
 
     @Override
-    public boolean run(File target, Predicate<String> optionals, File installer) throws ActionCanceledException {
+    public boolean run(File target, File installer) throws ActionCanceledException {
         if (target.exists() && !target.isDirectory()) {
             error("There is a file at this location, the server cannot be installed here!");
             return false;
@@ -72,6 +70,7 @@ public class ServerInstall extends Action {
                 error("Failed to download version manifest, can not find server jar URL.");
                 return false;
             }
+
             Download server = vanilla.getDownload("server");
             if (server == null) {
                 error("Failed to download minecraft server, info missing from manifest: " + versionJson);
@@ -92,19 +91,15 @@ public class ServerInstall extends Action {
         // Download Libraries
         List<File> libDirs = new ArrayList<>();
         File mcLibDir = new File(SimpleInstaller.getMCDir(), "libraries");
-        if (mcLibDir.exists()) {
+        if (mcLibDir.exists())
             libDirs.add(mcLibDir);
-        }
-        if (!downloadLibraries(librariesDir, optionals, libDirs))
+
+        if (!downloadLibraries(librariesDir, libDirs))
             return false;
 
         checkCancel();
         if (!processors.process(librariesDir, serverTarget, target, installer))
             return false;
-
-        // TODO: Optionals
-        //if (!OptionalLibrary.saveModListJson(librariesDir, new File(target, "mods/mod_list.json"), VersionInfo.getOptionals(), optionals))
-        //    return false;
 
         return true;
     }

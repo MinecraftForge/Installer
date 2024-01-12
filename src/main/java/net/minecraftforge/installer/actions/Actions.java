@@ -9,37 +9,34 @@ import java.util.function.Supplier;
 
 import net.minecraftforge.installer.json.InstallV1;
 
-public enum Actions
-{
+public enum Actions{
     CLIENT("Install client", "Install a new profile to the Mojang client launcher", ClientInstall::new, () -> "Successfully installed client into launcher."),
     SERVER("Install server", "Create a new modded server installation", ServerInstall::new, () -> "The server installed successfully"),
-    EXTRACT("Extract", "Extract the contained jar file", ExtractAction::new, () -> "All files successfully extract.");
+    EXTRACT("Extract", "Extract the contained jar file", ExtractAction::new, () -> "All files successfully extract."),
+    OFFLINE("Offline Installer", "Repackages this installer with all downloaded dependencies, Minecraft not included for legal reasons", OfflineAction::new, () -> "Offline installer created");
+    ;
 
     private String label;
     private String tooltip;
     private BiFunction<InstallV1, ProgressCallback, Action> action;
     private Supplier<String> success;
 
-    private Actions(String label, String tooltip, BiFunction<InstallV1, ProgressCallback, Action> action, Supplier<String> success)
-    {
+    private Actions(String label, String tooltip, BiFunction<InstallV1, ProgressCallback, Action> action, Supplier<String> success) {
         this.label = label;
         this.tooltip = tooltip;
         this.success = success;
         this.action = action;
     }
 
-    public String getButtonLabel()
-    {
+    public String getButtonLabel() {
         return label;
     }
 
-    public String getTooltip()
-    {
+    public String getTooltip() {
         return tooltip;
     }
 
-    public String getSuccess()
-    {
+    public String getSuccess() {
         return success.get();
     }
 

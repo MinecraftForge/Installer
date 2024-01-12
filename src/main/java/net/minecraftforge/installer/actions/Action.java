@@ -8,8 +8,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
-
 import javax.swing.JOptionPane;
 
 import net.minecraftforge.installer.DownloadUtils;
@@ -41,18 +39,23 @@ public abstract class Action {
         monitor.stage(message);
     }
 
-    public abstract boolean run(File target, Predicate<String> optionals, File installer) throws ActionCanceledException;
+    public abstract boolean run(File target, File installer) throws ActionCanceledException;
     public abstract boolean isPathValid(File targetDir);
     public abstract String getFileError(File targetDir);
     public abstract String getSuccessMessage();
 
-    protected boolean downloadLibraries(File librariesDir, Predicate<String> optionals, List<File> additionalLibDirs) throws ActionCanceledException {
-        monitor.start("Downloading libraries");
-        monitor.message(String.format("Found %d additional library directories", additionalLibDirs.size()));
-
+    protected List<Library> getLibraries() {
         List<Library> libraries = new ArrayList<>();
         libraries.addAll(Arrays.asList(version.getLibraries()));
         libraries.addAll(Arrays.asList(processors.getLibraries()));
+        return libraries;
+    }
+
+    protected boolean downloadLibraries(File librariesDir, List<File> additionalLibDirs) throws ActionCanceledException {
+        monitor.start("Downloading libraries");
+        monitor.message(String.format("Found %d additional library directories", additionalLibDirs.size()));
+
+        List<Library> libraries = getLibraries();
 
         StringBuilder output = new StringBuilder();
         final double steps = libraries.size();
@@ -61,7 +64,7 @@ public abstract class Action {
         for (Library lib : libraries) {
             checkCancel();
             monitor.progress(progress++ / steps);
-            if (!DownloadUtils.downloadLibrary(monitor, profile.getMirror(), lib, librariesDir, optionals, grabbed, additionalLibDirs)) {
+            if (!DownloadUtils.downloadLibrary(monitor, profile.getMirror(), lib, librariesDir, grabbed, additionalLibDirs)) {
                 LibraryDownload download = lib.getDownloads() == null ? null :  lib.getDownloads().getArtifact();
                 if (download != null && !download.getUrl().isEmpty()) // If it doesn't have a URL we can't download it, assume we install it later
                     output.append('\n').append(lib.getName());

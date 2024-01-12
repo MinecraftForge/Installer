@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import java.util.function.Predicate;
 import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
@@ -25,7 +24,7 @@ public class ClientInstall extends Action {
     }
 
     @Override
-    public boolean run(File target, Predicate<String> optionals, File installer) throws ActionCanceledException {
+    public boolean run(File target, File installer) throws ActionCanceledException {
         if (!target.exists()) {
             error("There is no minecraft installation at: " + target);
             return false;
@@ -93,39 +92,10 @@ public class ClientInstall extends Action {
         }
 
         // Download Libraries
-        if (!downloadLibraries(librariesDir, optionals, new ArrayList<>()))
+        if (!downloadLibraries(librariesDir, new ArrayList<>()))
             return false;
+
         checkCancel();
-
-        /*
-        String modListType = VersionInfo.getModListType();
-        File modListFile = new File(target, "mods/mod_list.json");
-
-        JsonRootNode versionJson = JsonNodeFactories.object(VersionInfo.getVersionInfo().getFields());
-
-        if ("absolute".equals(modListType))
-        {
-            modListFile = new File(versionTarget, "mod_list.json");
-            JsonStringNode node = (JsonStringNode)versionJson.getNode("minecraftArguments");
-            try {
-                Field value = JsonStringNode.class.getDeclaredField("value");
-                value.setAccessible(true);
-                String args = (String)value.get(node);
-                value.set(node, args + " --modListFile \"absolute:"+modListFile.getAbsolutePath()+ "\"");
-            } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        }
-
-        if (!"none".equals(modListType))
-        {
-            if (!OptionalLibrary.saveModListJson(librariesDir, modListFile, VersionInfo.getOptionals(), optionals))
-            {
-                JOptionPane.showMessageDialog(null, "Failed to write mod_list.json, optional mods may not be loaded.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
-        */
 
         if (!processors.process(librariesDir, clientTarget, target, installer))
             return false;

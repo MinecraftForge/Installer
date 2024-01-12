@@ -69,91 +69,65 @@ public class InstallerPanel extends JPanel {
     private JLabel infoLabel;
     private JButton sponsorButton;
     private JDialog dialog;
-    //private JLabel sponsorLogo;
     private JPanel sponsorPanel;
     private JPanel fileEntryPanel;
-    private List<OptionalListEntry> optionals = new ArrayList<>();
     private Map<String, Function<ProgressCallback, Action>> actions = new HashMap<>();
 
     private final InstallV1 profile;
     private final File installer;
     private final String badCerts;
 
-    private class FileSelectAction extends AbstractAction
-    {
+    private class FileSelectAction extends AbstractAction {
         private static final long serialVersionUID = 1L;
 
         @Override
-        public void actionPerformed(ActionEvent e)
-        {
+        public void actionPerformed(ActionEvent e) {
             JFileChooser dirChooser = new JFileChooser();
             dirChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             dirChooser.setFileHidingEnabled(false);
             dirChooser.ensureFileIsVisible(targetDir);
             dirChooser.setSelectedFile(targetDir);
             int response = dirChooser.showOpenDialog(InstallerPanel.this);
-            switch (response)
-            {
-            case JFileChooser.APPROVE_OPTION:
-                targetDir = dirChooser.getSelectedFile();
-                updateFilePath();
-                break;
-            default:
-                break;
+            switch (response) {
+                case JFileChooser.APPROVE_OPTION:
+                    targetDir = dirChooser.getSelectedFile();
+                    updateFilePath();
+                    break;
+                default:
+                    break;
             }
         }
     }
 
-    private class SelectButtonAction extends AbstractAction
-    {
+    private class SelectButtonAction extends AbstractAction {
         private static final long serialVersionUID = 1L;
-
         @Override
-        public void actionPerformed(ActionEvent e)
-        {
+        public void actionPerformed(ActionEvent e) {
             updateFilePath();
         }
-
     }
 
-    //private static final String URL = "89504E470D0A1A0A0000000D4948445200000014000000160803000000F79F4C3400000012504C5445FFFFFFCCFFFF9999996666663333330000009E8B9AE70000000274524E53FF00E5B7304A000000564944415478016DCB410E003108425169E5FE579E98584246593EBF8165C24C5C614BED08455ECABC947929F392584A12CD8021EBEF91B0BD46A13969682BCC45E3706AE04E0DE0E42C819FA3D10F10BE954DC4C4DE07EB6A0497D14F4E8F0000000049454E44AE426082";
-    public static byte[] hexToByteArray(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                                 + Character.digit(s.charAt(i+1), 16));
-        }
-        return data;
-    }
-
-    private BufferedImage getImage(String path, String default_)
-    {
-        try
-        {
+    private BufferedImage getImage(String path) {
+        try {
             InputStream in = SimpleInstaller.class.getResourceAsStream(path);
-            if (in == null && default_ != null)
-                in = new ByteArrayInputStream(hexToByteArray(default_));
-            return ImageIO.read(in);
-        }
-        catch (IOException e)
-        {
-            if (default_ == null)
-                throw new RuntimeException(e);
-            else
-                return new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+            return in == null ? null : ImageIO.read(in);
+        } catch (IOException e) {
+            return sneak(e);
         }
     }
 
-    public InstallerPanel(File targetDir, InstallV1 profile, File installer, String badCerts)
-    {
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable, R> R sneak(Throwable e) throws E {
+        throw (E)e;
+    }
+
+    public InstallerPanel(File targetDir, InstallV1 profile, File installer, String badCerts) {
         this.profile = profile;
         this.installer = installer;
         this.badCerts = badCerts;
 
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        BufferedImage image = getImage(profile.getLogo(), null);
-        //final BufferedImage urlIcon = getImage(profile.getUrlIcon(), URL);
+        BufferedImage image = getImage(profile.getLogo());
 
         JPanel logoSplash = new JPanel();
         logoSplash.setLayout(new BoxLayout(logoSplash, BoxLayout.Y_AXIS));
@@ -181,12 +155,6 @@ public class InstallerPanel extends JPanel {
         sponsorPanel.setAlignmentX(CENTER_ALIGNMENT);
         sponsorPanel.setAlignmentY(CENTER_ALIGNMENT);
 
-//        sponsorLogo = new JLabel();
-//        sponsorLogo.setSize(50, 20);
-//        sponsorLogo.setAlignmentX(CENTER_ALIGNMENT);
-//        sponsorLogo.setAlignmentY(CENTER_ALIGNMENT);
-//        sponsorPanel.add(sponsorLogo);
-
         sponsorButton = new JButton();
         sponsorButton.setAlignmentX(CENTER_ALIGNMENT);
         sponsorButton.setAlignmentY(CENTER_ALIGNMENT);
@@ -203,11 +171,11 @@ public class InstallerPanel extends JPanel {
         choicePanel.setLayout(new BoxLayout(choicePanel, BoxLayout.Y_AXIS));
         boolean first = true;
         SelectButtonAction sba = new SelectButtonAction();
-        for (Actions action : Actions.values())
-        {
+        for (Actions action : Actions.values()) {
             if (action == Actions.CLIENT && profile.hideClient()) continue;
             if (action == Actions.SERVER && profile.hideServer()) continue;
             if (action == Actions.EXTRACT && profile.hideExtract()) continue;
+            if (action == Actions.OFFLINE && profile.hideOffline()) continue;
             actions.put(action.name(), prog -> action.getAction(profile, prog));
             JRadioButton radioButton = new JRadioButton();
             radioButton.setAction(sba);
@@ -225,82 +193,6 @@ public class InstallerPanel extends JPanel {
         choicePanel.setAlignmentX(RIGHT_ALIGNMENT);
         choicePanel.setAlignmentY(CENTER_ALIGNMENT);
         add(choicePanel);
-
-        /*
-        if (VersionInfo.hasOptionals())
-        {
-            optionals = new OptionalListEntry[VersionInfo.getOptionals().size()];
-            int x = 0;
-            for (OptionalLibrary opt : VersionInfo.getOptionals())
-                optionals[x++] = new OptionalListEntry(opt);
-
-            final JList<OptionalListEntry> list = new JList<OptionalListEntry>(optionals);
-
-            list.setCellRenderer(new ListCellRenderer<OptionalListEntry>()
-            {
-                private JPanel panel = new JPanel(new BorderLayout());
-                private JCheckBox check = new JCheckBox();
-                private JLabel icon = new JLabel(new ImageIcon(urlIcon));
-                {
-                    check.setHorizontalAlignment(SwingConstants.LEFT);
-                    icon.setSize(urlIcon.getWidth(), urlIcon.getHeight());
-                    panel.add(check, BorderLayout.LINE_START);
-                    panel.add(icon,  BorderLayout.LINE_END);
-                }
-
-                @Override
-                public Component getListCellRendererComponent(JList<? extends OptionalListEntry> list, OptionalListEntry value, int index, boolean isSelected, boolean cellHasFocus)
-                {
-                    check.setSelected(value.isEnabled());
-                    check.setText(value.lib.getName());
-                    icon.setVisible(value.lib.getURL() != null);
-                    return panel;
-                }
-            });
-
-            list.addMouseListener(new MouseAdapter()
-            {
-                public void mouseClicked(MouseEvent event)
-                {
-                    int index = list.locationToIndex(event.getPoint());
-                    OptionalListEntry entry = list.getModel().getElementAt(index);
-
-                    if (entry.lib.getURL() != null && event.getPoint().getX() > list.getWidth() - urlIcon.getWidth())
-                        openURL(entry.lib.getURL());
-                    else
-                        entry.setEnabled(!entry.isEnabled());
-                    list.repaint(list.getCellBounds(index, index));
-                }
-            });
-            list.addMouseMotionListener(new MouseMotionListener()
-            {
-                public void mouseMoved(MouseEvent event)
-                {
-                    int index = list.locationToIndex(event.getPoint());
-                    OptionalListEntry entry = list.getModel().getElementAt(index);
-                    if (entry.lib.getDesc() != null)
-                    {
-                        StringBuilder tt = new StringBuilder();
-                        tt.append("<html>");
-                        //tt.append("  <h1>").append(index).append(" ").append(entry.lib.getName()).append("</h1>");
-                        //if (entry.lib.getURL() != null)
-                        //    tt.append("  URL: <a href=\"").append(entry.lib.getURL()).append("\">").append(entry.lib.getURL()).append("</a><br />");
-                        if (entry.lib.getDesc() != null)
-                            tt.append(entry.lib.getDesc());
-                        tt.append("</html>");
-                        list.setToolTipText(tt.toString());
-                    }
-                    else
-                        list.setToolTipText(null);
-                }
-
-                @Override public void mouseDragged(MouseEvent event) {}
-            });
-
-
-            add(new JScrollPane(list));
-        }
-        */
 
         JPanel entryPanel = new JPanel();
         entryPanel.setLayout(new BoxLayout(entryPanel,BoxLayout.X_AXIS));
@@ -339,24 +231,19 @@ public class InstallerPanel extends JPanel {
         updateFilePath();
     }
 
-
-    private void updateFilePath()
-    {
-        try
-        {
+    private void updateFilePath() {
+        try {
             targetDir = targetDir.getCanonicalFile();
             selectedDirText.setText(targetDir.getPath());
-        }
-        catch (IOException e)
-        {
-
+        } catch (IOException e) {
+            System.out.println("Failed to make cononical file: " + targetDir);
+            e.printStackTrace();
         }
 
         Action action = actions.get(choiceButtonGroup.getSelection().getActionCommand()).apply(null);
         boolean valid = action.isPathValid(targetDir);
 
-        if (profile.getMirror() != null)
-        {
+        if (profile.getMirror() != null) {
             String message = String.format("<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", profile.getMirror().getName(), profile.getMirror().getHomepage());
             sponsorButton.setText(message);
             sponsorButton.setToolTipText(profile.getMirror().getHomepage());
@@ -365,53 +252,43 @@ public class InstallerPanel extends JPanel {
             else
                 sponsorButton.setIcon(null);
             sponsorPanel.setVisible(true);
-        }
-        else
-        {
+        } else {
             sponsorPanel.setVisible(false);
         }
-        if (valid)
-        {
+
+        if (valid) {
             selectedDirText.setForeground(null);
             infoLabel.setVisible(false);
             fileEntryPanel.setBorder(null);
-        }
-        else
-        {
+        } else {
             selectedDirText.setForeground(Color.RED);
             fileEntryPanel.setBorder(new LineBorder(Color.RED));
-            infoLabel.setText("<html>"+action.getFileError(targetDir)+"</html>");
+            infoLabel.setText("<html>" + action.getFileError(targetDir) + "</html>");
             infoLabel.setVisible(true);
         }
-        if (dialog!=null)
-        {
+
+        if (dialog != null) {
             dialog.invalidate();
             dialog.pack();
         }
     }
 
-    public void run(ProgressCallback monitor)
-    {
+    public void run(ProgressCallback monitor) {
         JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
 
-        dialog = optionPane.createDialog("Mod system installer");
+        dialog = optionPane.createDialog("Forge Installer");
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         dialog.setVisible(true);
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
-        if (result == JOptionPane.OK_OPTION)
-        {
+        if (result == JOptionPane.OK_OPTION) {
             ProgressFrame prog = new ProgressFrame(monitor, "Installing " + profile.getVersion(), Thread.currentThread()::interrupt);
             SimpleInstaller.hookStdOut(prog);
-            Predicate<String> optPred = input -> {
-                Optional<OptionalListEntry> ent = this.optionals.stream().filter(e -> e.lib.getArtifact().equals(input)).findFirst();
-                return !ent.isPresent() || ent.get().isEnabled();
-            };
             Action action = actions.get(choiceButtonGroup.getSelection().getActionCommand()).apply(prog);
             try {
                 prog.setVisible(true);
                 prog.toFront();
 
-                if (action.run(targetDir, optPred, installer)) {
+                if (action.run(targetDir, installer)) {
                     prog.start("Finished!");
                     prog.progress(1);
                     JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
@@ -435,38 +312,15 @@ public class InstallerPanel extends JPanel {
         dialog.dispose();
     }
 
-    private void openURL(String url)
-    {
-        try
-        {
+    private void openURL(String url) {
+        try {
             Desktop.getDesktop().browse(new URI(url));
-            EventQueue.invokeLater(new Runnable() {
-                @Override
-                public void run()
-                {
-                    InstallerPanel.this.dialog.toFront();
-                    InstallerPanel.this.dialog.requestFocus();
-                }
+            EventQueue.invokeLater(() -> {
+                InstallerPanel.this.dialog.toFront();
+                InstallerPanel.this.dialog.requestFocus();
             });
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             JOptionPane.showMessageDialog(InstallerPanel.this, "An error occurred launching the browser", "Error launching browser", JOptionPane.ERROR_MESSAGE);
         }
-    }
-
-    private static class OptionalListEntry
-    {
-        OptionalLibrary lib;
-        private boolean enabled = false;
-
-        OptionalListEntry(OptionalLibrary lib)
-        {
-            this.lib = lib;
-            this.enabled = lib.getDefault();
-        }
-
-        public boolean isEnabled(){ return this.enabled; }
-        public void setEnabled(boolean v){ this.enabled = v; }
     }
 }

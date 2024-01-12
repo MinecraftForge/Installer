@@ -37,7 +37,7 @@ public class Install extends Spec {
     // URL for mirror list, which needs to be a json file in the format of an array of Mirror
     protected String mirrorList;
     //Hides an entry from the install UI
-    protected boolean hideClient, hideServer, hideExtract = false;
+    protected boolean hideClient, hideServer, hideExtract, hideOffline = false;
     // Extra libraries needed by processors, that may differ from the installer version's library list. Uses the same format as Mojang for simplicities sake.
     protected Version.Library[] libraries;
     // Executable jars to be run after all libraries have been downloaded.
@@ -116,6 +116,10 @@ public class Install extends Spec {
 
     public boolean hideExtract() {
         return hideExtract;
+    }
+
+    public boolean hideOffline() {
+        return hideOffline;
     }
 
     public Version.Library[] getLibraries() {

@@ -15,7 +15,9 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -30,30 +32,23 @@ import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
 
-public class SimpleInstaller
-{
+public class SimpleInstaller {
     public static boolean headless = false;
     public static boolean debug = false;
     public static URL mirror = null;
 
-    public static void main(String[] args) throws IOException, URISyntaxException
-    {
+    public static void main(String[] args) throws IOException, URISyntaxException {
         ProgressCallback monitor;
-        try
-        {
+        try {
             monitor = ProgressCallback.withOutputs(System.out, getLog());
-        }
-        catch (FileNotFoundException e)
-        {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
             monitor = ProgressCallback.withOutputs(System.out);
         }
         hookStdOut(monitor);
 
         if (System.getProperty("java.net.preferIPv4Stack") == null) //This is a dirty hack, but screw it, i'm hoping this as default will fix more things then it breaks.
-        {
             System.setProperty("java.net.preferIPv4Stack", "true");
-        }
         String vendor = System.getProperty("java.vendor", "missing vendor");
         String javaVersion = System.getProperty("java.version", "missing java version");
         String jvmVersion = System.getProperty("java.vm.version", "missing jvm version");
@@ -62,16 +57,18 @@ public class SimpleInstaller
         monitor.message("Current Time: " + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()));
 
         File installer = new File(SimpleInstaller.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-        if (installer.getAbsolutePath().contains("!/"))
-        {
+        if (installer.getAbsolutePath().contains("!/")) {
             monitor.stage("Due to java limitation, please do not run this jar in a folder ending with !");
             monitor.message(installer.getAbsolutePath());
             return;
         }
 
         OptionParser parser = new OptionParser();
-        OptionSpec<File> serverInstallOption = parser.accepts("installServer", "Install a server to the current directory").withOptionalArg().ofType(File.class).defaultsTo(new File("."));
-        OptionSpec<File> extractOption = parser.accepts("extract", "Extract the contained jar file to the specified directory").withOptionalArg().ofType(File.class).defaultsTo(new File("."));
+        Map<Actions, OptionSpec<File>> actions = new LinkedHashMap<>();
+        actions.put(Actions.SERVER, action(parser, "installServer", "Install a server to the specified directory"));
+        actions.put(Actions.CLIENT, action(parser, "installClient", "Install the client files to the specified directory"));
+        actions.put(Actions.EXTRACT, action(parser, "extract", "Extract the contained jar file to the specified directory"));
+        actions.put(Actions.OFFLINE, action(parser, "makeOffline", "Creates a offline installer at the specified path"));
         OptionSpec<Void> helpOption = parser.acceptsAll(Arrays.asList("h", "help"),"Help with this installer");
         OptionSpec<Void> offlineOption = parser.accepts("offline", "Don't attempt any network calls");
         OptionSpec<Void> debugOption = parser.accepts("debug", "Run in debug mode -- don't delete any files");
@@ -84,18 +81,14 @@ public class SimpleInstaller
         }
 
         debug = optionSet.has(debugOption);
-        if (optionSet.has(mirrorOption)) {
+        if (optionSet.has(mirrorOption))
             mirror = optionSet.valueOf(mirrorOption);
-        }
 
         String badCerts = "";
-        if (optionSet.has(offlineOption))
-        {
+        if (optionSet.has(offlineOption)) {
             DownloadUtils.OFFLINE_MODE = true;
             monitor.message("ENABLING OFFLINE MODE");
-        }
-        else
-        {
+        } else {
             for(String host : new String[] {
                 "files.minecraftforge.net",
                 "maven.minecraftforge.net",
@@ -119,75 +112,66 @@ public class SimpleInstaller
             }
         }
 
-        Actions action = null;
-        File target = null;
-        if (optionSet.has(serverInstallOption)) {
-            action = Actions.SERVER;
-            target = optionSet.valueOf(serverInstallOption);
-        } else if (optionSet.has(extractOption)) {
-            action = Actions.EXTRACT;
-            target = optionSet.valueOf(extractOption);
-        }
+        boolean didWork = false;
 
-        if (action != null)
-        {
-            try
-            {
-                if (!badCerts.isEmpty())
-                {
+        for (Actions action : actions.keySet()) {
+            OptionSpec<File> option = actions.get(action);
+            if (!optionSet.has(option))
+                continue;
+
+            try {
+                if (!badCerts.isEmpty()) {
                     monitor.message("Failed to validate certificates for " + badCerts + " this typically means you have an outdated java.");
                     monitor.message("If instalation fails try updating your java!");
                     return;
                 }
+
+                File target = optionSet.valueOf(option);
                 SimpleInstaller.headless = true;
                 monitor.message("Target Directory: " + target);
                 InstallV1 install = Util.loadInstallProfile();
+
                 if (install.getMirror() != null)
                     monitor.stage(String.format("Data kindly mirrored by %s at %s", install.getMirror().getName(), install.getMirror().getHomepage()));
 
-                if (!action.getAction(install, monitor).run(target, a -> true, installer))
-                {
+                if (!action.getAction(install, monitor).run(target, installer)) {
                     monitor.stage("There was an error during installation");
                     System.exit(1);
-                }
-                else
-                {
+                } else {
                     monitor.message(action.getSuccess());
                     monitor.stage("You can delete this installer file now if you wish");
                 }
+
                 System.exit(0);
-            }
-            catch (Throwable e)
-            {
+            } catch (Throwable e) {
                 monitor.stage("A problem installing was detected, install cannot continue");
                 System.exit(1);
             }
         }
-        else
+
+        if (!didWork)
             launchGui(monitor, installer, badCerts);
     }
 
-    public static File getMCDir()
-    {
+    private static OptionSpec<File> action(OptionParser parser, String arg, String desc) {
+        return parser.accepts(arg, desc).withOptionalArg().ofType(File.class).defaultsTo(new File("."));
+    }
+
+    public static File getMCDir() {
         String userHomeDir = System.getProperty("user.home", ".");
         String osType = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
         String mcDir = ".minecraft";
         if (osType.contains("win") && System.getenv("APPDATA") != null)
             return new File(System.getenv("APPDATA"), mcDir);
         else if (osType.contains("mac"))
-            return new File(new File(new File(userHomeDir, "Library"),"Application Support"),"minecraft");
+            return new File(userHomeDir, "Library/Application Support/minecraft");
         return new File(userHomeDir, mcDir);
     }
 
-    private static void launchGui(ProgressCallback monitor, File installer, String badCerts)
-    {
-        try
-        {
+    private static void launchGui(ProgressCallback monitor, File installer, String badCerts) {
+        try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        }
-        catch (Exception e)
-        {
-        }
+        } catch (Exception e) { }
 
         try {
             InstallV1 profile = Util.loadInstallProfile();
@@ -196,12 +180,17 @@ public class SimpleInstaller
             InstallerPanel panel = new InstallerPanel(getMCDir(), profile, installer, badCerts);
             panel.run(monitor);
         } catch (Throwable e) {
-            JOptionPane.showMessageDialog(null,"Something went wrong while installing.<br />Check log for more details:<br/>" + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                "Something went wrong while installing: " + e.toString() + "\n" +
+                "Check log for more details.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE
+            );
         }
     }
 
-    private static OutputStream getLog() throws FileNotFoundException
-    {
+    private static OutputStream getLog() throws FileNotFoundException {
         File f = new File(SimpleInstaller.class.getProtectionDomain().getCodeSource().getLocation().getFile());
         File output;
         if (f.isFile()) output = new File(f.getName() + ".log");
@@ -210,32 +199,26 @@ public class SimpleInstaller
         return new BufferedOutputStream(new FileOutputStream(output));
     }
 
-    static void hookStdOut(ProgressCallback monitor)
-    {
+    static void hookStdOut(ProgressCallback monitor) {
         final Pattern endingWhitespace = Pattern.compile("\\r?\\n$");
         final OutputStream monitorStream = new OutputStream() {
-
             @Override
-            public void write(byte[] buf, int off, int len)
-            {
+            public void write(byte[] buf, int off, int len) {
                 byte[] toWrite = new byte[len];
                 System.arraycopy(buf, off, toWrite, 0, len);
                 write(toWrite);
             }
 
             @Override
-            public void write(byte[] b)
-            {
+            public void write(byte[] b) {
                 String toWrite = new String(b);
                 toWrite = endingWhitespace.matcher(toWrite).replaceAll("");
-                if (!toWrite.isEmpty()) {
+                if (!toWrite.isEmpty())
                     monitor.message(toWrite);
-                }
             }
 
             @Override
-            public void write(int b)
-            {
+            public void write(int b) {
                 write(new byte[] { (byte) b });
             }
         };

@@ -15,3 +15,4 @@ src/main/resources/version.json
 src/main/resources/install_profile.json
 .idea/
 out/
+*-installer.jar

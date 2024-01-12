@@ -17,7 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Predicate;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLException;
@@ -38,18 +38,13 @@ public class DownloadUtils {
 
     public static boolean OFFLINE_MODE = false;
 
-    public static boolean downloadLibrary(ProgressCallback monitor, Mirror mirror, Library library, File root, Predicate<String> optional, List<Artifact> grabbed, List<File> additionalLibraryDirs) {
+    public static boolean downloadLibrary(ProgressCallback monitor, Mirror mirror, Library library, File root, List<Artifact> grabbed, List<File> additionalLibraryDirs) {
         Artifact artifact = library.getName();
         File target = artifact.getLocalPath(root);
         LibraryDownload download = library.getDownloads() == null ? null :  library.getDownloads().getArtifact();
         if (download == null) {
             download = new LibraryDownload();
             download.setPath(artifact.getPath());
-        }
-
-        if (!optional.test(library.getName().getDescriptor())) {
-            monitor.message(String.format("Considering library %s: Not Downloading {Disabled}", artifact.getDescriptor()));
-            return true;
         }
 
         monitor.message(String.format("Considering library %s", artifact.getDescriptor()));
@@ -157,7 +152,7 @@ public class DownloadUtils {
         return false;
     }
 
-    public static boolean download(ProgressCallback monitor, Mirror mirror, LibraryDownload download, File target) {
+    private static boolean download(ProgressCallback monitor, Mirror mirror, LibraryDownload download, File target) {
         String url = download.getUrl();
         if (url.startsWith("http") && !url.startsWith(LIBRARIES_URL) && mirror != null && url.endsWith(download.getPath())) {
             // TODO: Vanilla launcher is dumb so we fake classifier only deps. One day the launcher will be sane/document...
@@ -262,11 +257,12 @@ public class DownloadUtils {
             return connection;
         } catch (SSLHandshakeException e) {
             System.out.println("Failed to establish connection to " + address);
-            String host = url.getHost();
-            System.out.println(" Host: " + host + " [" + getIps(host).stream().collect(Collectors.joining(", ")) + "]");
+            System.out.println(" Host: " + url.getHost() + " [" + getIps(url.getHost()).stream().collect(Collectors.joining(", ")) + "]");
             e.printStackTrace();
             return null;
         } catch (IOException e) {
+            System.out.println("Failed to establish connection to " + address);
+            System.out.println(" Host: " + url.getHost() + " [" + getIps(url.getHost()).stream().collect(Collectors.joining(", ")) + "]");
             e.printStackTrace();
             return null;
         }
@@ -296,49 +292,20 @@ public class DownloadUtils {
         }
     }
 
-    public static boolean downloadFileEtag(File target, String url) {
-        try {
-            URLConnection connection = getConnection(url);
-            String etag = connection.getHeaderField("ETag");
-            if (etag == null)
-              etag = "-";
-            else if ((etag.startsWith("\"")) && (etag.endsWith("\"")))
-                etag = etag.substring(1, etag.length() - 1);
-
-            Files.copy(connection.getInputStream(), target.toPath(), StandardCopyOption.REPLACE_EXISTING);
-
-            if (etag.indexOf('-') != -1) return true; //No-etag, assume valid
-            byte[] fileData = Files.readAllBytes(target.toPath());
-            String md5 = HashFunction.MD5.hash(fileData).toString();
-            System.out.println("  ETag: " + etag);
-            System.out.println("  MD5:  " + md5);
-            return etag.equalsIgnoreCase(md5);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
     public static Mirror[] downloadMirrors(String url) {
-        try {
-            URLConnection connection = getConnection(url);
-            if (connection != null) {
-                try (InputStream stream = connection.getInputStream()) {
-                    return Util.loadMirrorList(stream);
-                }
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-        return null;
+        return downloadString(url, Util::loadMirrorList);
     }
 
     public static Manifest downloadManifest() {
+        return downloadString(MANIFEST_URL, Util::loadManifest);
+    }
+
+    private static <R> R downloadString(String url, Function<InputStream, R> reader) {
         try {
-            URLConnection connection = getConnection(MANIFEST_URL);
+            URLConnection connection = getConnection(url);
             if (connection != null) {
                 try (InputStream stream = connection.getInputStream()) {
-                    return Util.loadManifest(stream);
+                    return reader.apply(stream);
                 }
             }
         } catch (IOException e) {

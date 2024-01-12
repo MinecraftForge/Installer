@@ -5,10 +5,10 @@ plugins {
     id 'java'
     id 'eclipse'
     id 'maven-publish'
-    id 'org.cadixdev.licenser' version '0.6.1'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'com.github.ben-manes.versions' version '0.49.0'
-    id 'net.minecraftforge.gradleutils' version '2.+'
+    id 'net.minecraftforge.licenser' version '1.0.1'
+    id 'net.minecraftforge.gradleutils' version '[2.3,2.4)'
 }
 
 group = 'net.minecraftforge'
@@ -41,6 +41,14 @@ dependencies {
     implementation(libs.gson)
     testImplementation(libs.junit.api)
     testRuntimeOnly(libs.bundles.junit.runtime)
+}
+
+
+def installerFiles = new FileNameFinder().getFileNames(projectDir.absolutePath, '*-installer.jar')
+if (!installerFiles.isEmpty()) {
+    def first = file(installerFiles.get(0))
+    logger.lifecycle("Detected test installer: " + first.name)
+    dependencies.implementation(files(first))
 }
 
 tasks.named('jar', Jar).configure {
