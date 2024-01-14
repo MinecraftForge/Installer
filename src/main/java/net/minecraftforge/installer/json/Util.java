@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -46,6 +47,10 @@ public class Util {
         return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Manifest.class);
     }
 
+    public static Version loadVersion(InputStream stream) {
+        return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Version.class);
+    }
+
     public static Version loadVersion(Install profile) {
         try (InputStream stream = Util.class.getResourceAsStream(profile.getJson())) {
             return GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), Version.class);
@@ -72,6 +77,16 @@ public class Util {
         }
     }
 
+    public static Version getVanillaVersion(String version) {
+        Manifest manifest = DownloadUtils.downloadManifest();
+        if (manifest == null)
+            return null;
+        String url = manifest.getUrl(version);
+        if (url == null)
+            return null;
+        return DownloadUtils.downloadString(url, Util::loadVersion);
+    }
+
     private static byte[] readFully(InputStream stream) throws IOException {
         byte[] data = new byte[4096];
         ByteArrayOutputStream entryBuffer = new ByteArrayOutputStream();
@@ -85,7 +100,7 @@ public class Util {
         return entryBuffer.toByteArray();
     }
 
-    public static String replaceTokens(Map<String, String> tokens, String value) {
+    public static String replaceTokens(Map<String, ? extends Supplier<String>> tokens, String value) {
         StringBuilder buf = new StringBuilder();
 
         for (int x = 0; x < value.length(); x++) {
@@ -116,9 +131,10 @@ public class Util {
                 if (c == '\'')
                     buf.append(key);
                 else {
-                    if (!tokens.containsKey(key.toString()))
+                    Supplier<String> token = tokens.get(key.toString());
+                    if (token == null)
                         throw new IllegalArgumentException("Illegal pattern: " + value + " Missing Key: " + key);
-                    buf.append(tokens.get(key.toString()));
+                    buf.append(token.get());
                 }
             } else {
                 buf.append(c);

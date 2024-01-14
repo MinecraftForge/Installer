@@ -292,6 +292,8 @@ public class InstallerPanel extends JPanel {
                     prog.start("Finished!");
                     prog.progress(1);
                     JOptionPane.showMessageDialog(null, action.getSuccessMessage(), "Complete", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    prog.start("There was an error during installation");
                 }
             } catch (ActionCanceledException e) {
                 JOptionPane.showMessageDialog(null, "Installation Canceled", "Forge Installer", JOptionPane.WARNING_MESSAGE);

@@ -300,7 +300,7 @@ public class DownloadUtils {
         return downloadString(MANIFEST_URL, Util::loadManifest);
     }
 
-    private static <R> R downloadString(String url, Function<InputStream, R> reader) {
+    public static <R> R downloadString(String url, Function<InputStream, R> reader) {
         try {
             URLConnection connection = getConnection(url);
             if (connection != null) {

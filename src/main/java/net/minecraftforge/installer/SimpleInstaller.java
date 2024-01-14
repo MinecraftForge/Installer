@@ -28,6 +28,7 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import joptsimple.OptionSpec;
 import net.minecraftforge.installer.actions.Actions;
+import net.minecraftforge.installer.actions.OfflineAction;
 import net.minecraftforge.installer.actions.ProgressCallback;
 import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
@@ -85,7 +86,7 @@ public class SimpleInstaller {
             mirror = optionSet.valueOf(mirrorOption);
 
         String badCerts = "";
-        if (optionSet.has(offlineOption)) {
+        if (optionSet.has(offlineOption) || SimpleInstaller.class.getResource("/" + OfflineAction.OFFLINE_FLAG) != null) {
             DownloadUtils.OFFLINE_MODE = true;
             monitor.message("ENABLING OFFLINE MODE");
         } else {

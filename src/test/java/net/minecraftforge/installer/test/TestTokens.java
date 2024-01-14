@@ -6,6 +6,7 @@ package net.minecraftforge.installer.test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
 
@@ -15,9 +16,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestTokens {
     @Test
     public void testTokens() {
-        Map<String, String> tokens = new HashMap<>();
-        tokens.put("VERSION", "1.17");
-        tokens.put("NAME", "Foo");
+        Map<String, Supplier<String>> tokens = new HashMap<>();
+        tokens.put("VERSION", () -> "1.17");
+        tokens.put("NAME", () -> "Foo");
         assertEquals(Util.replaceTokens(tokens, "{VERSION}"), "1.17");
         assertEquals(Util.replaceTokens(tokens, "{NAME}"), "Foo");
         assertEquals(Util.replaceTokens(tokens, "{NAME}-{VERSION}"), "Foo-1.17");

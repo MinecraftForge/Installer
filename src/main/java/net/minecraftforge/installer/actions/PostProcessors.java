@@ -6,6 +6,7 @@ package net.minecraftforge.installer.actions;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -13,11 +14,15 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
+import java.util.function.Supplier;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -39,7 +44,6 @@ public class PostProcessors {
     private final boolean isClient;
     private final ProgressCallback monitor;
     private final boolean hasTasks;
-    private final Map<String, String> data;
     private final List<Processor> processors;
 
     public PostProcessors(InstallV1 profile, boolean isClient, ProgressCallback monitor) {
@@ -48,7 +52,6 @@ public class PostProcessors {
         this.monitor = monitor;
         this.processors = profile.getProcessors(isClient ? "client" : "server");
         this.hasTasks = !this.processors.isEmpty();
-        this.data = profile.getData(isClient);
     }
 
     public Library[] getLibraries() {
@@ -62,90 +65,90 @@ public class PostProcessors {
             profile.getData(isClient).size();
     }
 
-    public boolean process(File librariesDir, File minecraft, File root, File installer) {
+    public Set<File> process(File librariesDir, File minecraft, File root, File installer) {
         try {
-            if (!data.isEmpty()) {
-                StringBuilder err = new StringBuilder();
-                Path temp  = Files.createTempDirectory("forge_installer");
-                monitor.start("Created Temporary Directory: " + temp);
-                double steps = data.size();
-                int progress = 1;
-                for (String key : data.keySet()) {
-                    monitor.progress(progress++ / steps);
-                    String value = data.get(key);
+            Map<String, DataEntry> data = loadData(librariesDir);
+            if (data == null)
+                return null;
 
-                    if (value.charAt(0) == '[' && value.charAt(value.length() - 1) == ']') { //Artifact
-                        data.put(key, Artifact.from(value.substring(1, value.length() -1)).getLocalPath(librariesDir).getAbsolutePath());
-                    } else if (value.charAt(0) == '\'' && value.charAt(value.length() - 1) == '\'') { //Literal
-                        data.put(key, value.substring(1, value.length() -1));
-                    } else {
-                        File target = Paths.get(temp.toString(), value).toFile();
-                        monitor.message("  Extracting: " + value);
-                        if (!DownloadUtils.extractFile(value, target))
-                            err.append("\n  ").append(value);
-                        data.put(key, target.getAbsolutePath());
-                    }
-                }
-                if (err.length() > 0) {
-                    error("Failed to extract files from archive: " + err.toString());
-                    return false;
-                }
-            }
-            data.put("SIDE", isClient ? "client" : "server");
-            data.put("MINECRAFT_JAR", minecraft.getAbsolutePath());
-            data.put("MINECRAFT_VERSION", profile.getMinecraft());
-            data.put("ROOT", root.getAbsolutePath());
-            data.put("INSTALLER", installer.getAbsolutePath());
-            data.put("LIBRARY_DIR", librariesDir.getAbsolutePath());
+            data.put("SIDE",              new DataEntry(isClient ? "client" : "server"));
+            data.put("MINECRAFT_JAR",     new FileEntry(minecraft));
+            data.put("MINECRAFT_VERSION", new DataEntry(profile.getMinecraft()));
+            data.put("ROOT",              new FileEntry(root));
+            data.put("INSTALLER",         new FileEntry(installer));
+            data.put("LIBRARY_DIR",       new FileEntry(librariesDir));
 
-            int progress = 1;
-            if (processors.size() == 1) {
+            if (processors.size() == 1)
                 monitor.stage("Building Processor");
-            } else {
+            else
                 monitor.start("Building Processors");
-            }
-            for (Processor proc : processors) {
-                monitor.progress((double) progress++ / processors.size());
-                log("===============================================================================");
 
-                Map<String, String> outputs = new HashMap<>();
-                if (!proc.getOutputs().isEmpty()) {
+            List<List<Output>> allOutputs = buildOutputs(librariesDir, data, processors);
+            if (allOutputs == null)
+                return null;
+
+            String libPrefix = librariesDir.getAbsolutePath().replace('\\', '/');
+            if (!libPrefix.endsWith("/"))
+                libPrefix += '/';
+
+            Set<File> ret = new HashSet<>();
+            for (int x = 0; x < processors.size(); x++) {
+                monitor.progress((double)(x + 1) / processors.size());
+                log("===============================================================================");
+                Processor proc = processors.get(x);
+                List<Output> outputs = allOutputs.get(x);
+
+                if (!outputs.isEmpty()) {
                     boolean miss = false;
                     log("  Cache: ");
-                    for (Entry<String, String> e : proc.getOutputs().entrySet()) {
-                        String key = e.getKey();
-                        if (key.charAt(0) == '[' && key.charAt(key.length() - 1) == ']')
-                            key = Artifact.from(key.substring(1, key.length() - 1)).getLocalPath(librariesDir).getAbsolutePath();
-                        else
-                            key = Util.replaceTokens(data, key);
+                    for (Output output : outputs) {
+                        if (!output.file.exists()) {
+                            log("    " + output.file + " Missing");
 
-                        String value = e.getValue();
-                        if (value != null)
-                            value = Util.replaceTokens(data, value);
-
-                        if (key == null || value == null) {
-                            error("  Invalid configuration, bad output config: [" + e.getKey() + ": " + e.getValue() + "]");
-                            return false;
-                        }
-
-                        outputs.put(key, value);
-                        File artifact = new File(key);
-                        if (!artifact.exists()) {
-                            log("    " + key + " Missing");
-                            miss = true;
-                        } else {
-                            String sha = DownloadUtils.getSha1(artifact);
-                            if (sha.equals(value)) {
-                                log("    " + key + " Validated: " + value);
+                            String path = output.file.getAbsolutePath().replace('\\', '/');
+                            if (!path.startsWith(libPrefix)) {
+                                miss = true;
                             } else {
-                                log("    " + key);
-                                log("      Expected: " + value);
+                                String relative = "/cache/" + path.substring(libPrefix.length());
+                                try (final InputStream input = DownloadUtils.class.getResourceAsStream(relative)) {
+                                    if (input != null) {
+                                        log("    Extracting output from " + relative);
+                                        if (!output.file.getParentFile().exists())
+                                             output.file.getParentFile().mkdirs();
+
+                                        Files.copy(input, output.file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                                        String sha1 = DownloadUtils.getSha1(output.file);
+                                        if (output.sha1.equals(sha1)) {
+                                            log("      Extraction completed: Checksum validated.");
+                                            ret.add(output.file);
+                                        } else {
+                                            log("    " + output.file);
+                                            log("      Expected: " + output.sha1);
+                                            log("      Actual:   " + sha1);
+                                            miss = true;
+                                            output.file.delete();
+                                        }
+                                    }
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                    return null;
+                                }
+                            }
+                        } else {
+                            String sha = DownloadUtils.getSha1(output.file);
+                            if (sha.equals(output.sha1)) {
+                                log("    " + output.file + " Validated: " + output.sha1);
+                                ret.add(output.file);
+                            } else {
+                                log("    " + output.file);
+                                log("      Expected: " + output.sha1);
                                 log("      Actual:   " + sha);
                                 miss = true;
-                                artifact.delete();
+                                output.file.delete();
                             }
                         }
                     }
+
                     if (!miss) {
                         log("  Cache Hit!");
                         continue;
@@ -155,7 +158,7 @@ public class PostProcessors {
                 File jar = proc.getJar().getLocalPath(librariesDir);
                 if (!jar.exists() || !jar.isFile()) {
                     error("  Missing Jar for processor: " + jar.getAbsolutePath());
-                    return false;
+                    return null;
                 }
 
                 // Locate main class in jar file
@@ -165,7 +168,7 @@ public class PostProcessors {
 
                 if (mainClass == null || mainClass.isEmpty()) {
                     error("  Jar does not have main class: " + jar.getAbsolutePath());
-                    return false;
+                    return null;
                 }
                 monitor.message("  MainClass: " + mainClass, MessagePriority.LOW);
 
@@ -183,7 +186,7 @@ public class PostProcessors {
                 }
                 if (err.length() > 0) {
                     error("  Missing Processor Dependencies: " + err.toString());
-                    return false;
+                    return null;
                 }
 
                 List<String> args = new ArrayList<>();
@@ -198,7 +201,7 @@ public class PostProcessors {
                 }
                 if (err.length() > 0) {
                     error("  Missing Processor data values: " + err.toString());
-                    return false;
+                    return null;
                 }
                 monitor.message("  Args: " + args.stream().map(a -> a.indexOf(' ') != -1 || a.indexOf(',') != -1 ? '"' + a + '"' : a).collect(Collectors.joining(", ")), MessagePriority.LOW);
 
@@ -214,44 +217,44 @@ public class PostProcessors {
                 } catch (InvocationTargetException ite) {
                     Throwable e = ite.getCause();
                     handleError(e);
-                    return false;
+                    return null;
                 } catch (Throwable e) {
                     handleError(e);
-                    return false;
+                    return null;
                 } finally {
                     // Set back to the previous classloader
                     currentThread.setContextClassLoader(threadClassloader);
                 }
 
                 if (!outputs.isEmpty()) {
-                    for (Entry<String, String> e : outputs.entrySet()) {
-                        File artifact = new File(e.getKey());
-                        if (!artifact.exists()) {
-                            err.append("\n    ").append(e.getKey()).append(" missing");
+                    for (Output output : outputs) {
+                        ret.add(output.file);
+                        if (!output.file.exists()) {
+                            err.append("\n    ").append(output.file).append(" missing");
                         } else {
-                            String sha = DownloadUtils.getSha1(artifact);
-                            if (sha.equals(e.getValue())) {
-                                log("  Output: " + e.getKey() + " Checksum Validated: " + sha);
+                            String sha = DownloadUtils.getSha1(output.file);
+                            if (sha.equals(output.sha1)) {
+                                log("  Output: " + output.file + " Checksum Validated: " + sha);
                             } else {
-                                err.append("\n    ").append(e.getKey())
-                                   .append("\n      Expected: ").append(e.getValue())
+                                err.append("\n    ").append(output.file)
+                                   .append("\n      Expected: ").append(output.sha1)
                                    .append("\n      Actual:   ").append(sha);
-                                if (!SimpleInstaller.debug && !artifact.delete())
+                                if (!SimpleInstaller.debug && !output.file.delete())
                                     err.append("\n      Could not delete file");
                             }
                         }
                     }
                     if (err.length() > 0) {
                         error("  Processor failed, invalid outputs:" + err.toString());
-                        return false;
+                        return null;
                     }
                 }
             }
 
-            return true;
+            return ret;
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
+            return null;
         }
     }
 
@@ -280,6 +283,7 @@ public class PostProcessors {
         for (String line : message.split("\n"))
             monitor.message(line);
     }
+
     private void log(String message) {
         for (String line : message.split("\n"))
             monitor.message(line);
@@ -301,5 +305,128 @@ public class PostProcessors {
             }
         }
         return parentClassLoader;
+    }
+
+    private Map<String, DataEntry> loadData(File librariesDir) throws IOException {
+        Map<String, String> cfg = profile.getData(isClient);
+        if (cfg.isEmpty())
+            return new HashMap<>();
+
+        Map<String, DataEntry> ret = new HashMap<>();
+
+        StringBuilder err = new StringBuilder();
+        Path temp  = Files.createTempDirectory("forge_installer");
+        monitor.start("Created Temporary Directory: " + temp);
+
+        double steps = cfg.size();
+        int progress = 1;
+        for (String key : cfg.keySet()) {
+            monitor.progress(progress++ / steps);
+            String value = cfg.get(key);
+
+            DataEntry entry = null;
+            if (value.charAt(0) == '[' && value.charAt(value.length() - 1) == ']') { //Artifact
+                Artifact artifact = Artifact.from(value.substring(1, value.length() - 1));
+                entry = new ArtifactEntry(artifact, librariesDir);
+            } else if (value.charAt(0) == '\'' && value.charAt(value.length() - 1) == '\'') { //Literal
+                entry = new DataEntry(value.substring(1, value.length() - 1));
+            } else {
+                File target = Paths.get(temp.toString(), value).toFile();
+                monitor.message("  Extracting: " + value);
+                if (!DownloadUtils.extractFile(value, target))
+                    err.append("\n  ").append(value);
+
+                entry = new FileEntry(target);
+            }
+            ret.put(key, entry);
+        }
+
+        if (err.length() > 0) {
+            error("Failed to extract files from archive: " + err.toString());
+            return null;
+        }
+
+        return ret;
+    }
+
+    private List<List<Output>> buildOutputs(File librariesDir, Map<String, DataEntry> data, List<Processor> processors) {
+        List<List<Output>> ret = new ArrayList<>();
+        for (Processor proc : processors) {
+            Map<String, String> outputs = proc.getOutputs();
+            if (outputs.isEmpty()) {
+                ret.add(Collections.emptyList());
+                continue;
+            }
+
+            List<Output> pout = new ArrayList<>();
+            for (String key : outputs.keySet()) {
+                char start = key.charAt(0);
+                char end = key.charAt(key.length() - 1);
+
+                String file = null;
+                if (start == '[' && end == ']')
+                    file = Artifact.from(key.substring(1, key.length() - 1)).getLocalPath(librariesDir).getAbsolutePath();
+                else
+                    file = Util.replaceTokens(data, key);
+
+                String value = outputs.get(key);
+                if (value != null)
+                    value = Util.replaceTokens(data, value);
+
+                if (key == null || value == null) {
+                    error("  Invalid configuration, bad output config: [" + key + ": " + value + "]");
+                    return null;
+                }
+
+                pout.add(new Output(new File(file), value));
+            }
+            ret.add(pout);
+        }
+        return ret;
+    }
+
+    private static class DataEntry implements Supplier<String> {
+        protected final String value;
+        protected DataEntry(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+
+        @Override
+        public String get() {
+            return toString();
+        }
+    }
+
+    private static class FileEntry extends DataEntry {
+        @SuppressWarnings("unused")
+        private final File file;
+        protected FileEntry(File file) {
+            super(file.getAbsolutePath());
+            this.file = file;
+        }
+    }
+
+    private static class ArtifactEntry extends DataEntry {
+        @SuppressWarnings("unused")
+        private final Artifact artifact;
+        protected ArtifactEntry(Artifact artifact, File root) {
+            super(artifact.getLocalPath(root).getAbsolutePath());
+            this.artifact = artifact;
+        }
+    }
+
+    private static class Output {
+        private final File file;
+        private final String sha1;
+
+        private Output(File file, String sha1) {
+            this.file = file;
+            this.sha1 = sha1;
+        }
     }
 }

@@ -30,55 +30,74 @@ import net.minecraftforge.installer.json.Version.Library;
 import net.minecraftforge.installer.json.Version.LibraryDownload;
 
 public class OfflineAction extends Action {
+    public static final String OFFLINE_FLAG = "_FORCE_OFFLINE_INSTALLER_";
     private final File base = findInstallerBase();
+    private final PostProcessors processorsClient;
     private final PostProcessors processorsServer;
     private int added = 0;
 
     protected OfflineAction(InstallV1 profile, ProgressCallback monitor) {
         super(profile, monitor, true);
+        this.processorsClient = new PostProcessors(profile, true, monitor);
         this.processorsServer = new PostProcessors(profile, false, monitor);
     }
 
     @Override
     public boolean run(File target, File installer) throws ActionCanceledException {
+        File librariesDir = new File(target, "libraries");
+        if (!target.exists())
+            target.mkdirs();
+        librariesDir.mkdir();
+        checkCancel();
+
+        // Download Libraries
+        List<File> libDirs = new ArrayList<>();
+        File mcLibDir = new File(SimpleInstaller.getMCDir(), "libraries");
+        if (mcLibDir.exists())
+            libDirs.add(mcLibDir);
+
+        if (!downloadLibraries(librariesDir, libDirs))
+            return false;
+
+        // Download client jar file
+        File clientTarget = new File(target, "client.jar");
+        File serverTarget = new File(target, "server.jar");
+        if (!downloadVanilla(clientTarget, "client") || !downloadVanilla(serverTarget, "server"))
+            return false;
+
+        // Run processors
+        Set<File> outputs = new HashSet<>();
+        if (!process(outputs, this.processorsClient, librariesDir, clientTarget, target, base) ||
+            !process(outputs, this.processorsServer, librariesDir, serverTarget, target, base))
+            return false;
+
         monitor.message("Building offline installer");
         monitor.message("Found Base: " + base);
         target = cleanTarget(target);
         monitor.message("Output: " + target);
-        File libDir = new File(target.getParentFile(), "libraries");
 
-        List<File> extraRepos = new ArrayList<>();
-        for (File dir : new File[] {
-            new File(SimpleInstaller.getMCDir(), "libraries"),
-            new File("libraries")
-        }) {
-            if (dir.exists() && !extraRepos.contains(dir))
-                extraRepos.add(dir);
-        }
-
-        // Download Libraries
-        if (!downloadLibraries(libDir, extraRepos))
-            return false;
         checkCancel();
-
-        try (ZipInputStream zin = new ZipInputStream(new FileInputStream(base));
-            ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(target))) {
-
+        try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(target))) {
             Set<String> seen = new HashSet<>();
+
+            // Copy our input installer jar
             monitor.message("Copying Base Installer Archive");
-            for (ZipEntry entry; (entry = zin.getNextEntry()) != null; ) {
-                zout.putNextEntry(getNewEntry(entry.getName()));
-                copy(zin, zout);
-                if (entry.getName().startsWith("maven/") && !entry.isDirectory())
-                    seen.add(entry.getName().substring(6));
+            try (ZipInputStream zin = new ZipInputStream(new FileInputStream(base))) {
+                for (ZipEntry entry; (entry = zin.getNextEntry()) != null; ) {
+                    zout.putNextEntry(getNewEntry(entry.getName()));
+                    copy(zin, zout);
+                    if (entry.getName().startsWith("maven/") && !entry.isDirectory())
+                        seen.add(entry.getName().substring(6));
+                }
             }
 
+            // Add extra libraries we downloaded
             for (Library lib : getLibraries()) {
                 Artifact artifact = lib.getName();
                 if (!seen.add(artifact.getPath()))
                     continue;
 
-                File local = artifact.getLocalPath(libDir);
+                File local = artifact.getLocalPath(librariesDir);
 
                 LibraryDownload download = lib.getDownloads() == null ? null :  lib.getDownloads().getArtifact();
                 if (download == null) {
@@ -98,12 +117,47 @@ public class OfflineAction extends Action {
                 }
 
                 monitor.message("Adding: maven/" + artifact.getPath());
-                try (FileInputStream fin = new FileInputStream(local)) {
-                    zout.putNextEntry(getNewEntry("maven/" + artifact.getPath()));
-                    copy(fin, zout);
-                }
+                zout.putNextEntry(getNewEntry("maven/" + artifact.getPath()));
+                copy(local, zout);
                 added++;
             }
+
+            // Add Vanilla files
+            monitor.message("Adding: cache/vanilla/client.jar");
+            zout.putNextEntry(getNewEntry("cache/vanilla/client.jar"));
+            copy(clientTarget, zout);
+            monitor.message("Adding: cache/vanilla/server.jar");
+            zout.putNextEntry(getNewEntry("cache/vanilla/server.jar"));
+            copy(serverTarget, zout);
+
+            // Add Processor outputs, which could be downloaded
+            String libPrefix = librariesDir.getAbsolutePath().replace('\\', '/');
+            if (!libPrefix.endsWith("/"))
+                libPrefix += '/';
+
+            for (File output : outputs) {
+                String path = output.getAbsolutePath().replace('\\', '/');
+                if (!path.startsWith(libPrefix)) {
+                    monitor.message("Skipping " + path);
+                    continue;
+                }
+
+                String relative = "cache/" + path.substring(libPrefix.length());
+                if (!output.exists()) {
+                    error("Output Does Not Exist: " + output.getAbsolutePath());
+                    monitor.message("Local Path: " + output.getAbsolutePath());
+                    return false;
+                }
+
+                monitor.message("Adding: " + relative);
+                zout.putNextEntry(getNewEntry(relative));
+                copy(output, zout);
+            }
+
+            // Add flag that forces the --offline arg to be set
+            zout.putNextEntry(getNewEntry(OFFLINE_FLAG));
+
+
         } catch (IOException e) {
             e.printStackTrace();
             error("Failed to copy installer jar: " + e.getMessage());
@@ -116,7 +170,7 @@ public class OfflineAction extends Action {
     @Override
     protected List<Library> getLibraries() {
         List<Library> tmp = super.getLibraries();
-        tmp.addAll(Arrays.asList(this.processorsServer.getLibraries()));
+        tmp.addAll(Arrays.asList(this.processorsClient.getLibraries()));
 
         // Prevent duplicates because why waste time
         List<Library> ret = new ArrayList<>();
@@ -130,16 +184,28 @@ public class OfflineAction extends Action {
         return ret;
     }
 
+    private boolean process(Set<File> output, PostProcessors procs, File librariesDir, File serverTarget, File target, File installer) {
+        Set<File> out = procs.process(librariesDir, serverTarget, target, installer);
+        if (out == null)
+            return false;
+
+        output.addAll(out);
+        return true;
+    }
+
     @Override
     public boolean isPathValid(File target) {
-        target = cleanTarget(target);
-        return !target.exists() || target.isFile();
+        return target.exists() && target.isDirectory() && target.list().length == 0;
     }
 
     @Override
     public String getFileError(File target) {
-        target = cleanTarget(target);
-        return "Target is not a file: " + target.getAbsolutePath();
+        if (!target.exists())
+            return "The specified directory does not exist<br/>It will be created";
+        else if (!target.isDirectory())
+            return "The specified path needs to be a directory";
+        else
+            return "There are already files at the target directory";
     }
 
     @Override
@@ -179,6 +245,12 @@ public class OfflineAction extends Action {
         int length;
         while ((length = source.read(buf)) != -1) {
             target.write(buf, 0, length);
+        }
+    }
+
+    private static void copy(File source, OutputStream target) throws IOException {
+        try (InputStream stream = new FileInputStream(source)) {
+            copy(stream, target);
         }
     }
 }

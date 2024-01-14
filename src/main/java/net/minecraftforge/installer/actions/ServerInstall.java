@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+
 import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.SimpleInstaller;
 import net.minecraftforge.installer.json.Artifact;
 import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
-import net.minecraftforge.installer.json.Version;
-import net.minecraftforge.installer.json.Version.Download;
 
 public class ServerInstall extends Action {
     private List<Artifact> grabbed = new ArrayList<>();
@@ -51,41 +51,16 @@ public class ServerInstall extends Action {
 
         //Download MC Server jar
         monitor.stage("Considering minecraft server jar");
-        Map<String, String> tokens = new HashMap<>();
-        tokens.put("ROOT", target.getAbsolutePath());
-        tokens.put("MINECRAFT_VERSION", profile.getMinecraft());
-        tokens.put("LIBRARY_DIR", librariesDir.getAbsolutePath());
+        Map<String, Supplier<String>> tokens = new HashMap<>();
+        tokens.put("ROOT", target::getAbsolutePath);
+        tokens.put("MINECRAFT_VERSION", profile::getMinecraft);
+        tokens.put("LIBRARY_DIR", librariesDir::getAbsolutePath);
 
         String path = Util.replaceTokens(tokens, profile.getServerJarPath());
         File serverTarget = new File(path);
-        if (!serverTarget.exists()) {
-            File parent = serverTarget.getParentFile();
-            if (!parent.exists()) {
-                parent.mkdirs();
-            }
+        if (!downloadVanilla(serverTarget, "server"))
+            return false;
 
-            File versionJson = new File(target, profile.getMinecraft() + ".json");
-            Version vanilla = Util.getVanillaVersion(profile.getMinecraft(), versionJson);
-            if (vanilla == null) {
-                error("Failed to download version manifest, can not find server jar URL.");
-                return false;
-            }
-
-            Download server = vanilla.getDownload("server");
-            if (server == null) {
-                error("Failed to download minecraft server, info missing from manifest: " + versionJson);
-                return false;
-            }
-
-            versionJson.delete();
-
-            if (!DownloadUtils.download(monitor, profile.getMirror(), server, serverTarget)) {
-                serverTarget.delete();
-                error("Downloading minecraft server failed, invalid checksum.\n" +
-                      "Try again, or manually place server jar to skip download.");
-                return false;
-            }
-        }
         checkCancel();
 
         // Download Libraries
@@ -98,7 +73,7 @@ public class ServerInstall extends Action {
             return false;
 
         checkCancel();
-        if (!processors.process(librariesDir, serverTarget, target, installer))
+        if (processors.process(librariesDir, serverTarget, target, installer) == null)
             return false;
 
         return true;

@@ -9,11 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
-import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.json.InstallV1;
 import net.minecraftforge.installer.json.Util;
-import net.minecraftforge.installer.json.Version;
-import net.minecraftforge.installer.json.Version.Download;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -69,27 +66,8 @@ public class ClientInstall extends Action {
         checkCancel();
 
         File clientTarget = new File(versionVanilla, profile.getMinecraft() + ".jar");
-        if (!clientTarget.exists()) {
-            File versionJson = new File(versionVanilla, profile.getMinecraft() + ".json");
-            Version vanilla = Util.getVanillaVersion(profile.getMinecraft(), versionJson);
-            if (vanilla == null) {
-                error("Failed to download version manifest, can not find client jar URL.");
-                return false;
-            }
-
-            Download client = vanilla.getDownload("client");
-            if (client == null) {
-                error("Failed to download minecraft client, info missing from manifest: " + versionJson);
-                return false;
-            }
-
-            if (!DownloadUtils.download(monitor, profile.getMirror(), client, clientTarget)) {
-                clientTarget.delete();
-                error("Downloading minecraft client failed, invalid checksum.\n" +
-                      "Try again, or use the vanilla launcher to install the vanilla version.");
-                return false;
-            }
-        }
+        if (!downloadVanilla(clientTarget, "client"))
+            return false;
 
         // Download Libraries
         if (!downloadLibraries(librariesDir, new ArrayList<>()))
@@ -97,7 +75,7 @@ public class ClientInstall extends Action {
 
         checkCancel();
 
-        if (!processors.process(librariesDir, clientTarget, target, installer))
+        if (processors.process(librariesDir, clientTarget, target, installer) == null)
             return false;
 
         checkCancel();
