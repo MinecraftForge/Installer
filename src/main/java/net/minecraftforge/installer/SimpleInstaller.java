@@ -19,7 +19,6 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
@@ -96,9 +95,10 @@ public class SimpleInstaller {
                 "libraries.minecraft.net",
                 "launchermeta.mojang.com",
                 "piston-meta.mojang.com",
+                "sessionserver.mojang.com",
                 "authserver.mojang.com",
             }) {
-                monitor.message("Host: " + host + " [" + DownloadUtils.getIps(host).stream().collect(Collectors.joining(", ")) + "]");
+                monitor.message("Host: " + host + " [" + DownloadUtils.getIpString(host) + "]");
             }
 
             for (String host : new String[] {

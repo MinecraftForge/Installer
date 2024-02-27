@@ -16,6 +16,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -257,12 +258,12 @@ public class DownloadUtils {
             return connection;
         } catch (SSLHandshakeException e) {
             System.out.println("Failed to establish connection to " + address);
-            System.out.println(" Host: " + url.getHost() + " [" + getIps(url.getHost()).stream().collect(Collectors.joining(", ")) + "]");
+            System.out.println(" Host: " + url.getHost() + " [" + getIpString(url.getHost()) + "]");
             e.printStackTrace();
             return null;
         } catch (IOException e) {
             System.out.println("Failed to establish connection to " + address);
-            System.out.println(" Host: " + url.getHost() + " [" + getIps(url.getHost()).stream().collect(Collectors.joining(", ")) + "]");
+            System.out.println(" Host: " + url.getHost() + " [" + getIpString(url.getHost()) + "]");
             e.printStackTrace();
             return null;
         }
@@ -273,9 +274,12 @@ public class DownloadUtils {
             InetAddress[] addresses = InetAddress.getAllByName(host);
             return Arrays.stream(addresses).map(InetAddress::getHostAddress).collect(Collectors.toList());
         } catch (UnknownHostException e1) {
-            e1.printStackTrace();
+            return Arrays.asList("Unknown");
         }
-        return null;
+    }
+
+    public static String getIpString(String host) {
+        return getIps(host).stream().collect(Collectors.joining(", "));
     }
 
     public static boolean checkCertificate(String host) {
