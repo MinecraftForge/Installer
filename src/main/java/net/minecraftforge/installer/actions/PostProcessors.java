@@ -128,6 +128,8 @@ public class PostProcessors {
                                             miss = true;
                                             output.file.delete();
                                         }
+                                    } else {
+                                        miss = true;
                                     }
                                 } catch (IOException e) {
                                     e.printStackTrace();
