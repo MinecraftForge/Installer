@@ -11,7 +11,7 @@ jobs:
   build:
     uses: MinecraftForge/SharedActions/.github/workflows/gradle.yml@main
     with:
-      java: 8
+      java: 11
       gradle_tasks: "publish"
       artifact_name: "installer"
     secrets:

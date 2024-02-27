@@ -1,5 +1,4 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import net.minecraftforge.gradleutils.PomUtils
 
 plugins {
     id 'java'
@@ -78,6 +77,10 @@ artifacts {
     archives shadowJar
 }
 
+changelog {
+    fromBase()
+}
+
 publishing {
     publications.register('mavenJava', MavenPublication) {
         from components.java
@@ -87,14 +90,14 @@ publishing {
         pom {
             name = 'Installer'
             description = 'Minecraft Forge Installer'
-            url = 'https://github.com/MinecraftForge/MergeTool'
+            url = 'https://github.com/MinecraftForge/Installer'
 
-            PomUtils.setGitHubDetails(pom, 'Installer')
+            gradleutils.pom.setGitHubDetails(pom, 'Installer')
 
-            license PomUtils.Licenses.LGPLv2_1
+            license gradleutils.pom.licenses.LGPLv2_1
 
             developers {
-                developer PomUtils.Developers.LexManos
+                developer gradleutils.pom.Developers.LexManos
             }
         }
     }
