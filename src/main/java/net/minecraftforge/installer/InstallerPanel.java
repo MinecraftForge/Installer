@@ -284,7 +284,7 @@ public class InstallerPanel extends JPanel {
                         "The following addresse did not have valid certificates: " + badCerts + "<br>" +
                         "This typically happens with an outdated java install. Try updating your java install from https://adoptium.net/";
                 }
-                JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", SwingUtil.createLogButton()}, "");
+                JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", SwingUtil.createlogButton()}, "");
                 e.printStackTrace();
             } finally {
                 prog.dispose();

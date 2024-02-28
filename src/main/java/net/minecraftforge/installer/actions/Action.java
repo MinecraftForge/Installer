@@ -41,7 +41,7 @@ public abstract class Action {
 
     protected void error(String message) {
         if (!SimpleInstaller.headless)
-            JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", SwingUtil.createLogButton()}, "");
+            JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", SwingUtil.createlogButton()}, "");
         monitor.stage(message);
     }
 
