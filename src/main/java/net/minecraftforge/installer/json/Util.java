@@ -4,6 +4,7 @@
  */
 package net.minecraftforge.installer.json;
 
+import java.awt.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -18,6 +19,8 @@ import java.util.function.Supplier;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.minecraftforge.installer.DownloadUtils;
+
+import javax.swing.*;
 
 public class Util {
     public static Gson GSON = new GsonBuilder().setPrettyPrinting()
@@ -142,5 +145,20 @@ public class Util {
         }
 
         return buf.toString();
+    }
+
+    public static Object createLogButton() {
+        JButton button = new JButton("Open Log");
+        button.addActionListener(ev -> {
+            File file = new File("installer.log");
+            try {
+                if (file.exists())
+                    Desktop.getDesktop().open(file);
+            } catch (IOException e) {
+                // Handle any errors that may occur during file opening
+                e.printStackTrace();
+            }
+        });
+        return button;
     }
 }

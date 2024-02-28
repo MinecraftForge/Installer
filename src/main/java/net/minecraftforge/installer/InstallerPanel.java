@@ -280,6 +280,7 @@ public class InstallerPanel extends JPanel {
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         dialog.setVisible(true);
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
+
         if (result == JOptionPane.OK_OPTION) {
             ProgressFrame prog = new ProgressFrame(monitor, "Installing " + profile.getVersion(), Thread.currentThread()::interrupt);
             SimpleInstaller.hookStdOut(prog);
@@ -304,7 +305,7 @@ public class InstallerPanel extends JPanel {
                         "The following addresse did not have valid certificates: " + badCerts + "<br>" +
                         "This typically happens with an outdated java install. Try updating your java install from https://adoptium.net/";
                 }
-                JOptionPane.showMessageDialog(null, message, "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", Util.createLogButton()}, "");
                 e.printStackTrace();
             } finally {
                 prog.dispose();
