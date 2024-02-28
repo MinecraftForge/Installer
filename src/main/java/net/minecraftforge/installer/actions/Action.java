@@ -18,6 +18,7 @@ import net.minecraftforge.installer.DownloadUtils;
 import net.minecraftforge.installer.SimpleInstaller;
 import net.minecraftforge.installer.json.Artifact;
 import net.minecraftforge.installer.json.InstallV1;
+import net.minecraftforge.installer.SwingUtil;
 import net.minecraftforge.installer.json.Util;
 import net.minecraftforge.installer.json.Version;
 import net.minecraftforge.installer.json.Version.Download;
@@ -40,7 +41,7 @@ public abstract class Action {
 
     protected void error(String message) {
         if (!SimpleInstaller.headless)
-            JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", Util.createLogButton()}, "");
+            JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", SwingUtil.createLogButton()}, "");
         monitor.stage(message);
     }
 

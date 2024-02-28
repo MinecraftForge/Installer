@@ -4,30 +4,18 @@
  */
 package net.minecraftforge.installer;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.Desktop;
 import java.awt.EventQueue;
-import java.awt.Frame;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 import javax.imageio.ImageIO;
 import javax.swing.AbstractAction;
@@ -36,29 +24,20 @@ import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.ListCellRenderer;
-import javax.swing.SwingConstants;
 import javax.swing.border.LineBorder;
 
 import net.minecraftforge.installer.actions.Action;
 import net.minecraftforge.installer.actions.ActionCanceledException;
 import net.minecraftforge.installer.actions.Actions;
 import net.minecraftforge.installer.actions.ProgressCallback;
-import net.minecraftforge.installer.json.Install;
 import net.minecraftforge.installer.json.InstallV1;
-import net.minecraftforge.installer.json.Mirror;
-import net.minecraftforge.installer.json.OptionalLibrary;
-import net.minecraftforge.installer.json.Util;
 
 @SuppressWarnings("unused")
 public class InstallerPanel extends JPanel {
@@ -305,7 +284,7 @@ public class InstallerPanel extends JPanel {
                         "The following addresse did not have valid certificates: " + badCerts + "<br>" +
                         "This typically happens with an outdated java install. Try updating your java install from https://adoptium.net/";
                 }
-                JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", Util.createLogButton()}, "");
+                JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", SwingUtil.createLogButton()}, "");
                 e.printStackTrace();
             } finally {
                 prog.dispose();

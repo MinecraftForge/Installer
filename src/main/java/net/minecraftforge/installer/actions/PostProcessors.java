@@ -36,6 +36,7 @@ import net.minecraftforge.installer.actions.ProgressCallback.MessagePriority;
 import net.minecraftforge.installer.json.Artifact;
 import net.minecraftforge.installer.json.Install.Processor;
 import net.minecraftforge.installer.json.InstallV1;
+import net.minecraftforge.installer.SwingUtil;
 import net.minecraftforge.installer.json.Version.Library;
 import net.minecraftforge.installer.json.Util;
 
@@ -281,7 +282,7 @@ public class PostProcessors {
 
     private void error(String message) {
         if (!SimpleInstaller.headless)
-            JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", Util.createLogButton()}, "");
+            JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", SwingUtil.createLogButton()}, "");
         for (String line : message.split("\n"))
             monitor.message(line);
     }
