@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.IOException;
 
 public class SwingUtil {
-    public static JButton createlogButton() {
+    public static JButton createLogButton() {
         JButton button = new JButton("Open log");
         button.addActionListener(ev -> {
             File file = new File("installer.log");
