@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 package net.minecraftforge.installer;
+import java.awt.HeadlessException;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -122,8 +123,8 @@ public class SimpleInstaller {
 
             try {
                 if (!badCerts.isEmpty()) {
-                    monitor.message("Failed to validate certificates for " + badCerts + " this typically means you have an outdated java.");
-                    monitor.message("If instalation fails try updating your java!");
+                    monitor.message("Failed to validate certificates for " + badCerts + " - this typically means you have an outdated Java.");
+                    monitor.message("If installation fails, try updating your Java!");
                     return;
                 }
 
@@ -151,7 +152,7 @@ public class SimpleInstaller {
         }
 
         if (!didWork)
-            launchGui(monitor, installer, badCerts);
+            launchGui(monitor, installer, badCerts, parser);
     }
 
     private static OptionSpec<File> action(OptionParser parser, String arg, String desc) {
@@ -169,10 +170,29 @@ public class SimpleInstaller {
         return new File(userHomeDir, mcDir);
     }
 
+    // Bouncer method, just in case
     private static void launchGui(ProgressCallback monitor, File installer, String badCerts) {
+        launchGui(monitor, installer, badCerts, null);
+    }
+
+    private static void launchGui(ProgressCallback monitor, File installer, String badCerts, OptionParser parser) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) { }
+        } catch (HeadlessException headless) {
+            // if ran in a headless CLI environment with no args, show some help text and exit gracefully
+            if (parser == null) {
+                System.out.println("No options found. Try running with --help for a list of options.");
+                System.exit(0);
+                return;
+            }
+            try {
+                parser.printHelpOn(System.out);
+            } catch (IOException ioException) {
+                sneak(ioException);
+            }
+            System.exit(0);
+            return;
+        } catch (Exception ignored) {}
 
         try {
             InstallV1 profile = Util.loadInstallProfile();
@@ -226,5 +246,10 @@ public class SimpleInstaller {
 
         System.setOut(new PrintStream(monitorStream));
         System.setErr(new PrintStream(monitorStream));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> void sneak(Throwable t) throws T {
+        throw (T) t;
     }
 }
