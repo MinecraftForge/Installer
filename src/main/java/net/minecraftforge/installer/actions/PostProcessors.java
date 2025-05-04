@@ -234,7 +234,7 @@ public class PostProcessors {
                         ret.add(output.file);
                         if (!output.file.exists()) {
                             err.append("\n    ").append(output.file).append(" missing");
-                        } else {
+                        } else if (!SimpleInstaller.skipHashCheck) {
                             String sha = DownloadUtils.getSha1(output.file);
                             if (sha.equals(output.sha1)) {
                                 log("  Output: " + output.file + " Checksum Validated: " + sha);
