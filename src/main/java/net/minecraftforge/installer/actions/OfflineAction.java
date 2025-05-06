@@ -78,6 +78,9 @@ public class OfflineAction extends Action {
 
         checkCancel();
         try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(target))) {
+            // Explicitly set compression level because of potential differences based on environment.
+            // See https://github.com/MinecraftForge/JarSplitter/pull/2
+            zout.setLevel(6);
             Set<String> seen = new HashSet<>();
 
             // Copy our input installer jar
