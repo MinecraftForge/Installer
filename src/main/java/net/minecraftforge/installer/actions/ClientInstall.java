@@ -23,14 +23,14 @@ public class ClientInstall extends Action {
     @Override
     public boolean run(File target, File installer) throws ActionCanceledException {
         if (!target.exists()) {
-            error("There is no minecraft installation at: " + target);
+            error("There is no Minecraft installation at: " + target);
             return false;
         }
 
         File launcherProfiles = new File(target, "launcher_profiles.json");
         File launcherProfilesMS = new File(target, "launcher_profiles_microsoft_store.json");
         if (!launcherProfiles.exists() && !launcherProfilesMS.exists()) {
-            error("There is no minecraft launcher profile in \"" + target + "\", you need to run the launcher first!");
+            error("There is no Minecraft launcher profile in \"" + target + "\", you need to run the launcher first!");
             return false;
         }
 
@@ -120,7 +120,7 @@ public class ClientInstall extends Action {
             String jstring = Util.GSON.toJson(json);
             Files.write(target.toPath(), jstring.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            error("There was a problem writing the launch profile,  is it write protected?");
+            error("There was a problem writing the launch profile, is it write protected?");
             return false;
         }
         return true;
@@ -137,9 +137,9 @@ public class ClientInstall extends Action {
     @Override
     public String getFileError(File targetDir) {
         if (targetDir.exists())
-            return "The directory is missing a launcher profile. Please run the minecraft launcher first";
+            return "The directory is missing a launcher profile. Please run the Minecraft launcher first";
         else
-            return "There is no minecraft directory set up. Either choose an alternative, or run the minecraft launcher to create one";
+            return "There is no Minecraft directory set up. Either choose an alternative, or run the Minecraft launcher to create one";
     }
 
     @Override

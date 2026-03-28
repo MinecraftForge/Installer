@@ -199,7 +199,7 @@ public class DownloadUtils {
 
     public static String getSha1(File target) {
         try {
-            return HashFunction.SHA1.hash(Files.readAllBytes(target.toPath())).toString();
+            return HashFunction.SHA1.hash(Files.readAllBytes(target.toPath()));
         } catch (IOException e) {
             e.printStackTrace();
             return null;

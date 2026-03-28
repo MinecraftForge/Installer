@@ -179,14 +179,14 @@ public class InstallerPanel extends JPanel {
         this.targetDir = targetDir;
         selectedDirText = new JTextField();
         selectedDirText.setEditable(false);
-        selectedDirText.setToolTipText("Path to minecraft");
+        selectedDirText.setToolTipText("Path to Minecraft");
         selectedDirText.setColumns(30);
 //        homeDir.setMaximumSize(homeDir.getPreferredSize());
         entryPanel.add(selectedDirText);
         JButton dirSelect = new JButton();
         dirSelect.setAction(new FileSelectAction());
         dirSelect.setText("...");
-        dirSelect.setToolTipText("Select an alternative minecraft directory");
+        dirSelect.setToolTipText("Select an alternative Minecraft directory");
         entryPanel.add(dirSelect);
 
         entryPanel.setAlignmentX(LEFT_ALIGNMENT);
@@ -215,7 +215,7 @@ public class InstallerPanel extends JPanel {
             targetDir = targetDir.getCanonicalFile();
             selectedDirText.setText(targetDir.getPath());
         } catch (IOException e) {
-            System.out.println("Failed to make cononical file: " + targetDir);
+            System.out.println("Failed to make canonical file: " + targetDir);
             e.printStackTrace();
         }
 
@@ -281,8 +281,8 @@ public class InstallerPanel extends JPanel {
                 String message = "There was an exception running task: " + e.toString();
                 if (badCerts != null && !badCerts.isEmpty()) {
                     message += "<br>" +
-                        "The following addresse did not have valid certificates: " + badCerts + "<br>" +
-                        "This typically happens with an outdated java install. Try updating your java install from https://adoptium.net/";
+                        "The following address did not have valid certificates: " + badCerts + "<br>" +
+                        "This typically happens with an outdated Java install. Try updating your Java install from https://adoptium.net/";
                 }
                 JOptionPane.showOptionDialog(null, message, "Error", JOptionPane.DEFAULT_OPTION, JOptionPane.ERROR_MESSAGE, null, new Object[]{"Ok", SwingUtil.createLogButton()}, "");
                 e.printStackTrace();
