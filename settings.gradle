@@ -9,13 +9,13 @@ pluginManagement {
 }
 
 plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
 
 dependencyResolutionManagement {
     versionCatalogs {
         libs {
-            library('gson', 'com.google.code.gson:gson:2.10.1')
+            library('gson', 'com.google.code.gson:gson:2.13.2')
             library('jopt-simple', 'net.sf.jopt-simple:jopt-simple:6.0-alpha-3')
             
 			version('junit', '5.10.1')

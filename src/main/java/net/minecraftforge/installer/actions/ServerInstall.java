@@ -96,7 +96,7 @@ public class ServerInstall extends Action {
 
     @Override
     public String getSuccessMessage() {
-        if (grabbed.size() > 0)
+        if (!grabbed.isEmpty())
             return String.format("Successfully downloaded minecraft server, downloaded %d libraries and installed %s", grabbed.size(), profile.getVersion());
         return String.format("Successfully downloaded minecraft server and installed %s", profile.getVersion());
     }

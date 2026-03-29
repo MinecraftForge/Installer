@@ -1,17 +1,22 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
+import java.nio.file.Files
+import java.nio.file.Paths
+
 plugins {
     id 'java'
     id 'eclipse'
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
-    id 'com.github.ben-manes.versions' version '0.49.0'
-    id 'net.minecraftforge.licenser' version '1.0.1'
-    id 'net.minecraftforge.gradleutils' version '[2.3,2.4)'
+    id 'com.gradleup.shadow' version '9.4.1'
+    id 'net.minecraftforge.gitversion' version '3.1.7'
+    id 'net.minecraftforge.licenser' version '1.2.0'
+    id 'net.minecraftforge.gradleutils' version '3.4.4'
+    id 'net.minecraftforge.changelog' version '3.2.1'
 }
 
+gradleutils.displayName = 'Installer'
 group = 'net.minecraftforge'
-version = gradleutils.tagOffsetVersion
+version = gitversion.tagOffset
 println "Version: $version"
 
 repositories {
@@ -25,9 +30,7 @@ license {
 }
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
-    }
+    toolchain.languageVersion = JavaLanguageVersion.of(8)
     withSourcesJar()
 }
 
@@ -42,21 +45,23 @@ dependencies {
     testRuntimeOnly(libs.bundles.junit.runtime)
 }
 
+Files.list(Paths.get(projectDir.absolutePath))
+        .filter(Files::isRegularFile)
+        .filter(path -> path.getFileName().toString().endsWith('-installer.jar'))
+        .findFirst()
+        .ifPresent(path -> {
+            var firstFile = path.toFile()
+            logger.lifecycle("Detected test installer: ${firstFile.name}")
+            dependencies.implementation(files(firstFile))
+        })
 
-def installerFiles = new FileNameFinder().getFileNames(projectDir.absolutePath, '*-installer.jar')
-if (!installerFiles.isEmpty()) {
-    def first = file(installerFiles.get(0))
-    logger.lifecycle("Detected test installer: " + first.name)
-    dependencies.implementation(files(first))
-}
-
-tasks.named('jar', Jar).configure {
+tasks.named('jar', Jar) {
     manifest {
         attributes('Main-Class': 'net.minecraftforge.installer.SimpleInstaller')
         attributes([
             'Specification-Title':    'Installer',
             'Specification-Vendor':   'Forge Development LLC',
-            'Specification-Version':   gradleutils.gitInfo.tag,
+            'Specification-Version':   gitversion.info.tag,
             'Implementation-Title':   'SimpleInstaller',
             'Implementation-Vendor':  'Forge Development LLC',
             'Implementation-Version':  project.version
@@ -64,12 +69,12 @@ tasks.named('jar', Jar).configure {
     }
 }
 
-tasks.named('shadowJar', ShadowJar).configure {
+tasks.named('shadowJar', ShadowJar) {
     archiveClassifier = 'fatjar'
     minimize()
 }
 
-compileJava {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
@@ -83,6 +88,9 @@ changelog {
 
 publishing {
     publications.register('mavenJava', MavenPublication) {
+        changelog.publish(it)
+        gradleutils.promote(it)
+
         from components.java
 
         artifactId = 'installer'
@@ -92,12 +100,12 @@ publishing {
             description = 'Minecraft Forge Installer'
             url = 'https://github.com/MinecraftForge/Installer'
 
-            gradleutils.pom.setGitHubDetails(pom, 'Installer')
+            gradleutils.pom.addRemoteDetails(pom)
 
             license gradleutils.pom.licenses.LGPLv2_1
 
             developers {
-                developer gradleutils.pom.Developers.LexManos
+                developer gradleutils.pom.developers.LexManos
             }
         }
     }
