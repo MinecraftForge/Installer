@@ -54,6 +54,7 @@ public class SimpleInstaller {
         String javaVersion = System.getProperty("java.version", "missing java version");
         String jvmVersion = System.getProperty("java.vm.version", "missing jvm version");
         monitor.message(String.format("JVM info: %s - %s - %s", vendor, javaVersion, jvmVersion));
+        monitor.message("Multi-Release: " + MRTest.getVersion());
         monitor.message("java.net.preferIPv4Stack=" + System.getProperty("java.net.preferIPv4Stack"));
         monitor.message("Current Time: " + new SimpleDateFormat("dd/MM/yyyy HH:mm:ss").format(new Date()));
 

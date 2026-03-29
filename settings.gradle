@@ -15,6 +15,12 @@ plugins {
 dependencyResolutionManagement {
     versionCatalogs {
         libs {
+            plugin 'licenser',    'net.minecraftforge.licenser'    version '1.2.0'
+            plugin 'gradleutils', 'net.minecraftforge.gradleutils' version '3.3.21'
+            plugin 'gitversion',  'net.minecraftforge.gitversion'  version '3.1.6'
+            plugin 'changelog',   'net.minecraftforge.changelog'   version '3.1.3'
+            plugin 'shadow',      'com.gradleup.shadow'            version '9.2.2'
+        
             library('gson', 'com.google.code.gson:gson:2.13.2')
             library('jopt-simple', 'net.sf.jopt-simple:jopt-simple:6.0-alpha-3')
             
@@ -28,3 +34,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'Installer'
+include(':installer-test')
+include(':installer-java9')

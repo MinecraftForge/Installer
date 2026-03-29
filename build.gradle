@@ -1,17 +1,15 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
-import java.nio.file.Files
-import java.nio.file.Paths
+import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
 
 plugins {
     id 'java'
     id 'eclipse'
     id 'maven-publish'
-    id 'com.gradleup.shadow' version '9.4.1'
-    id 'net.minecraftforge.gitversion' version '3.1.7'
-    id 'net.minecraftforge.licenser' version '1.2.0'
-    id 'net.minecraftforge.gradleutils' version '3.4.4'
-    id 'net.minecraftforge.changelog' version '3.2.1'
+    alias libs.plugins.gradleutils
+    alias libs.plugins.gitversion
+    alias libs.plugins.changelog
+    alias libs.plugins.licenser
+    alias libs.plugins.shadow
 }
 
 gradleutils.displayName = 'Installer'
@@ -34,26 +32,37 @@ java {
     withSourcesJar()
 }
 
-test {
-  useJUnitPlatform()
+configurations {
+    multirelease {
+        extendsFrom implementation
+        canBeConsumed = true
+        canBeResolved = false
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, 'multi-release'))
+        }
+    }
 }
 
 dependencies {
     implementation(libs.jopt.simple)
     implementation(libs.gson)
-    testImplementation(libs.junit.api)
-    testRuntimeOnly(libs.bundles.junit.runtime)
 }
 
-Files.list(Paths.get(projectDir.absolutePath))
-        .filter(Files::isRegularFile)
-        .filter(path -> path.getFileName().toString().endsWith('-installer.jar'))
-        .findFirst()
-        .ifPresent(path -> {
-            var firstFile = path.toFile()
-            logger.lifecycle("Detected test installer: ${firstFile.name}")
-            dependencies.implementation(files(firstFile))
-        })
+// This isn't great, but it alows us to drop a existing jar file into the root folder and do some debugging
+def testJars = fileTree(dir: projectDir).matching{ include '*-installer.jar' }    
+if (testJars.files.size() == 1) {
+    logger.lifecycle("Detected test installer: ${testJars.singleFile.name}")
+    def testData = tasks.register('testData', Jar) {
+        from(zipTree(testJars.singleFile)) {
+            exclude('**/*.class')
+            exclude('META-INF/**')
+            exclude('joptsimple/**')
+        }
+        includeEmptyDirs = false
+        archiveClassifier = 'test-data'
+    }
+    dependencies.implementation(files(testData))
+}
 
 tasks.named('jar', Jar) {
     manifest {
@@ -69,9 +78,55 @@ tasks.named('jar', Jar) {
     }
 }
 
+def multiReleaseJar = tasks.register('multiReleaseJar', Jar) {
+    manifest {
+        from(tasks.named('jar').get().manifest)
+        attributes(['Multi-Release': 'true'])
+    }
+    archiveClassifier = 'multi-release'
+    from(zipTree(tasks.named('jar', Jar).flatMap { it.archiveFile }))
+}
+
+def addRelease = version -> {
+    var cfg = configurations.register('java' + version) {
+        transitive = false
+    }
+    dependencies.add('java' + version, project(':installer-java' + version))
+    
+    multiReleaseJar.configure {
+        from(cfg.map{ zipTree(it.singleFile) }) {
+            into('META-INF/versions/' + version)
+            exclude('META-INF/**')
+            includeEmptyDirs = false
+        }
+    }
+}
+addRelease(9)
+
+
 tasks.named('shadowJar', ShadowJar) {
     archiveClassifier = 'fatjar'
     minimize()
+    
+    // Add out multi-release elements
+    from(multiReleaseJar.map{ zipTree(it.archiveFile) }) {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+    
+    // Meta stuff we don't need
+    exclude('com/google/errorprone/**')
+    exclude('META-INF/maven/**')
+    exclude('META-INF/proguard/**')
+    
+    // We shouldn't ever need to care about conflicts as this is an executable jar, but just be safe
+    relocate('joptsimple', 'net.minecraftforge.installer.shadow.joptsimple')
+    relocate('com.google.gson', 'net.minecraftforge.installer.shadow.gson')
+    
+    // Rewrite JOpt's message files, so that help text is displayed nicely.
+    transform(PropertiesFileTransformer) {
+        paths = [ 'Messages.properties$' ]
+        keyTransformer = { key -> 'net.minecraftforge.installer.shadow.' + key }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -79,7 +134,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 artifacts {
-    archives shadowJar
+    multirelease multiReleaseJar
 }
 
 changelog {
@@ -92,6 +147,7 @@ publishing {
         gradleutils.promote(it)
 
         from components.java
+        artifact multiReleaseJar
 
         artifactId = 'installer'
 
