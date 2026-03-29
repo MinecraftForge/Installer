@@ -2,7 +2,7 @@ name: Publish
 
 on:
   push:
-    branches: [ "*" ]
+    branches: [ "2.0" ]
 
 permissions:
   contents: read
@@ -11,7 +11,7 @@ jobs:
   build:
     uses: MinecraftForge/SharedActions/.github/workflows/gradle.yml@main
     with:
-      java: 11
+      java: 17
       gradle_tasks: "publish"
       artifact_name: "installer"
     secrets:
