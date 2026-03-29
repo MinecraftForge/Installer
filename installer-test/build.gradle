@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+    id 'eclipse'
+    alias libs.plugins.gradleutils
+    alias libs.plugins.gitversion
+    alias libs.plugins.licenser
+}
+
+repositories {
+    mavenCentral()
+    maven gradleutils.forgeMaven
+}
+
+license {
+    header = rootProject.file('LICENSE-header.txt')
+    newLine = false
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(8)
+    withSourcesJar()
+}
+
+test {
+    useJUnitPlatform()
+}
+
+dependencies {
+    testImplementation(rootProject) {
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, 'multi-release'))
+        }
+    }
+    testImplementation(libs.junit.api)
+    testRuntimeOnly(libs.bundles.junit.runtime)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
