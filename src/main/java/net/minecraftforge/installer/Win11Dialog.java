@@ -35,7 +35,7 @@ final class Win11Dialog {
 
     // Note: These are here because Java 8 doesn't support declaring static fields inside anonymous classes
     private static final Color WINDOW_HIT_TEST_COLOR = new Color(255, 255, 255, 1);
-    private static final Color TITLE_BAR_OVERLAY = new Color(255, 255, 255, 28);
+    private static final Color TITLE_BAR_OVERLAY = new Color(220, 220, 220, 0);
     private static final Color CLOSE_BUTTON_HOVER = new Color(196, 43, 28);
     private static final Color CLOSE_BUTTON_PRESSED = new Color(143, 32, 20);
     private static final Color CLOSE_BUTTON_GLYPH = new Color(32, 32, 32);
