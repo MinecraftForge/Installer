@@ -5,9 +5,11 @@
 package net.minecraftforge.installer;
 
 import javax.swing.*;
+import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.util.Enumeration;
 
 public class SwingUtil {
     public static JButton createLogButton() {
@@ -27,5 +29,22 @@ public class SwingUtil {
             }
         });
         return button;
+    }
+
+    /**
+     * Applies a new global font to all Swing UI components instantiated after this method call
+     * @param fontFamily The name of the desired font to apply
+     */
+    static void applyGlobalFont(String fontFamily) {
+        UIDefaults defaults = UIManager.getDefaults();
+        Enumeration<Object> keys = defaults.keys();
+        while (keys.hasMoreElements()) {
+            Object key = keys.nextElement();
+            Object value = defaults.get(key);
+            if (value instanceof FontUIResource) {
+                FontUIResource font = (FontUIResource) value;
+                defaults.put(key, new FontUIResource(fontFamily, font.getStyle(), font.getSize()));
+            }
+        }
     }
 }

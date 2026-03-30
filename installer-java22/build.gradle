@@ -1,0 +1,13 @@
+plugins {
+    id 'java'
+    id 'eclipse'
+    id 'net.minecraftforge.licenser' version '1.2.0'
+    id 'net.minecraftforge.gradleutils' version '3.4.4'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(22)
+
+license {
+    header = rootProject.file('LICENSE-header.txt')
+    newLine = false
+}

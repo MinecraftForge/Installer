@@ -99,7 +99,7 @@ public class SimpleInstaller {
                 "sessionserver.mojang.com",
                 "authserver.mojang.com",
             }) {
-                monitor.message("Host: " + host + " [" + DownloadUtils.getIpString(host) + "]");
+                monitor.message("Host: " + host + " [" + DownloadUtils.getIpString(host) + ']');
             }
 
             for (String host : new String[] {
@@ -178,6 +178,7 @@ public class SimpleInstaller {
     private static void launchGui(ProgressCallback monitor, File installer, String badCerts, OptionParser parser) {
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            if (Win11MicaEffect.isSupported()) SwingUtil.applyGlobalFont("Segoe UI");
         } catch (HeadlessException headless) {
             // if ran in a headless CLI environment with no args, show some help text and exit gracefully
             if (parser == null) {

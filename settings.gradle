@@ -28,3 +28,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'Installer'
+
+include 'installer-java22'

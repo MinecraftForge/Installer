@@ -12,6 +12,7 @@ plugins {
     id 'net.minecraftforge.licenser' version '1.2.0'
     id 'net.minecraftforge.gradleutils' version '3.4.4'
     id 'net.minecraftforge.changelog' version '3.2.1'
+    id 'net.minecraftforge.multi-release' version '0.1.4'
 }
 
 gradleutils.displayName = 'Installer'
@@ -67,9 +68,26 @@ tasks.named('jar', Jar) {
             'Implementation-Version':  project.version
         ] as LinkedHashMap, 'net/minecraftforge/installer/')
     }
+
+    archiveClassifier = 'java8'
+}
+
+multiRelease.register {
+    add(JavaLanguageVersion.of(22), project(':installer-java22'))
+}
+
+tasks.named('multiReleaseJar', Jar) {
+    archiveClassifier = ''
 }
 
 tasks.named('shadowJar', ShadowJar) {
+    dependsOn tasks.named('multiReleaseJar')
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from({
+        zipTree(tasks.named('multiReleaseJar').get().archiveFile.get().asFile)
+    })
+
     archiveClassifier = 'fatjar'
     minimize()
 }
