@@ -58,7 +58,10 @@ Files.list(Paths.get(projectDir.absolutePath))
 
 tasks.named('jar', Jar) {
     manifest {
-        attributes('Main-Class': 'net.minecraftforge.installer.SimpleInstaller')
+        attributes([
+            'Main-Class': 'net.minecraftforge.installer.SimpleInstaller',
+            'Enable-Native-Access': 'ALL-UNNAMED'
+        ])
         attributes([
             'Specification-Title':    'Installer',
             'Specification-Vendor':   'Forge Development LLC',
