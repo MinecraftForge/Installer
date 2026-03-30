@@ -147,7 +147,9 @@ final class Win11MicaEffect {
             // default of no backdrop effect. This is the main bit that actually enables the Mica backdrop effect - the
             // rest of the code is mostly workarounds for Swing limitations
             MemorySegment backdropType = arena.allocate(ValueLayout.JAVA_INT);
-            backdropType.set(ValueLayout.JAVA_INT, 0, 2); // DWMSBT_MAINWINDOW
+            // 2 = Mica (DWMSBT_MAINWINDOW), 3 = Acrylic (DWMSBT_TRANSIENTWINDOW), 4 = Mica Alt (DWMSBT_TABBEDWINDOW)
+            int backdropTypePreference = Integer.getInteger("forgeinstaller.backdroptype", 2);
+            backdropType.set(ValueLayout.JAVA_INT, 0, backdropTypePreference);
             int DWMWA_SYSTEMBACKDROP_TYPE = 38;
             int hresult = (int) dwmSetWindowAttribute.invokeExact(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, backdropType, Integer.BYTES);
             if (hresult != 0)
