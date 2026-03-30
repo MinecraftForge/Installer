@@ -241,7 +241,8 @@ final class Win11MicaEffect {
         final class LazyInit {
             private LazyInit() {}
             private static final boolean IS_UNSUPPORTED
-                    = !System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH).startsWith("windows 11");
+                    = !System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH).startsWith("windows 11")
+                    || !Boolean.getBoolean("forgeinstaller.usewin11mica");
         }
         return LazyInit.IS_UNSUPPORTED;
     }
