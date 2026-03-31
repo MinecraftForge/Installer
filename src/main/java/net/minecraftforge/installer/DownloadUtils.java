@@ -48,7 +48,7 @@ public class DownloadUtils {
             download.setPath(artifact.getPath());
         }
 
-        monitor.message(String.format("Considering library %s", artifact.getDescriptor()));
+        monitor.message("Considering library " + artifact.getDescriptor());
 
         if (target.exists()) {
             if (download.getSha1() != null) {
@@ -279,7 +279,7 @@ public class DownloadUtils {
     }
 
     public static String getIpString(String host) {
-        return getIps(host).stream().collect(Collectors.joining(", "));
+        return String.join(", ", getIps(host));
     }
 
     public static boolean checkCertificate(String host) {

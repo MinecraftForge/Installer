@@ -50,7 +50,7 @@ final class Win11Dialog {
      * @return A new JDialog instance with custom window decorations and support for the Mica backdrop on Windows 11.
      * @see Win11MicaEffect
      */
-    static JDialog create(JOptionPane optionPane, JPanel installerPanel, String title) {
+    static JDialog create(JOptionPane optionPane, JPanel installerPanel, String title) throws Exception {
         JDialog installerDialog = new JDialog(null, title, Dialog.ModalityType.APPLICATION_MODAL);
         installerDialog.setUndecorated(true);
         installerDialog.setType(Window.Type.NORMAL);

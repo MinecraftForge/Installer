@@ -15,7 +15,7 @@ final class Win11MicaEffect {
 
     static void prepare(Component component) {}
 
-    static void install(JDialog dialog) {}
+    static void install(JDialog dialog) throws Exception {}
 
     static boolean isSupported() {
         return false;

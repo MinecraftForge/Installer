@@ -18,6 +18,7 @@ import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.util.Locale;
+import java.util.concurrent.Callable;
 
 import javax.swing.JComponent;
 import javax.swing.JDialog;
@@ -50,7 +51,7 @@ final class Win11MicaEffect {
         }
     }
 
-    static void install(JDialog dialog) {
+    static void install(JDialog dialog) throws Exception {
         if (isUnsupportedPlatform())
             return;
 
@@ -67,18 +68,22 @@ final class Win11MicaEffect {
         // In order for the Mica effect to apply correctly on a Swing window, we need to ensure a repaint after applying
         // for timing reasons. If the window is already showing, we can repaint immediately, otherwise wait for the
         // window to be opened first.
-        Runnable apply = () -> {
+        Callable<Void> apply = () -> {
             try {
                 applyTo(dialog);
-                dialog.invalidate();
-                dialog.validate();
-                dialog.repaint();
-                dialog.getRootPane().repaint();
-            } catch (Throwable _) {}
+            } catch (Throwable t) {
+                if (t instanceof Exception e) throw e;
+                else throw new RuntimeException(t);
+            }
+            dialog.invalidate();
+            dialog.validate();
+            dialog.repaint();
+            dialog.getRootPane().repaint();
+            return null;
         };
 
         if (dialog.isShowing()) {
-            apply.run();
+            apply.call();
             return;
         }
 
@@ -86,7 +91,11 @@ final class Win11MicaEffect {
             @Override
             public void windowOpened(WindowEvent e) {
                 dialog.removeWindowListener(this);
-                apply.run();
+                try {
+                    apply.call();
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
             }
         });
     }
@@ -153,7 +162,7 @@ final class Win11MicaEffect {
             int DWMWA_SYSTEMBACKDROP_TYPE = 38;
             int hresult = (int) dwmSetWindowAttribute.invokeExact(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, backdropType, Integer.BYTES);
             if (hresult != 0)
-                return;
+                throw new RuntimeException("DwmSetWindowAttribute failed with HRESULT 0x" + Integer.toHexString(hresult));
 
             // Tell DWM to paint the entire window background with the Mica brush rather than the default of only the
             // title bar.
@@ -240,9 +249,24 @@ final class Win11MicaEffect {
     private static boolean isUnsupportedPlatform() {
         final class LazyInit {
             private LazyInit() {}
-            private static final boolean IS_UNSUPPORTED
-                    = !System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH).startsWith("windows 11")
-                    || !Boolean.getBoolean("forgeinstaller.usewin11mica");
+            private static final boolean IS_UNSUPPORTED;
+            static {
+                var useMica = true;
+                boolean forceDisableMica = false;
+                var isWin11 = System.getProperty("os.name", "").toLowerCase(Locale.ENGLISH).startsWith("windows 11");
+                if (isWin11) {
+                    // Disable Mica if explicitly requested
+                    forceDisableMica = !Boolean.parseBoolean(System.getProperty("forgeinstaller.usewin11mica", "true"));
+                    if (forceDisableMica)
+                        useMica = false;
+                } else {
+                    // Mica is only supported on Windows 11
+                    useMica = false;
+                }
+
+//                System.out.println("OS: " + System.getProperty("os.name", "") + ", isWin11: " + isWin11 + ", forceDisableMica: " + forceDisableMica);
+                IS_UNSUPPORTED = !useMica;
+            }
         }
         return LazyInit.IS_UNSUPPORTED;
     }
