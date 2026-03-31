@@ -255,7 +255,15 @@ public class InstallerPanel extends JPanel {
     public void run(ProgressCallback monitor) {
         JOptionPane optionPane = new JOptionPane(this, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
 
-        dialog = optionPane.createDialog("Forge Installer");
+        try {
+            dialog = Win11MicaEffect.isSupported()
+                    ? Win11Dialog.create(optionPane, this, "Forge Installer")
+                    : optionPane.createDialog("Forge Installer");
+        } catch (Exception e) {
+            System.out.println("Failed to setup Win11 dialog, falling back to Swing default:");
+            e.printStackTrace();
+            dialog = optionPane.createDialog("Forge Installer");
+        }
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         dialog.setVisible(true);
         int result = (Integer) (optionPane.getValue() != null ? optionPane.getValue() : -1);
