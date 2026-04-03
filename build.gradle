@@ -46,15 +46,21 @@ dependencies {
     testRuntimeOnly(libs.bundles.junit.runtime)
 }
 
-Files.list(Paths.get(projectDir.absolutePath))
-        .filter(Files::isRegularFile)
-        .filter(path -> path.getFileName().toString().endsWith('-installer.jar'))
-        .findFirst()
-        .ifPresent(path -> {
-            var firstFile = path.toFile()
-            logger.lifecycle("Detected test installer: ${firstFile.name}")
-            dependencies.implementation(files(firstFile))
-        })
+// This isn't great, but it alows us to drop a existing jar file into the root folder and do some debugging
+def testJars = fileTree(dir: projectDir).matching{ include '*-installer.jar' }    
+if (testJars.files.size() == 1) {
+    logger.lifecycle("Detected test installer: ${testJars.singleFile.name}")
+    def testData = tasks.register('testData', Jar) {
+        from(zipTree(testJars.singleFile)) {
+            exclude('**/*.class')
+            exclude('META-INF/**')
+            exclude('joptsimple/**')
+        }
+        includeEmptyDirs = false
+        archiveClassifier = 'test-data'
+    }
+    dependencies.implementation(files(testData))
+}
 
 tasks.named('jar', Jar) {
     manifest {
@@ -93,6 +99,21 @@ tasks.named('shadowJar', ShadowJar) {
 
     archiveClassifier = 'fatjar'
     minimize()
+    
+    // Meta stuff we don't need
+    exclude('com/google/errorprone/**')
+    exclude('META-INF/maven/**')
+    exclude('META-INF/proguard/**')
+    
+    // We shouldn't ever need to care about conflicts as this is an executable jar, but just be safe
+    relocate('joptsimple', 'net.minecraftforge.installer.shadow.joptsimple')
+    relocate('com.google.gson', 'net.minecraftforge.installer.shadow.gson')
+    
+    // Rewrite JOpt's message files, so that help text is displayed nicely.
+    transform(com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer) {
+        paths = [ 'Messages.properties$' ]
+        keyTransformer = { key -> 'net.minecraftforge.installer.shadow.' + key }
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
