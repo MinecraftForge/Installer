@@ -20,4 +20,8 @@ final class Win11MicaEffect {
     static boolean isSupported() {
         return false;
     }
+
+    static boolean useDarkMode() {
+        return false;
+    }
 }
