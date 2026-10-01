@@ -137,9 +137,9 @@ public class ClientInstall extends Action {
     @Override
     public String getFileError(File targetDir) {
         if (targetDir.exists())
-            return "The directory is missing a launcher profile. Please run the Minecraft launcher first";
+            return "The directory is missing a launcher profile.<br/>Please run the Minecraft launcher first";
         else
-            return "There is no Minecraft directory set up. Either choose an alternative, or run the Minecraft launcher to create one";
+            return "There is no Minecraft directory set up.<br/>Either choose an alternative, or run the Minecraft launcher to create one";
     }
 
     @Override

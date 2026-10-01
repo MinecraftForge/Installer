@@ -30,7 +30,7 @@ public abstract class Action {
     protected final ProgressCallback monitor;
     protected final PostProcessors processors;
     protected final Version version;
-    private List<Artifact> grabbed = new ArrayList<>();
+    private final ArrayList<Artifact> grabbed = new ArrayList<>();
 
     protected Action(InstallV1 profile, ProgressCallback monitor, boolean isClient) {
         this.profile = profile;
