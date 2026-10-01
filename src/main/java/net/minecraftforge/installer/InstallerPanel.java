@@ -85,18 +85,12 @@ public class InstallerPanel extends JPanel {
         public void actionPerformed(ActionEvent e) {
             String actionCommand = e.getActionCommand();
             if (Actions.SERVER.name().equals(actionCommand))
-                targetDir = getDefaultServerDir();
+                targetDir = new File("ForgeServer");
             else if (Actions.CLIENT.name().equals(actionCommand))
                 targetDir = SimpleInstaller.getMCDir();
 
             updateFilePath();
         }
-    }
-
-    private static File getDefaultServerDir() {
-        File base = FileSystemView.getFileSystemView().getHomeDirectory();
-        File desktop = new File(base, "Desktop");
-        return new File(desktop.isDirectory() ? desktop : base, "ForgeServer");
     }
 
     private BufferedImage getImage(String path) {
