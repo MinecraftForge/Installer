@@ -32,6 +32,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JTextField;
 import javax.swing.border.LineBorder;
+import javax.swing.filechooser.FileSystemView;
 
 import net.minecraftforge.installer.actions.Action;
 import net.minecraftforge.installer.actions.ActionCanceledException;
@@ -78,10 +79,16 @@ public class InstallerPanel extends JPanel {
         }
     }
 
-    private class SelectButtonAction extends AbstractAction {
+    private final class SelectButtonAction extends AbstractAction {
         private static final long serialVersionUID = 1L;
         @Override
         public void actionPerformed(ActionEvent e) {
+            String actionCommand = e.getActionCommand();
+            if (Actions.SERVER.name().equals(actionCommand))
+                targetDir = new File("ForgeServer");
+            else if (Actions.CLIENT.name().equals(actionCommand))
+                targetDir = SimpleInstaller.getMCDir();
+
             updateFilePath();
         }
     }
