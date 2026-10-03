@@ -102,6 +102,14 @@ public class InstallerPanel extends JPanel {
         }
     }
 
+    // e.g. /big_logo.png -> /big_logo_dark_mode.png
+    private static String getDarkModePath(String path) {
+        int extension = path.lastIndexOf('.');
+        return extension == -1
+                ? path + "_dark_mode"
+                : path.substring(0, extension) + "_dark_mode" + path.substring(extension);
+    }
+
     @SuppressWarnings("unchecked")
     private static <E extends Throwable, R> R sneak(Throwable e) throws E {
         throw (E)e;
@@ -113,7 +121,11 @@ public class InstallerPanel extends JPanel {
         this.badCerts = badCerts;
 
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        BufferedImage image = getImage(profile.getLogo());
+        BufferedImage image = null;
+        if (Win11MicaEffect.useDarkMode())
+            image = getImage(getDarkModePath(profile.getLogo()));
+        if (image == null)
+            image = getImage(profile.getLogo());
 
         JPanel logoSplash = new JPanel();
         logoSplash.setLayout(new BoxLayout(logoSplash, BoxLayout.Y_AXIS));
@@ -190,6 +202,7 @@ public class InstallerPanel extends JPanel {
         selectedDirText.setColumns(30);
 //        homeDir.setMaximumSize(homeDir.getPreferredSize());
         entryPanel.add(selectedDirText);
+        entryPanel.add(Box.createHorizontalStrut(6));
         JButton dirSelect = new JButton();
         dirSelect.setAction(new FileSelectAction());
         dirSelect.setText("...");
@@ -230,7 +243,8 @@ public class InstallerPanel extends JPanel {
         boolean valid = action.isPathValid(targetDir);
 
         if (profile.getMirror() != null) {
-            String message = String.format("<html><a href=\'%s\'>Data kindly mirrored by %s</a></html>", profile.getMirror().getName(), profile.getMirror().getHomepage());
+            String linkStyle = Win11MicaEffect.useDarkMode() ? " style='color:#60CDFF'" : "";
+            String message = String.format("<html><a href=\'%s\'%s>Data kindly mirrored by %s</a></html>", profile.getMirror().getName(), linkStyle, profile.getMirror().getHomepage());
             sponsorButton.setText(message);
             sponsorButton.setToolTipText(profile.getMirror().getHomepage());
             if (profile.getMirror().getImageAddress() != null)
@@ -244,6 +258,7 @@ public class InstallerPanel extends JPanel {
 
         if (valid) {
             selectedDirText.setForeground(null);
+            Win11MicaEffect.prepare(selectedDirText);
             infoLabel.setVisible(false);
             fileEntryPanel.setBorder(null);
         } else {

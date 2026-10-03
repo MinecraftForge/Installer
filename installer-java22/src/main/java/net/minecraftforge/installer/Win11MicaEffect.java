@@ -4,10 +4,14 @@
  */
 package net.minecraftforge.installer;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dialog;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.lang.foreign.Arena;
@@ -20,16 +24,18 @@ import java.lang.invoke.MethodHandle;
 import java.util.Locale;
 import java.util.concurrent.Callable;
 
+import javax.swing.AbstractButton;
+import javax.swing.BorderFactory;
+import javax.swing.ButtonModel;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.plaf.basic.BasicButtonUI;
 
 final class Win11MicaEffect {
-    private static final Color TRANSPARENT = new Color(220, 220, 220, 0);
-    private static final Color WINDOW_BACKGROUND = new Color(220, 220, 220, 1);
-
     private Win11MicaEffect() {}
 
     /// Swing paints an opaque background by default for all components, which hides the Mica backdrop effect.
@@ -41,12 +47,71 @@ final class Win11MicaEffect {
         if (component instanceof JPanel || component instanceof JOptionPane || component instanceof JRadioButton) {
             JComponent jComponent = (JComponent) component;
             jComponent.setOpaque(false);
-            jComponent.setBackground(TRANSPARENT);
+            jComponent.setBackground(Win11Theme.CURRENT.transparent());
         }
+
+        Win11Theme.CURRENT.applyTo(component);
 
         if (component instanceof Container container) {
             for (Component child : container.getComponents()) {
                 prepare(child);
+            }
+        }
+    }
+
+    static final class Win11ButtonUI extends BasicButtonUI {
+        private static final int CURVE_AMOUNT = 8;
+
+        static void install(JButton button) {
+            if (button.getUI() instanceof Win11ButtonUI)
+                return;
+
+            // Keep the same insets as the native button to avoid layout changes
+            Insets insets = button.getInsets();
+            button.setUI(new Win11ButtonUI());
+            button.setBorder(BorderFactory.createEmptyBorder(insets.top, insets.left, insets.bottom, insets.right));
+            button.setOpaque(false);
+            button.setRolloverEnabled(true);
+        }
+
+        @Override
+        public void paint(Graphics graphics, JComponent component) {
+            AbstractButton button = (AbstractButton) component;
+            ButtonModel model = button.getModel();
+            Win11Theme theme = Win11Theme.CURRENT;
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (model.isPressed() && model.isArmed())
+                    g2.setColor(theme.buttonPressed());
+                else if (model.isRollover())
+                    g2.setColor(theme.buttonHover());
+                else
+                    g2.setColor(theme.control());
+                g2.fillRoundRect(0, 0, button.getWidth() - 1, button.getHeight() - 1, CURVE_AMOUNT, CURVE_AMOUNT);
+
+                g2.setColor(theme.controlBorder());
+                g2.drawRoundRect(0, 0, button.getWidth() - 1, button.getHeight() - 1, CURVE_AMOUNT, CURVE_AMOUNT);
+            } finally {
+                g2.dispose();
+            }
+            super.paint(graphics, component);
+        }
+
+        @Override
+        protected void paintButtonPressed(Graphics graphics, AbstractButton button) {
+            // Already handled in paint()
+        }
+
+        @Override
+        protected void paintFocus(Graphics graphics, AbstractButton button, Rectangle viewRect, Rectangle textRect, Rectangle iconRect) {
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            try {
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(Win11Theme.CURRENT.focusRing());
+                g2.drawRoundRect(1, 1, button.getWidth() - 3, button.getHeight() - 3, CURVE_AMOUNT - 2, CURVE_AMOUNT - 2);
+            } finally {
+                g2.dispose();
             }
         }
     }
@@ -59,11 +124,11 @@ final class Win11MicaEffect {
         dialog.getLayeredPane().setOpaque(false);
         if (dialog.getContentPane() instanceof JComponent contentPane) {
             contentPane.setOpaque(false);
-            contentPane.setBackground(TRANSPARENT);
+            contentPane.setBackground(Win11Theme.CURRENT.transparent());
         }
         prepare(dialog.getRootPane());
 
-        dialog.setBackground(WINDOW_BACKGROUND);
+        dialog.setBackground(Win11Theme.CURRENT.windowBackground());
 
         // In order for the Mica effect to apply correctly on a Swing window, we need to ensure a repaint after applying
         // for timing reasons. If the window is already showing, we can repaint immediately, otherwise wait for the
@@ -152,6 +217,14 @@ final class Win11MicaEffect {
             int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
             int _ = (int) dwmSetWindowAttribute.invokeExact(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, cornerPreference, Integer.BYTES);
 
+            // DWM defaults to light mode for backwards-compatibility, so opt-into dark mode if the user prefers it
+            if (useDarkMode()) {
+                MemorySegment useDarkMode = arena.allocate(ValueLayout.JAVA_BOOLEAN);
+                useDarkMode.set(ValueLayout.JAVA_BOOLEAN, 0, true);
+                int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+                int _ = (int) dwmSetWindowAttribute.invokeExact(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, useDarkMode, Integer.BYTES);
+            }
+
             // Tell DWM that we'd like to opt-into the main window backdrop type rather than the backwards-compatible
             // default of no backdrop effect. This is the main bit that actually enables the Mica backdrop effect - the
             // rest of the code is mostly workarounds for Swing limitations
@@ -239,6 +312,70 @@ final class Win11MicaEffect {
         // SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED;
         int flags = 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020;
         int _ = (int) setWindowPos.invokeExact(hwnd, MemorySegment.NULL, 0, 0, 0, 0, flags);
+    }
+
+    /// @return true if Mica is supported and the user prefers dark mode for apps in Windows' personalisation settings.
+    /// Can be overridden with the `forgeinstaller.darkmode` system property.
+    static boolean useDarkMode() {
+        final class LazyInit {
+            private LazyInit() {}
+            private static final boolean USE_DARK_MODE;
+            static {
+                boolean isDarkMode = false;
+                if (!isUnsupportedPlatform()) {
+                    String override = System.getProperty("forgeinstaller.darkmode");
+                    if (override != null) {
+                        isDarkMode = Boolean.parseBoolean(override);
+                    } else {
+                        try {
+                            isDarkMode = readAppsUseLightTheme() == 0;
+                        } catch (Throwable ignored) {
+                            // Fallback to light mode if we can't read the preference
+                        }
+                    }
+                }
+                USE_DARK_MODE = isDarkMode;
+            }
+        }
+        return LazyInit.USE_DARK_MODE;
+    }
+
+    /// Reads the `AppsUseLightTheme` DWORD from the registry, which is 0 when the user has chosen dark mode for apps.
+    /// @return the registry value, or -1 if it couldn't be read (e.g. the user has never changed their theme)
+    private static int readAppsUseLightTheme() throws Throwable {
+        var linker = Linker.nativeLinker();
+        try (Arena arena = Arena.ofConfined()) {
+            SymbolLookup advapi32 = SymbolLookup.libraryLookup("advapi32", arena);
+            MethodHandle regGetValueW = linker.downcallHandle(
+                advapi32.find("RegGetValueW").orElseThrow(),
+                FunctionDescriptor.of(
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.JAVA_INT,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.ADDRESS,
+                    ValueLayout.ADDRESS
+                )
+            );
+
+            MemorySegment HKEY_CURRENT_USER = MemorySegment.ofAddress(0x80000001L);
+            MemorySegment subKey = arena.allocateFrom(ValueLayout.JAVA_CHAR,
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\0".toCharArray());
+            MemorySegment valueName = arena.allocateFrom(ValueLayout.JAVA_CHAR, "AppsUseLightTheme\0".toCharArray());
+            MemorySegment data = arena.allocate(ValueLayout.JAVA_INT);
+            MemorySegment dataSize = arena.allocateFrom(ValueLayout.JAVA_INT, Integer.BYTES);
+
+            int RRF_RT_REG_DWORD = 0x00000010;
+            int status = (int) regGetValueW.invokeExact(
+                HKEY_CURRENT_USER, subKey, valueName, RRF_RT_REG_DWORD, MemorySegment.NULL, data, dataSize
+            );
+            if (status != 0) // ERROR_SUCCESS
+                return -1;
+
+            return data.get(ValueLayout.JAVA_INT, 0);
+        }
     }
 
     /// @return true if the current platform is Windows 11
